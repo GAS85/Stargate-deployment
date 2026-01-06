@@ -1,0 +1,361 @@
+version: "3.8"
+
+services:
+  # ===================
+  # Infrastructure
+  # ===================
+  
+  postgres:
+    image: postgres:15-alpine
+    container_name: stargate-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init/postgres:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - svdh-network
+
+  # Fix vault data volume permissions
+  vault-data-fixer:
+    image: hashicorp/vault:1.19.0
+    container_name: stargate-vault-data-fixer
+    user: root
+    entrypoint: /bin/sh -c "chown -R vault:vault /vault/data && echo 'Vault data permissions fixed'"
+    volumes:
+      - vault_data:/vault/data
+    networks:
+      - svdh-network
+
+  vault:
+    image: hashicorp/vault:1.19.0
+    container_name: stargate-vault
+    depends_on:
+      vault-data-fixer:
+        condition: service_completed_successfully
+    cap_add:
+      - IPC_LOCK
+    environment:
+      VAULT_ADDR: "http://127.0.0.1:8200"
+      VAULT_API_ADDR: "http://0.0.0.0:8200"
+    volumes:
+      - vault_data:/vault/data
+      - ./config/vault:/vault/config:ro
+    ports:
+      - "8200:8200"
+    command: server
+    healthcheck:
+      test: ["CMD-SHELL", "vault status -address=http://127.0.0.1:8200 || [ $? -eq 2 ]"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - svdh-network
+
+  minio:
+    image: minio/minio:latest
+    container_name: stargate-minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - svdh-network
+
+  # MinIO bucket initialization
+  minio-init:
+    image: minio/mc:latest
+    container_name: stargate-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+        mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD};
+        mc mb local/$${S3_BUCKET_NAME} --ignore-existing;
+        mc anonymous set download local/$${S3_BUCKET_NAME};
+        echo 'MinIO bucket created successfully';
+      "
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME:-svdh-bucket}
+    networks:
+      - svdh-network
+
+  # Vault initialization container
+  vault-init:
+    image: hashicorp/vault:1.19.0
+    container_name: stargate-vault-init
+    user: root
+    depends_on:
+      vault:
+        condition: service_healthy
+    environment:
+      VAULT_ADDR: "http://vault:8200"
+    volumes:
+      - ./scripts:/scripts:ro
+      - ./secrets:/secrets
+    entrypoint: /bin/sh -c "apk add --no-cache jq && /scripts/init-vault.sh"
+    networks:
+      - svdh-network
+
+  # ===================
+  # Applications
+  # ===================
+
+  smimekeys-client:
+    image: registry.vereign.io/svdh/smimekeys:${SMIMEKEYS_VERSION:-latest}
+    container_name: stargate-smimekeys-client
+    depends_on:
+      postgres:
+        condition: service_healthy
+      vault-init:
+        condition: service_completed_successfully
+    environment:
+      # HTTP Server
+      HTTP_HOST: ""
+      HTTP_PORT: "8080"
+      HTTP_READ_TIMEOUT: "10s"
+      HTTP_WRITE_TIMEOUT: "10s"
+      HTTP_IDLE_TIMEOUT: "60s"
+      METRICS_ADDR: ":2112"
+      
+      # Database
+      DB_URI: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/smimekeys_client"
+      DB_LOG_QUERIES: "false"
+      
+      # Vault
+      PRIVATE_KEY_STORE: "vault"
+      VAULT_ADDRESS: "http://vault:8200"
+      VAULT_TOKEN: "${VAULT_TOKEN}"
+      VAULT_MOUNT_PATH: "secret-smimekeys-client"
+      VAULT_KV2_MAX_VERSIONS: "2"
+      VAULT_KV2_CAS_REQUIRED: "false"
+      VAULT_KV2_DELETE_VERSION_AFTER: "0s"
+      
+      # CA Configuration (external CA)
+      CERT_CA_ROOT: "false"
+      CERT_CA_ADDR: "https://smimekeys-ca-dev.k8s.vereign-cdn.com"
+      CERT_CA_EXPIRY: "8760h"
+      CERT_CA_PUBLIC_HTTP_ADDR: ""
+      CERT_CRL_REFRESH_PERIOD: "30m"
+      
+      # LDAP
+      LDAP_ADDR: "ldap://ldap_server:389"
+      LDAP_USERNAME: "cn=admin,dc=seppmailserver,dc=ch"
+      LDAP_BASE_DN: "ou=publicHINKeys,dc=seppmailserver,dc=ch"
+      
+      LOG_LEVEL: "info"
+    ports:
+      - "8081:8080"
+      - "2113:2112"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/liveness"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - svdh-network
+
+  policy:
+    image: registry.vereign.io/svdh/policy:${POLICY_VERSION:-latest}
+    container_name: stargate-policy
+    depends_on:
+      postgres:
+        condition: service_healthy
+      vault-init:
+        condition: service_completed_successfully
+    environment:
+      # HTTP Server
+      HTTP_HOST: ""
+      HTTP_PORT: "8080"
+      HTTP_IDLE_TIMEOUT: "120s"
+      HTTP_READ_TIMEOUT: "60s"
+      HTTP_WRITE_TIMEOUT: "60s"
+      
+      # Database
+      DB_URI: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/policy"
+      DB_LOG_QUERIES: "false"
+      DB_NOTIFIER_MAX_RETRY_ATTEMPTS: "10"
+      
+      # Vault
+      VAULT_ADDRESS: "http://vault:8200"
+      VAULT_TOKEN: "${VAULT_TOKEN}"
+      VAULT_MOUNT_PATH: "secret-policy"
+      
+      LOG_LEVEL: "INFO"
+    ports:
+      - "8082:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/liveness"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - svdh-network
+
+  idagent:
+    image: registry.vereign.io/svdh/idagent:${IDAGENT_VERSION:-latest}
+    container_name: stargate-idagent
+    depends_on:
+      postgres:
+        condition: service_healthy
+      vault-init:
+        condition: service_completed_successfully
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      # HTTP Server
+      HTTP_HOST: ""
+      HTTP_PORT: "8080"
+      HTTP_IDLE_TIMEOUT: "60s"
+      HTTP_READ_TIMEOUT: "10s"
+      HTTP_WRITE_TIMEOUT: "10s"
+      METRICS_ADDR: ":2112"
+      
+      # Database
+      DB_URI: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/idagent"
+      
+      # Vault
+      VAULT_ADDRESS: "http://vault:8200"
+      VAULT_TOKEN: "${VAULT_TOKEN}"
+      VAULT_MOUNT_PATH: "secret-idagent"
+      VAULT_KV2_MAX_VERSIONS: "10"
+      VAULT_KV2_CAS_REQUIRED: "false"
+      VAULT_KV2_DELETE_VERSION_AFTER: "0s"
+      
+      # S3
+      S3_HOSTNAME: "minio:9000"
+      S3_ACCESS_KEY: "${MINIO_ROOT_USER:-minioadmin}"
+      S3_SECRET_KEY: "${MINIO_ROOT_PASSWORD:-minioadmin}"
+      S3_SECURE: "false"
+      S3_BUCKET_NAME: "${S3_BUCKET_NAME:-svdh-bucket}"
+      
+      # External services
+      SERVICE_PUBLIC_ADDR: "http://localhost:8083"
+      ISSUER_SERVICE_ADDR: "https://vereign-issuer.vrgnservices.eu"
+      VERIFIER_SERVICE_ADDR: "https://vereign-verifier.vrgnservices.eu:4433"
+      WEBHOOK_CALLBACK_ADDR: ""
+      
+      # WireGuard
+      WG_LOCAL_IP: "10.0.0.4"
+      
+      LOG_LEVEL: "info"
+    ports:
+      - "8083:8080"
+      - "2114:2112"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/liveness"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - svdh-network
+
+  mxengine:
+    image: registry.vereign.io/svdh/mxengine:${MXENGINE_VERSION:-latest}
+    container_name: stargate-mxengine
+    depends_on:
+      postgres:
+        condition: service_healthy
+      vault-init:
+        condition: service_completed_successfully
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      # HTTP Server
+      LOG_LEVEL: "debug"
+      INBOUND_HANDLERS: "json,smtp"
+      INBOUND_HTTP_HOST: ""
+      INBOUND_HTTP_PORT: "8080"
+      INBOUND_HTTP_READ_TIMEOUT: "10s"
+      INBOUND_HTTP_WRITE_TIMEOUT: "10s"
+      INBOUND_HTTP_IDLE_TIMEOUT: "60s"
+      INBOUND_HTTP_MAX_SIZE: "20971520"
+      INBOUND_HTTP_PUBLIC_ADDRESS: "http://localhost:8084"
+      
+      # SMTP
+      INBOUND_SMTP_PUBLIC_HOSTNAME: "localhost"
+      INBOUND_SMTP_HOST: ""
+      INBOUND_SMTP_PORT: "1587"
+      INBOUND_SMTP_APP_NAME: "mxengine local"
+      INBOUND_SMTP_MAX_SIZE: "20971520"
+      INBOUND_SMTP_TLS: "false"
+      INBOUND_SMTP_AUTH: "false"
+      
+      # Database
+      DB_URI: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/mxengine"
+      
+      # S3
+      S3_HOSTNAME: "minio:9000"
+      S3_ACCESS_KEY: "${MINIO_ROOT_USER:-minioadmin}"
+      S3_SECRET_KEY: "${MINIO_ROOT_PASSWORD:-minioadmin}"
+      S3_SECURE: "false"
+      S3_BUCKET_NAME: "${S3_BUCKET_NAME:-svdh-bucket}"
+      
+      # Vault
+      VAULT_ADDRESS: "http://vault:8200"
+      VAULT_TOKEN: "${VAULT_TOKEN}"
+      VAULT_MOUNT_PATH: "secret-mxengine"
+      
+      # Outbound (disabled for local)
+      OUTBOUND_WORKERS: "5"
+      OUTBOUND_QUEUE_POLL_INTERVAL: "3s"
+      OUTBOUND_MAX_MESSAGE_RETRIES: "30"
+      NACK_WAIT_RETRY: "5m"
+      SEALER: "true"
+      OUTBOUND_SEAL_ADDR: "http://seal:8080"
+      OUTBOUND_SMTP_PASS: "SecureMessage"
+      OUTBOUND_SMTP_HOST: "box.vereign-cdn.com"
+      OUTBOUND_SMTP_PORT: "10021"
+      OUTBOUND_SMTP_USER: "seal@vereign-cdn.com"
+      OUTBOUND_SMTP_AUTH: "PLAIN"
+      
+      # Archive
+      ARCHIVE_INTERVAL: "30m"
+      ARCHIVE_RETENTION_PERIOD: "87672h"
+      ARCHIVE_BATCH_SIZE: "1000"
+      WAIT_BEFORE_ARCHIVE: "2160h"
+    ports:
+      - "8084:8080"
+      - "1587:1587"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/liveness"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - svdh-network
+
+volumes:
+  postgres_data:
+  vault_data:
+  minio_data:
+
+networks:
+  svdh-network:
+    driver: bridge

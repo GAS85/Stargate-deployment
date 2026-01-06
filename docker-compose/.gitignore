@@ -1,0 +1,8 @@
+# Secrets directory (contains Vault keys)
+secrets/
+
+# Environment file with sensitive data
+.env
+
+# Keep the example
+!.env.example
