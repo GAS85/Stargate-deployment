@@ -169,12 +169,6 @@ services:
     ports:
       - "8081:8080"
       - "2113:2112"
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/liveness"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
     networks:
       - svdh-network
 
@@ -207,12 +201,6 @@ services:
       LOG_LEVEL: "INFO"
     ports:
       - "8082:8080"
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/liveness"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
     networks:
       - svdh-network
 
@@ -266,12 +254,6 @@ services:
     ports:
       - "8083:8080"
       - "2114:2112"
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/liveness"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
     networks:
       - svdh-network
 
@@ -342,12 +324,6 @@ services:
     ports:
       - "8084:8080"
       - "1587:1587"
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/liveness"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
     networks:
       - svdh-network
 
