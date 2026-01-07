@@ -311,8 +311,8 @@ services:
       SEALER: "true"
       OUTBOUND_SEAL_ADDR: "http://seal:8080"
       OUTBOUND_SMTP_PASS: "SecureMessage"
-      OUTBOUND_SMTP_HOST: "box.vereign-cdn.com"
-      OUTBOUND_SMTP_PORT: "10021"
+      OUTBOUND_SMTP_HOST: "mail.vrgnservices.eu"
+      OUTBOUND_SMTP_PORT: "10026"
       OUTBOUND_SMTP_USER: "seal@vereign-cdn.com"
       OUTBOUND_SMTP_AUTH: "PLAIN"
       
