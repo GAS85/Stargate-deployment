@@ -119,6 +119,25 @@ services:
     networks:
       - svdh-network
 
+  # Policy initialization container
+  policy-init:
+    image: postgres:15-alpine
+    container_name: stargate-policy-init
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: policy
+    volumes:
+      - ./scripts:/scripts:ro
+      - ./policies:/policies:ro
+    entrypoint: /scripts/init-policies.sh
+    networks:
+      - svdh-network
+
   # ===================
   # Applications
   # ===================
