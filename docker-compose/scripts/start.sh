@@ -17,6 +17,35 @@ echo ""
 # Create secrets directory if it doesn't exist
 mkdir -p "$SECRETS_DIR"
 
+# Create .env file from .env.example if it doesn't exist
+if [ ! -f "$ENV_FILE" ]; then
+  if [ -f "$PROJECT_DIR/.env.example" ]; then
+    echo "Creating .env file from .env.example..."
+    cp "$PROJECT_DIR/.env.example" "$ENV_FILE"
+  else
+    echo "Creating default .env file..."
+    cat > "$ENV_FILE" << 'EOF'
+# PostgreSQL
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+
+# Vault (auto-populated by start.sh)
+VAULT_TOKEN=
+
+# MinIO (S3)
+MINIO_ROOT_USER=minioadmin
+MINIO_ROOT_PASSWORD=minioadmin123
+S3_BUCKET_NAME=svdh-bucket
+
+# Application Versions
+SMIMEKEYS_VERSION=latest
+POLICY_VERSION=latest
+IDAGENT_VERSION=latest
+MXENGINE_VERSION=latest
+EOF
+  fi
+fi
+
 # Check if we need to login to registry
 echo "Checking Docker registry access..."
 if ! docker pull registry.vereign.io/svdh/smimekeys:latest --quiet 2>/dev/null; then
@@ -70,9 +99,9 @@ if [ -f "$KEYS_FILE" ]; then
   UNSEAL_KEY_2=$(jq -r '.unseal_keys_b64[1]' "$KEYS_FILE")
   UNSEAL_KEY_3=$(jq -r '.unseal_keys_b64[2]' "$KEYS_FILE")
   
-  docker exec svdh-vault vault operator unseal "$UNSEAL_KEY_1" || true
-  docker exec svdh-vault vault operator unseal "$UNSEAL_KEY_2" || true
-  docker exec svdh-vault vault operator unseal "$UNSEAL_KEY_3" || true
+  docker exec stargate-vault vault operator unseal "$UNSEAL_KEY_1" || true
+  docker exec stargate-vault vault operator unseal "$UNSEAL_KEY_2" || true
+  docker exec stargate-vault vault operator unseal "$UNSEAL_KEY_3" || true
   
   echo "Vault unsealed!"
   
