@@ -14,6 +14,70 @@ echo "  Stargate Local Development Environment"
 echo "============================================"
 echo ""
 
+# Function to install Docker on Ubuntu
+install_docker() {
+  echo "Installing Docker from official repository..."
+  
+  # Remove old packages
+  sudo apt remove -y docker.io docker-doc docker-compose podman-docker containerd runc 2>/dev/null || true
+  
+  # Install prerequisites
+  sudo apt update
+  sudo apt install -y ca-certificates curl
+  
+  # Add Docker's official GPG key
+  sudo install -m 0755 -d /etc/apt/keyrings
+  sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  sudo chmod a+r /etc/apt/keyrings/docker.asc
+  
+  # Add the repository
+  echo \
+    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+    $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+    sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+  
+  # Install Docker
+  sudo apt update
+  sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin jq
+  
+  echo "Docker installed successfully!"
+  docker --version
+  docker compose version
+}
+
+# Check for required commands
+check_dependencies() {
+  local missing=()
+  
+  if ! command -v docker &> /dev/null; then
+    missing+=("docker")
+  fi
+  
+  if ! docker compose version &> /dev/null 2>&1; then
+    missing+=("docker-compose-plugin")
+  fi
+  
+  if ! command -v jq &> /dev/null; then
+    missing+=("jq")
+  fi
+  
+  if [ ${#missing[@]} -gt 0 ]; then
+    echo "Missing dependencies: ${missing[*]}"
+    echo ""
+    read -p "Do you want to install Docker and dependencies? (y/N) " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+      install_docker
+    else
+      echo "Please install the missing dependencies and try again."
+      exit 1
+    fi
+  fi
+}
+
+# Check dependencies first
+check_dependencies
+
 # Create secrets directory if it doesn't exist
 mkdir -p "$SECRETS_DIR"
 
