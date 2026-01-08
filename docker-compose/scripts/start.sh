@@ -212,6 +212,12 @@ else
     echo "Keys saved to: $KEYS_FILE"
     echo "IMPORTANT: Back up this file securely!"
     echo ""
+    
+    # Restart application services to pick up the new VAULT_TOKEN
+    echo "Restarting application services with Vault token..."
+    docker compose up -d --force-recreate smimekeys-client policy idagent mxengine
+    echo "Application services restarted."
+    echo ""
   else
     echo "WARNING: Vault keys file not found."
     echo "Check vault-init logs: docker compose logs vault-init"
