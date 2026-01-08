@@ -204,3 +204,22 @@ svdh-local/
 └── secrets/               # Created on first run
     └── vault-keys.json    # Vault unseal keys (BACK THIS UP!)
 ```
+
+
+# Check all liveness endpoints
+curl -s http://localhost:8081/liveness  # smimekeys-client
+curl -s http://localhost:8082/liveness  # policy
+curl -s http://localhost:8083/liveness  # idagent
+curl -s http://localhost:8084/liveness  # mxengine
+
+# Check logs (last 10 lines)
+docker logs stargate-smimekeys-client --tail 10
+docker logs stargate-policy --tail 10
+docker logs stargate-idagent --tail 10
+docker logs stargate-mxengine --tail 10
+
+# Follow logs in real-time
+docker logs -f stargate-mxengine
+
+# Check all container statuses
+docker ps --format 'table {{.Names}}\t{{.Status}}'
