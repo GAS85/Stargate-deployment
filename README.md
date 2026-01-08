@@ -18,10 +18,48 @@ Local Docker Compose setup for running SVDH services.
 ## Quick Start
 
 ### Prerequisites
-- Docker and Docker Compose installed
+- Docker and Docker Compose installed (from Docker's official repository)
 - Access to `registry.vereign.io` (login with `docker login registry.vereign.io`)
 
-### First Time Setup
+### Installing Docker (Ubuntu)
+
+```bash
+# 1. Remove the Ubuntu docker.io package (if installed)
+sudo apt remove docker.io docker-doc docker-compose podman-docker containerd runc
+
+# 2. Set up Docker's official GPG key and repository
+sudo apt update
+sudo apt install ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+# Add the repository
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# 3. Install Docker Engine + Compose from Docker's repo
+sudo apt update
+sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin jq
+
+# 4. Verify installation
+docker --version
+docker compose version
+```
+
+### Deploying to a Server
+
+```bash
+# Copy files to the server
+scp -r /home/petar/Repos/svdh/stargate-deployment/docker-compose/* stargate-demo:/root/stargate/
+
+# SSH to server and start
+ssh stargate-demo "cd /root/stargate && chmod +x scripts/*.sh && ./scripts/start.sh"
+```
+
+### First Time Setup (Local)
 
 ```bash
 # Make scripts executable
@@ -205,21 +243,24 @@ svdh-local/
     └── vault-keys.json    # Vault unseal keys (BACK THIS UP!)
 ```
 
+## Quick Health & Log Checks
 
+```bash
 # Check all liveness endpoints
-curl -s http://localhost:8081/liveness  # smimekeys-client
-curl -s http://localhost:8082/liveness  # policy
-curl -s http://localhost:8083/liveness  # idagent
-curl -s http://localhost:8084/liveness  # mxengine
+echo "=== smimekeys-client ===" && curl -s http://localhost:8081/liveness && echo ""
+echo "=== policy ===" && curl -s http://localhost:8082/liveness && echo ""
+echo "=== idagent ===" && curl -s http://localhost:8083/liveness && echo ""
+echo "=== mxengine ===" && curl -s http://localhost:8084/liveness && echo ""
 
 # Check logs (last 10 lines)
-docker logs stargate-smimekeys-client --tail 10
-docker logs stargate-policy --tail 10
-docker logs stargate-idagent --tail 10
-docker logs stargate-mxengine --tail 10
+echo "=== smimekeys-client logs ===" && docker logs stargate-smimekeys-client --tail 10
+echo "=== policy logs ===" && docker logs stargate-policy --tail 10
+echo "=== idagent logs ===" && docker logs stargate-idagent --tail 10
+echo "=== mxengine logs ===" && docker logs stargate-mxengine --tail 10
 
 # Follow logs in real-time
 docker logs -f stargate-mxengine
 
 # Check all container statuses
 docker ps --format 'table {{.Names}}\t{{.Status}}'
+```
