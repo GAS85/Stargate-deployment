@@ -1,7 +1,12 @@
-package alpha.deliveryStrategy
+package outbound.delivery_strategy
 
-default strategy := "smtp"
+default strategy := "seal"
 
-strategy := "smime" if {
-    contains(lower(input.subject), "[confidential]")
+strategy := "seal" if {
+	input.channel == "smtp"
 }
+
+strategy := "smtp" if {
+	input.channel == "json"
+}
+

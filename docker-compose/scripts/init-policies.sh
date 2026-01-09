@@ -46,15 +46,15 @@ EOF
 }
 
 # Insert the delivery_strategy policy
-if [ -f "/policies/outbound/delivery_strategy/policy.rego" ]; then
+if [ -f "/policies/alpha/deliveryStrategy/policy.rego" ]; then
   upsert_policy \
     "policy.rego" \
-    "delivery_strategy" \
-    "outbound" \
-    "/policies/outbound/delivery_strategy/policy.rego" \
+    "deliveryStrategy" \
+    "alpha" \
+    "/policies/alpha/deliveryStrategy/policy.rego" \
     "{}"
 else
-  echo "WARNING: /policies/outbound/delivery_strategy/policy.rego not found"
+  echo "WARNING: /policies/alpha/deliveryStrategy/policy.rego not found"
 fi
 
 echo ""
