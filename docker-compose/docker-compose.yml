@@ -143,7 +143,7 @@ services:
   # ===================
 
   smimekeys-client:
-    image: registry.vereign.io/svdh/smimekeys:${SMIMEKEYS_VERSION:-latest}
+    image: registry.vereign.io/svdh/smimekeys:${SMIMEKEYS_VERSION:-dev}
     container_name: stargate-smimekeys-client
     depends_on:
       postgres:
@@ -192,7 +192,7 @@ services:
       - svdh-network
 
   policy:
-    image: registry.vereign.io/svdh/policy:${POLICY_VERSION:-latest}
+    image: registry.vereign.io/svdh/policy:${POLICY_VERSION:-dev}
     container_name: stargate-policy
     depends_on:
       postgres:
@@ -224,7 +224,7 @@ services:
       - svdh-network
 
   idagent:
-    image: registry.vereign.io/svdh/idagent:${IDAGENT_VERSION:-latest}
+    image: registry.vereign.io/svdh/idagent:${IDAGENT_VERSION:-dev}
     container_name: stargate-idagent
     depends_on:
       postgres:
@@ -259,12 +259,15 @@ services:
       S3_SECRET_KEY: "${MINIO_ROOT_PASSWORD:-minioadmin}"
       S3_SECURE: "false"
       S3_BUCKET_NAME: "${S3_BUCKET_NAME:-svdh-bucket}"
+      S3_MESSAGE_BUCKET: "${S3_BUCKET_NAME:-svdh-bucket}"
       
       # External services
       SERVICE_PUBLIC_ADDR: "http://localhost:8083"
       ISSUER_SERVICE_ADDR: "https://vereign-issuer.vrgnservices.eu"
       VERIFIER_SERVICE_ADDR: "https://vereign-verifier.vrgnservices.eu:4433"
       WEBHOOK_CALLBACK_ADDR: ""
+      MXENGINE_ADDR: "http://mxengine:8080"
+      SMIMEKEYS_ADDR: "http://smimekeys-client:8080"
       
       # WireGuard
       WG_LOCAL_IP: "10.0.0.4"
@@ -277,7 +280,7 @@ services:
       - svdh-network
 
   mxengine:
-    image: registry.vereign.io/svdh/mxengine:${MXENGINE_VERSION:-latest}
+    image: registry.vereign.io/svdh/mxengine:${MXENGINE_VERSION:-dev}
     container_name: stargate-mxengine
     depends_on:
       postgres:
@@ -332,7 +335,8 @@ services:
       OUTBOUND_MAX_MESSAGE_RETRIES: "30"
       NACK_WAIT_RETRY: "5m"
       SEALER: "false"
-      OUTBOUND_SEAL_ADDR: "https://mxengine-dev.k8s.vereign-cdn.com"
+      OUTBOUND_SEALER_MX_ADDR: "https://mxengine-dev.k8s.vereign-cdn.com"
+      OUTBOUND_SEAL_ADDR: ""
       OUTBOUND_SMTP_PASS: "SecureMessage"
       OUTBOUND_SMTP_HOST: "mail.vrgnservices.eu"
       OUTBOUND_SMTP_PORT: "10026"
