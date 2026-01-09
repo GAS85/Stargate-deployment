@@ -322,6 +322,10 @@ services:
       VAULT_TOKEN: "${VAULT_TOKEN}"
       VAULT_MOUNT_PATH: "secret-mxengine"
       
+      # Policy
+      POLICY_ADDR: "http://policy:8080"
+      POLICY_OUTBOUND: "outbound/delivery_strategy"
+      
       # Outbound (disabled for local)
       OUTBOUND_WORKERS: "5"
       OUTBOUND_QUEUE_POLL_INTERVAL: "3s"

@@ -7,11 +7,11 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 cd "$PROJECT_DIR"
 
 echo "Stopping all services..."
-docker compose down
+docker compose stop
 
 echo ""
-echo "All services stopped."
+echo "All services stopped. Data volumes preserved."
 echo ""
-echo "To also remove volumes (databases, vault data, minio data):"
-echo "  docker compose down -v"
+echo "To start again:        ./scripts/start.sh"
+echo "To delete all data:    ./scripts/purge.sh"
 echo ""

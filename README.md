@@ -18,36 +18,8 @@ Local Docker Compose setup for running SVDH services.
 ## Quick Start
 
 ### Prerequisites
-- Docker and Docker Compose installed (from Docker's official repository)
+- Ubuntu server (Docker will be installed automatically if missing)
 - Access to `registry.vereign.io` (login with `docker login registry.vereign.io`)
-
-### Installing Docker (Ubuntu)
-
-```bash
-# 1. Remove the Ubuntu docker.io package (if installed)
-sudo apt remove docker.io docker-doc docker-compose podman-docker containerd runc
-
-# 2. Set up Docker's official GPG key and repository
-sudo apt update
-sudo apt install ca-certificates curl
-sudo install -m 0755 -d /etc/apt/keyrings
-sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-sudo chmod a+r /etc/apt/keyrings/docker.asc
-
-# Add the repository
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
-  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-# 3. Install Docker Engine + Compose from Docker's repo
-sudo apt update
-sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin jq
-
-# 4. Verify installation
-docker --version
-docker compose version
-```
 
 ### Deploying to a Server
 
@@ -55,8 +27,8 @@ docker compose version
 # Copy files to the server
 scp -r /home/petar/Repos/svdh/stargate-deployment/docker-compose/* stargate-demo:/root/stargate/
 
-# SSH to server and start
-ssh stargate-demo "cd /root/stargate && chmod +x scripts/*.sh && ./scripts/start.sh"
+# SSH to server and install
+ssh stargate-demo "cd /root/stargate && chmod +x scripts/*.sh && ./scripts/install.sh"
 ```
 
 ### First Time Setup (Local)
@@ -65,16 +37,20 @@ ssh stargate-demo "cd /root/stargate && chmod +x scripts/*.sh && ./scripts/start
 # Make scripts executable
 chmod +x scripts/*.sh
 
-# Start everything
-./scripts/start.sh
+# Run installation
+./scripts/install.sh
 ```
 
-The start script will:
-1. Start infrastructure (PostgreSQL, Vault, MinIO)
-2. Initialize Vault (create keys, unseal, create mounts)
-3. Save Vault keys to `secrets/vault-keys.json`
-4. Update `.env` with the Vault root token
-5. Start application services
+The install script will:
+1. Check for Docker/Docker Compose/jq and offer to install them if missing (Ubuntu)
+2. Create `.env` file from `.env.example` if it doesn't exist
+3. Start infrastructure (PostgreSQL, Vault, MinIO)
+4. Initialize Vault (create keys, unseal, create mounts)
+5. Save Vault keys to `secrets/vault-keys.json`
+6. Update `.env` with the Vault root token
+7. Restart application services to pick up the token
+8. Generate S/MIME signing key and CSR (prompts for certificate details)
+9. Set up daily backup cron job (runs at 2:00 AM)
 
 ### Subsequent Starts (after reboot)
 
@@ -82,8 +58,8 @@ The start script will:
 ./scripts/start.sh
 ```
 
-The script detects existing Vault keys and automatically:
-1. Starts infrastructure
+The start script:
+1. Starts infrastructure services
 2. Unseals Vault using stored keys
 3. Starts application services
 
@@ -91,14 +67,48 @@ The script detects existing Vault keys and automatically:
 
 ```bash
 ./scripts/stop.sh
+```
 
-# Or to also remove all data (volumes):
-docker compose down -v
+This stops containers but preserves all data.
+
+## Scripts Reference
+
+| Script | Purpose |
+|--------|--------|
+| `install.sh` | First-time setup (Docker, Vault, S/MIME key, cron backup) |
+| `start.sh` | Start services and unseal Vault |
+| `stop.sh` | Stop containers (data preserved) |
+| `backup.sh` | Manual PostgreSQL backup to `./backups/` |
+| `purge.sh` | Delete ALL data (requires confirmation) |
+
+## Backups
+
+### Automatic Backups
+- Daily backups run at 2:00 AM via cron (set up during install)
+- Backups stored in `./backups/` as timestamped `.tar.gz` files
+- Old backups (>7 days) are automatically cleaned up
+
+### Manual Backup
+
+```bash
+./scripts/backup.sh
+```
+
+Creates a compressed archive of all PostgreSQL databases.
+
+### Restore from Backup
+
+```bash
+# Extract backup
+tar -xzf backups/20260109_020000.tar.gz -C backups/
+
+# Restore a specific database
+cat backups/20260109_020000/mxengine.sql | docker exec -i stargate-postgres psql -U postgres -d mxengine
 ```
 
 ## Configuration
 
-Edit `.env` file to customize:
+The `.env` file is automatically created from `.env.example` on first run. Edit it to customize:
 
 ```env
 # PostgreSQL
@@ -217,30 +227,40 @@ docker compose logs <service-name>
 
 ### Reset everything
 ```bash
-docker compose down -v
-rm -rf secrets/
-./scripts/start.sh
+./scripts/purge.sh
+./scripts/install.sh
 ```
 
 ## Files Structure
 
 ```
-svdh-local/
+stargate/
 ├── docker-compose.yml      # Main compose file
-├── .env                    # Environment variables
-├── README.md              # This file
+├── .env                    # Environment variables (auto-created)
+├── .env.example            # Template for .env
+├── README.md               # This file
 ├── config/
 │   └── vault/
-│       └── vault.hcl      # Vault configuration
+│       └── vault.hcl       # Vault configuration
 ├── init/
 │   └── postgres/
 │       └── 01-create-databases.sql
+├── policies/               # Rego policy files
+│   └── outbound/
+│       └── delivery_strategy/
+│           └── policy.rego
 ├── scripts/
-│   ├── start.sh           # Start script (handles init/unseal)
-│   ├── stop.sh            # Stop script
-│   └── init-vault.sh      # Vault initialization (used by container)
-└── secrets/               # Created on first run
-    └── vault-keys.json    # Vault unseal keys (BACK THIS UP!)
+│   ├── install.sh          # First-time installation
+│   ├── start.sh            # Start services + unseal Vault
+│   ├── stop.sh             # Stop containers (preserves data)
+│   ├── backup.sh           # Manual database backup
+│   ├── purge.sh            # Delete all data (destructive!)
+│   ├── init-vault.sh       # Vault initialization (used by container)
+│   └── init-policies.sh    # Policy initialization (used by container)
+├── secrets/                # Created on first run (gitignored)
+│   └── vault-keys.json     # Vault unseal keys (BACK THIS UP!)
+└── backups/                # Database backups (gitignored)
+    └── *.tar.gz
 ```
 
 ## Quick Health & Log Checks
