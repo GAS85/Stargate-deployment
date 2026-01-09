@@ -324,6 +324,10 @@ services:
       VAULT_ADDRESS: "http://vault:8200"
       VAULT_TOKEN: "${VAULT_TOKEN}"
       VAULT_MOUNT_PATH: "secret-mxengine"
+
+      #Smimekeys
+      SMIME_ENABLED: "true"
+      SMIMEKEYS_ADDR: "http://smimekeys-client:8080"
       
       # Policy
       POLICY_ADDR: "http://policy:8080"
@@ -351,6 +355,8 @@ services:
     ports:
       - "8084:8080"
       - "1587:1587"
+    tmpfs:
+      - /tmp:size=100M
     networks:
       - svdh-network
 
