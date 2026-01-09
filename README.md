@@ -246,8 +246,8 @@ stargate/
 │   └── postgres/
 │       └── 01-create-databases.sql
 ├── policies/               # Rego policy files
-│   └── outbound/
-│       └── delivery_strategy/
+│   └── alpha/
+│       └── deliveryStrategy/
 │           └── policy.rego
 ├── scripts/
 │   ├── install.sh          # First-time installation
