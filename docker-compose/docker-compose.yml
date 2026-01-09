@@ -337,11 +337,11 @@ services:
       SEALER: "false"
       OUTBOUND_SEALER_MX_ADDR: "https://mxengine-dev.k8s.vereign-cdn.com"
       OUTBOUND_SEAL_ADDR: ""
-      OUTBOUND_SMTP_PASS: "SecureMessage"
       OUTBOUND_SMTP_HOST: "mail.vrgnservices.eu"
       OUTBOUND_SMTP_PORT: "10026"
-      OUTBOUND_SMTP_USER: "seal@vereign-cdn.com"
-      OUTBOUND_SMTP_AUTH: "PLAIN"
+      # OUTBOUND_SMTP_USER: "seal@vereign-cdn.com"
+      # OUTBOUND_SMTP_PASS: "SecureMessage"
+      # OUTBOUND_SMTP_AUTH: "PLAIN"
       
       # Archive
       ARCHIVE_INTERVAL: "30m"
