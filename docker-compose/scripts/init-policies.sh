@@ -25,7 +25,12 @@ upsert_policy() {
   local name="$2"
   local policy_group="$3"
   local rego_file="$4"
-  local data="${5:-{}}"
+  local data="$5"
+  
+  # Default to empty JSON object if not provided
+  if [ -z "$data" ]; then
+    data='{}'
+  fi
   
   # Read the rego content
   local rego_content
@@ -35,7 +40,7 @@ upsert_policy() {
   
   psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<EOF
 INSERT INTO policies (filename, name, policy_group, rego, data)
-VALUES ('$filename', '$name', '$policy_group', \$\$${rego_content}\$\$, '$data')
+VALUES ('$filename', '$name', '$policy_group', \$\$${rego_content}\$\$, '${data}')
 ON CONFLICT (name, policy_group)
 DO UPDATE SET 
   filename = EXCLUDED.filename,
@@ -46,15 +51,15 @@ EOF
 }
 
 # Insert the delivery_strategy policy
-if [ -f "/policies/outbound/delivery_strategy/policy.rego" ]; then
+if [ -f "/policies/alpha/deliveryStrategy/policy.rego" ]; then
   upsert_policy \
     "policy.rego" \
-    "delivery_strategy" \
-    "outbound" \
-    "/policies/outbound/delivery_strategy/policy.rego" \
+    "deliveryStrategy" \
+    "alpha" \
+    "/policies/alpha/deliveryStrategy/policy.rego" \
     "{}"
 else
-  echo "WARNING: /policies/outbound/delivery_strategy/policy.rego not found"
+  echo "WARNING: /policies/alpha/deliveryStrategy/policy.rego not found"
 fi
 
 echo ""
