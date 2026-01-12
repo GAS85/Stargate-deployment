@@ -243,9 +243,55 @@ SMIMEKEYS_VERSION=latest
 POLICY_VERSION=latest
 IDAGENT_VERSION=latest
 MXENGINE_VERSION=latest
+
+# Postfix Relay (auto-configures from DNS)
+MAIL_DOMAIN=
+
+# Logging (Promtail -> Loki)
+LOKI_URL=https://loki.k8s.vereign-cdn.com
+PROMTAIL_HOSTNAME=stargate
 EOF
   fi
 fi
+
+# Prompt for required configuration if not set
+configure_required_settings() {
+  echo ""
+  echo "============================================"
+  echo "  Configuration"
+  echo "============================================"
+  echo ""
+  
+  # Check MAIL_DOMAIN
+  CURRENT_MAIL_DOMAIN=$(grep "^MAIL_DOMAIN=" "$ENV_FILE" | cut -d'=' -f2-)
+  if [ -z "$CURRENT_MAIL_DOMAIN" ]; then
+    read -p "Mail domain for Postfix relay (e.g., example.com): " input_mail_domain
+    if [ -n "$input_mail_domain" ]; then
+      sed -i "s/^MAIL_DOMAIN=.*/MAIL_DOMAIN=$input_mail_domain/" "$ENV_FILE"
+      echo "Set MAIL_DOMAIN=$input_mail_domain"
+    else
+      echo "WARNING: MAIL_DOMAIN not set. Postfix relay will not start."
+    fi
+  fi
+  
+  # Check PROMTAIL_HOSTNAME
+  CURRENT_HOSTNAME=$(grep "^PROMTAIL_HOSTNAME=" "$ENV_FILE" | cut -d'=' -f2-)
+  if [ "$CURRENT_HOSTNAME" = "stargate" ] || [ -z "$CURRENT_HOSTNAME" ]; then
+    SUGGESTED_HOSTNAME=$(hostname -s 2>/dev/null || echo "stargate")
+    read -p "Hostname for log labels [$SUGGESTED_HOSTNAME]: " input_hostname
+    PROMTAIL_HOSTNAME="${input_hostname:-$SUGGESTED_HOSTNAME}"
+    if grep -q "^PROMTAIL_HOSTNAME=" "$ENV_FILE"; then
+      sed -i "s/^PROMTAIL_HOSTNAME=.*/PROMTAIL_HOSTNAME=$PROMTAIL_HOSTNAME/" "$ENV_FILE"
+    else
+      echo "PROMTAIL_HOSTNAME=$PROMTAIL_HOSTNAME" >> "$ENV_FILE"
+    fi
+    echo "Set PROMTAIL_HOSTNAME=$PROMTAIL_HOSTNAME"
+  fi
+  
+  echo ""
+}
+
+configure_required_settings
 
 # Check Docker registry access
 echo "Checking Docker registry access..."
@@ -342,6 +388,12 @@ echo ""
 echo "  Vault UI:          http://localhost:8200"
 echo "  MinIO Console:     http://localhost:9001"
 echo "  PostgreSQL:        localhost:5432"
+echo "  Postfix SMTP:      localhost:25"
+echo ""
+echo "  Monitoring:"
+echo "  -----------"
+echo "  Node Exporter:     http://localhost:9100/metrics"
+echo "  Promtail:          Logs -> Loki"
 echo ""
 echo "  Scripts:"
 echo "  --------"

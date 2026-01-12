@@ -1,5 +1,4 @@
-version: "3.8"
-
+# Docker Compose configuration for Stargate Alpha environment
 services:
   # ===================
   # Infrastructure
@@ -217,9 +216,13 @@ services:
       VAULT_TOKEN: "${VAULT_TOKEN}"
       VAULT_MOUNT_PATH: "secret-policy"
       
+      # Metrics
+      METRICS_ADDR: ":2112"
+      
       LOG_LEVEL: "INFO"
     ports:
       - "8082:8080"
+      - "2115:2112"
     networks:
       - svdh-network
 
@@ -352,11 +355,80 @@ services:
       ARCHIVE_RETENTION_PERIOD: "87672h"
       ARCHIVE_BATCH_SIZE: "1000"
       WAIT_BEFORE_ARCHIVE: "2160h"
+      
+      # Metrics
+      METRICS_ADDR: ":2112"
     ports:
       - "8084:8080"
       - "1587:1587"
+      - "2116:2112"
     tmpfs:
       - /tmp:size=100M
+    networks:
+      - svdh-network
+
+  # ===================
+  # Monitoring
+  # ===================
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: stargate-node-exporter
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    ports:
+      - "9100:9100"
+    networks:
+      - svdh-network
+
+  postfix-relay:
+    build:
+      context: ./config/postfix
+      dockerfile: Dockerfile
+    container_name: stargate-postfix-relay
+    restart: unless-stopped
+    environment:
+      # Required: Mail domain to relay for (auto-configures from DNS)
+      MAIL_DOMAIN: "${MAIL_DOMAIN}"
+      # Optional: Hostname for Postfix (default: container hostname)
+      MAIL_HOSTNAME: "${MAIL_HOSTNAME:-}"
+      # Optional: Enable IPv6 (default: false, ipv4 only)
+      ENABLE_IPV6: "${POSTFIX_ENABLE_IPV6:-false}"
+      # Optional: DNS timeout in seconds (default: 2)
+      DNS_TIMEOUT: "${DNS_TIMEOUT:-2}"
+      # Optional: Specific DNS server to use
+      DNS_SERVER: "${DNS_SERVER:-}"
+      # Optional: Manual relay host (skip MX lookup)
+      RELAYHOST: "${RELAYHOST:-}"
+      # Optional: Manual allowed networks (skip SPF lookup)
+      MYNETWORKS: "${POSTFIX_MYNETWORKS:-}"
+    volumes:
+      - postfix_spool:/var/spool/postfix
+    ports:
+      - "25:25"
+    networks:
+      - svdh-network
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: stargate-promtail
+    restart: unless-stopped
+    volumes:
+      - ./config/promtail/promtail-config.yaml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - promtail_positions:/tmp
+    command: -config.file=/etc/promtail/config.yml -config.expand-env=true
+    environment:
+      LOKI_URL: "${LOKI_URL:-https://loki.k8s.vereign-cdn.com}"
+      HOSTNAME: "${PROMTAIL_HOSTNAME:-stargate}"
     networks:
       - svdh-network
 
@@ -364,6 +436,8 @@ volumes:
   postgres_data:
   vault_data:
   minio_data:
+  postfix_spool:
+  promtail_positions:
 
 networks:
   svdh-network:

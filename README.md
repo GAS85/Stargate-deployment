@@ -14,6 +14,11 @@ Local Docker Compose setup for running SVDH services.
 - **PostgreSQL** - Database (port 5432)
 - **Vault** - Secrets management (port 8200)
 - **MinIO** - S3-compatible storage (API: 9000, Console: 9001)
+- **Postfix Relay** - Mail relay server (port 25) - auto-configures from DNS
+
+### Monitoring
+- **node-exporter** - Host metrics for Prometheus (port 9100)
+- **Promtail** - Log collector for Loki (ships app logs)
 
 ## Quick Start
 
@@ -150,6 +155,183 @@ curl http://localhost:8082/liveness  # policy
 curl http://localhost:8083/liveness  # idagent
 curl http://localhost:8084/liveness  # mxengine
 ```
+
+## Monitoring
+
+### Prometheus Metrics
+
+All application services expose Prometheus metrics on port 2112 (internally), mapped to different host ports:
+
+| Service | Metrics Port | Metrics URL |
+|---------|--------------|-------------|
+| smimekeys-client | 2113 | http://localhost:2113/metrics |
+| idagent | 2114 | http://localhost:2114/metrics |
+| policy | 2115 | http://localhost:2115/metrics |
+| mxengine | 2116 | http://localhost:2116/metrics |
+| node-exporter | 9100 | http://localhost:9100/metrics |
+
+### Prometheus Scrape Config Example
+
+```yaml
+scrape_configs:
+  - job_name: 'stargate-smimekeys'
+    static_configs:
+      - targets: ['<host>:2113']
+  - job_name: 'stargate-idagent'
+    static_configs:
+      - targets: ['<host>:2114']
+  - job_name: 'stargate-policy'
+    static_configs:
+      - targets: ['<host>:2115']
+  - job_name: 'stargate-mxengine'
+    static_configs:
+      - targets: ['<host>:2116']
+  - job_name: 'stargate-node'
+    static_configs:
+      - targets: ['<host>:9100']
+```
+
+### Quick Metrics Check
+
+```bash
+# Check all metrics endpoints
+curl -s http://localhost:2113/metrics | head -20  # smimekeys-client
+curl -s http://localhost:2114/metrics | head -20  # idagent
+curl -s http://localhost:2115/metrics | head -20  # policy
+curl -s http://localhost:2116/metrics | head -20  # mxengine
+curl -s http://localhost:9100/metrics | head -20  # node-exporter
+```
+
+### Log Collection (Promtail → Loki)
+
+Promtail collects logs from application containers and ships them to Loki.
+
+**Containers monitored:**
+- stargate-smimekeys-client
+- stargate-policy
+- stargate-idagent
+- stargate-mxengine
+
+**Configuration** in `.env`:
+
+```env
+# Loki push URL
+LOKI_URL=https://loki.k8s.vereign-cdn.com
+
+# Hostname label for logs
+PROMTAIL_HOSTNAME=stargate
+```
+
+**Labels added to logs:**
+- `environment=stargate-alpha` - Identifies the deployment
+- `host=<PROMTAIL_HOSTNAME>` - Identifies the host
+- `container=<container-name>` - Container name
+- `service=<service-name>` - Service name (e.g., smimekeys-client, policy)
+- `level=<log-level>` - Extracted from JSON logs if available
+
+**Query logs in Grafana:**
+
+```logql
+{environment="stargate-alpha"} |= "error"
+{environment="stargate-alpha", service="mxengine"}
+{environment="stargate-alpha", level="error"}
+```
+
+**Verify Promtail is working:**
+
+```bash
+# Check Promtail status
+docker logs stargate-promtail
+
+# Check targets
+curl -s http://localhost:9080/targets
+```
+
+**Note:** The VM's public IP must be whitelisted in Loki's ingress configuration.
+
+## Postfix Relay
+
+The Postfix relay container automatically configures itself from DNS records:
+- **MX records** → Determines where to relay mail (RELAYHOST)
+- **SPF records** → Determines who can send through the relay (MYNETWORKS)
+
+### How It Works
+
+The container is built locally from `boky/postfix` with a wrapper script:
+
+1. **Build phase** (`docker compose build postfix-relay`):
+   - Pulls `boky/postfix:latest` as base image
+   - Installs DNS utilities (`bind-tools`)
+   - Adds `wrapper.sh` script as entrypoint
+
+2. **Runtime** (on every container start):
+   - `wrapper.sh` runs first and reads `MAIL_DOMAIN`
+   - Performs MX lookup → sets `RELAYHOST` environment variable
+   - Parses SPF records recursively → sets `MYNETWORKS` environment variable
+   - Executes the original boky/postfix entrypoint with configured variables
+
+DNS lookups happen fresh on every container restart, so configuration updates automatically if DNS records change.
+
+### Configuration
+
+Set `MAIL_DOMAIN` in your `.env` file:
+
+```env
+# Required: Your mail domain
+MAIL_DOMAIN=example.com
+```
+
+The container will:
+1. Look up MX records for `example.com` to find relay destination
+2. Parse SPF records recursively to find allowed sender networks
+3. Configure Postfix automatically
+
+### Manual Overrides
+
+If DNS lookups fail or you need custom configuration:
+
+```env
+# Skip MX lookup - specify relay host directly
+RELAYHOST=[smtp.office365.com]
+
+# Skip SPF lookup - specify allowed networks directly
+POSTFIX_MYNETWORKS=10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
+```
+
+### Verification
+
+```bash
+# Check Postfix status
+docker exec stargate-postfix-relay postfix status
+
+# View configuration
+docker exec stargate-postfix-relay postconf | grep -E 'relayhost|mynetworks|relay_domains'
+
+# Check logs
+docker logs stargate-postfix-relay
+
+# Test connection
+telnet localhost 25
+```
+
+### Rebuild After Changes
+
+If you modify `wrapper.sh` or `Dockerfile`:
+
+```bash
+docker compose build postfix-relay
+docker compose up -d postfix-relay
+```
+
+### Troubleshooting
+
+**DNS Lookup Failures**:
+- Set `DNS_SERVER=8.8.8.8` to use a specific DNS server
+- Use `RELAYHOST` and `POSTFIX_MYNETWORKS` to skip DNS lookups
+
+**Connection Refused**:
+- Ensure port 25 is not blocked by firewall
+- Check if another service is using port 25: `ss -tlnp | grep :25`
 
 ## Vault
 
