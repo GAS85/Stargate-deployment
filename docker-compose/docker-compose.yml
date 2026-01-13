@@ -344,7 +344,7 @@ services:
       SEALER: "false"
       OUTBOUND_SEALER_MX_ADDR: "https://mxengine-dev.k8s.vereign-cdn.com"
       OUTBOUND_SEAL_ADDR: ""
-      OUTBOUND_SMTP_HOST: "mail.vrgnservices.eu"
+      OUTBOUND_SMTP_HOST: "postfix-relay"
       OUTBOUND_SMTP_PORT: "10026"
       # OUTBOUND_SMTP_USER: "seal@vereign-cdn.com"
       # OUTBOUND_SMTP_PASS: "SecureMessage"
@@ -398,15 +398,18 @@ services:
     environment:
       # Required: Mail domain to relay for (auto-configures from DNS)
       MAIL_DOMAIN: "${MAIL_DOMAIN}"
-      # Optional: Hostname for Postfix (default: container hostname)
+      # Optional: Hostname for Postfix (default: mail.<MAIL_DOMAIN>)
       MAIL_HOSTNAME: "${MAIL_HOSTNAME:-}"
+      # MXEngine integration (Docker service name and port)
+      MXENGINE_HOST: "${MXENGINE_HOST:-mxengine}"
+      MXENGINE_PORT: "${MXENGINE_PORT:-1587}"
       # Optional: Enable IPv6 (default: false, ipv4 only)
       ENABLE_IPV6: "${POSTFIX_ENABLE_IPV6:-false}"
       # Optional: DNS timeout in seconds (default: 2)
       DNS_TIMEOUT: "${DNS_TIMEOUT:-2}"
       # Optional: Specific DNS server to use
       DNS_SERVER: "${DNS_SERVER:-}"
-      # Optional: Manual relay host (skip MX lookup)
+      # Optional: Manual relay host (skip MX lookup for transport map)
       RELAYHOST: "${RELAYHOST:-}"
       # Optional: Manual allowed networks (skip SPF lookup)
       MYNETWORKS: "${POSTFIX_MYNETWORKS:-}"
@@ -414,6 +417,7 @@ services:
       - postfix_spool:/var/spool/postfix
     ports:
       - "25:25"
+      - "10026:10026"
     networks:
       - svdh-network
 
