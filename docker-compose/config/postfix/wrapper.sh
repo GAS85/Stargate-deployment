@@ -259,4 +259,4 @@ echo "  ALLOWED_SENDER_DOMAINS: $ALLOWED_SENDER_DOMAINS"
 echo ""
 
 # Execute the original boky/postfix entrypoint
-exec /run.sh "$@"
+exec /scripts/run.sh "$@"

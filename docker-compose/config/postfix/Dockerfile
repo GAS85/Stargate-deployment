@@ -1,8 +1,8 @@
 FROM boky/postfix:latest
 
-# Install DNS utilities for SPF/MX lookups
+# Install DNS utilities for SPF/MX lookups (Debian-based image)
 USER root
-RUN apk add --no-cache bind-tools
+RUN apt-get update && apt-get install -y --no-install-recommends dnsutils && rm -rf /var/lib/apt/lists/*
 
 # Copy wrapper script
 COPY wrapper.sh /wrapper.sh
