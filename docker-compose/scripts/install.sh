@@ -6,6 +6,7 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 SECRETS_DIR="$PROJECT_DIR/secrets"
 KEYS_FILE="$SECRETS_DIR/vault-keys.json"
 ENV_FILE="$PROJECT_DIR/.env"
+CONFIG_FILE="$PROJECT_DIR/customer-config.sh"
 
 cd "$PROJECT_DIR"
 
@@ -100,6 +101,136 @@ update_env_token() {
   echo "Updated VAULT_TOKEN in .env file"
 }
 
+# Generate a random password
+generate_password() {
+  local length=${1:-24}
+  tr -dc 'A-Za-z0-9' < /dev/urandom | head -c "$length"
+}
+
+# ==============================================================================
+# Customer Configuration Loading
+# ==============================================================================
+
+load_customer_config() {
+  echo "============================================"
+  echo "  Loading Customer Configuration"
+  echo "============================================"
+  echo ""
+  
+  if [ ! -f "$CONFIG_FILE" ]; then
+    echo "ERROR: Customer configuration file not found!"
+    echo ""
+    echo "Please fill in the customer configuration file:"
+    echo "  $CONFIG_FILE"
+    echo ""
+    echo "Then run this script again."
+    exit 1
+  fi
+  
+  # Source the config file
+  source "$CONFIG_FILE"
+  
+  # Validate required fields
+  local missing_required=()
+  
+  [ -z "$CUSTOMER_NAME" ] && missing_required+=("CUSTOMER_NAME")
+  [ -z "$DEPLOYMENT_NAME" ] && missing_required+=("DEPLOYMENT_NAME")
+  [ -z "$MAIL_DOMAIN" ] && missing_required+=("MAIL_DOMAIN")
+  [ -z "$CERT_DNS_NAMES" ] && missing_required+=("CERT_DNS_NAMES")
+  [ -z "$CERT_ORGANIZATION" ] && missing_required+=("CERT_ORGANIZATION")
+  [ -z "$CERT_COMMON_NAME" ] && missing_required+=("CERT_COMMON_NAME")
+  [ -z "$CERT_COUNTRIES" ] && missing_required+=("CERT_COUNTRIES")
+  
+  if [ ${#missing_required[@]} -gt 0 ]; then
+    echo "ERROR: Missing required configuration values:"
+    for field in "${missing_required[@]}"; do
+      echo "  - $field"
+    done
+    echo ""
+    echo "Please fill in all required fields in:"
+    echo "  $CONFIG_FILE"
+    exit 1
+  fi
+  
+  # Set defaults for optional fields
+  POSTGRES_USER="${POSTGRES_USER:-postgres}"
+  POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-$(generate_password)}"
+  MINIO_ROOT_USER="${MINIO_ROOT_USER:-minioadmin}"
+  MINIO_ROOT_PASSWORD="${MINIO_ROOT_PASSWORD:-$(generate_password)}"
+  S3_BUCKET_NAME="${S3_BUCKET_NAME:-svdh-bucket}"
+  
+  SMIMEKEYS_VERSION="${SMIMEKEYS_VERSION:-latest}"
+  POLICY_VERSION="${POLICY_VERSION:-latest}"
+  IDAGENT_VERSION="${IDAGENT_VERSION:-latest}"
+  MXENGINE_VERSION="${MXENGINE_VERSION:-latest}"
+  
+  MAIL_HOSTNAME="${MAIL_HOSTNAME:-mail.${MAIL_DOMAIN}}"
+  POSTFIX_ENABLE_IPV6="${POSTFIX_ENABLE_IPV6:-false}"
+  DNS_TIMEOUT="${DNS_TIMEOUT:-2}"
+  
+  LOKI_URL="${LOKI_URL:-https://loki.k8s.vereign-cdn.com}"
+  
+  echo "Customer: $CUSTOMER_NAME"
+  echo "Deployment: $DEPLOYMENT_NAME"
+  echo "Mail Domain: $MAIL_DOMAIN"
+  echo ""
+}
+
+# ==============================================================================
+# Environment File Generation
+# ==============================================================================
+
+generate_env_file() {
+  echo "============================================"
+  echo "  Generating Environment File"
+  echo "============================================"
+  echo ""
+  
+  cat > "$ENV_FILE" << EOF
+# ==============================================================================
+# Stargate Environment Configuration
+# ==============================================================================
+# Generated from customer-config.sh on $(date)
+# Customer: $CUSTOMER_NAME
+# Deployment: $DEPLOYMENT_NAME
+# ==============================================================================
+
+# PostgreSQL
+POSTGRES_USER=$POSTGRES_USER
+POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+
+# Vault (auto-populated after initialization)
+VAULT_TOKEN=
+
+# MinIO (S3)
+MINIO_ROOT_USER=$MINIO_ROOT_USER
+MINIO_ROOT_PASSWORD=$MINIO_ROOT_PASSWORD
+S3_BUCKET_NAME=$S3_BUCKET_NAME
+
+# Application Versions
+SMIMEKEYS_VERSION=$SMIMEKEYS_VERSION
+POLICY_VERSION=$POLICY_VERSION
+IDAGENT_VERSION=$IDAGENT_VERSION
+MXENGINE_VERSION=$MXENGINE_VERSION
+
+# Postfix Mail Relay
+MAIL_DOMAIN=$MAIL_DOMAIN
+MAIL_HOSTNAME=$MAIL_HOSTNAME
+POSTFIX_ENABLE_IPV6=$POSTFIX_ENABLE_IPV6
+DNS_TIMEOUT=$DNS_TIMEOUT
+DNS_SERVER=${DNS_SERVER:-}
+RELAYHOST=${RELAYHOST:-}
+POSTFIX_MYNETWORKS=${POSTFIX_MYNETWORKS:-}
+
+# Logging (Promtail -> Loki)
+LOKI_URL=$LOKI_URL
+PROMTAIL_HOSTNAME=$DEPLOYMENT_NAME
+EOF
+
+  echo "Environment file created: $ENV_FILE"
+  echo ""
+}
+
 # Function to generate S/MIME key and CSR
 generate_smime_key_and_csr() {
   echo ""
@@ -107,42 +238,37 @@ generate_smime_key_and_csr() {
   echo "  S/MIME Key and CSR Generation"
   echo "============================================"
   echo ""
-  echo "This will generate a signing key and CSR for the smimekeys service."
-  echo "Press Enter to accept default values shown in [brackets]."
+  echo "Generating signing key and CSR using configuration:"
+  echo "  DNS Names: $CERT_DNS_NAMES"
+  echo "  Organization: $CERT_ORGANIZATION"
+  echo "  Common Name: $CERT_COMMON_NAME"
+  echo "  Countries: $CERT_COUNTRIES"
   echo ""
-  
-  # Prompt for configuration values
-  read -p "DNS Names (comma-separated) [domain.com]: " input_dns_names
-  DNS_NAMES="${input_dns_names:-domain.com}"
-  
-  read -p "Subject Organization [Vereign AG - alpha]: " input_subject_org
-  SUBJECT_ORG="${input_subject_org:-Vereign AG - alpha}"
-  
-  read -p "Subject Common Name [Vereign AG - alpha]: " input_subject_cn
-  SUBJECT_CN="${input_subject_cn:-Vereign AG - alpha}"
-  
-  read -p "Subject Countries (comma-separated) [CH,BG]: " input_subject_country
-  SUBJECT_COUNTRY="${input_subject_country:-CH,BG}"
   
   # Convert comma-separated DNS names to JSON array
-  DNS_NAMES_JSON=$(echo "$DNS_NAMES" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | jq -R . | jq -s .)
+  DNS_NAMES_JSON=$(echo "$CERT_DNS_NAMES" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | jq -R . | jq -s .)
   
   # Convert comma-separated countries to JSON array
-  COUNTRY_JSON=$(echo "$SUBJECT_COUNTRY" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | jq -R . | jq -s .)
+  COUNTRY_JSON=$(echo "$CERT_COUNTRIES" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | jq -R . | jq -s .)
   
-  echo ""
-  echo "Generating key with smimekeys-client..."
+  echo "Waiting for smimekeys-client to be ready..."
   
   # Wait for smimekeys-client to be ready
   for i in {1..30}; do
     if curl -s http://localhost:8081/liveness > /dev/null 2>&1; then
       break
     fi
-    echo "Waiting for smimekeys-client to be ready... ($i/30)"
+    echo "  Attempt $i/30..."
     sleep 2
   done
   
+  if ! curl -s http://localhost:8081/liveness > /dev/null 2>&1; then
+    echo "ERROR: smimekeys-client not responding after 60 seconds"
+    return 1
+  fi
+  
   # Step 1: Generate key
+  echo "Generating RSA key..."
   KEY_RESPONSE=$(curl -s --location 'http://localhost:8081/v1/keys/gen' \
     --header 'Content-Type: application/json' \
     --header 'Accept: application/json' \
@@ -172,10 +298,14 @@ generate_smime_key_and_csr() {
     --data "{
       \"dnsNames\": $DNS_NAMES_JSON,
       \"keyId\": \"$KEY_ID\",
-      \"subjectCN\": \"$SUBJECT_CN\",
+      \"subjectCN\": \"$CERT_COMMON_NAME\",
       \"subjectCountry\": $COUNTRY_JSON,
-      \"subjectOrg\": \"$SUBJECT_ORG\"
+      \"subjectOrg\": \"$CERT_ORGANIZATION\"
     }")
+  
+  # Save CSR to file
+  CSR_FILE="$SECRETS_DIR/signing-key.csr"
+  echo "$CSR_RESPONSE" | jq -r '.csr // empty' > "$CSR_FILE" 2>/dev/null || true
   
   echo ""
   echo "============================================"
@@ -183,6 +313,11 @@ generate_smime_key_and_csr() {
   echo "============================================"
   echo ""
   echo "$CSR_RESPONSE" | jq . 2>/dev/null || echo "$CSR_RESPONSE"
+  echo ""
+  
+  if [ -s "$CSR_FILE" ]; then
+    echo "CSR saved to: $CSR_FILE"
+  fi
   echo ""
 }
 
@@ -214,84 +349,15 @@ setup_backup_cron() {
 # Check dependencies first
 check_dependencies
 
+# Load and validate customer configuration
+load_customer_config
+
 # Create directories
 mkdir -p "$SECRETS_DIR"
 mkdir -p "$PROJECT_DIR/backups"
 
-# Create .env file
-if [ ! -f "$ENV_FILE" ]; then
-  if [ -f "$PROJECT_DIR/.env.example" ]; then
-    echo "Creating .env file from .env.example..."
-    cp "$PROJECT_DIR/.env.example" "$ENV_FILE"
-  else
-    echo "Creating default .env file..."
-    cat > "$ENV_FILE" << 'EOF'
-# PostgreSQL
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-
-# Vault (auto-populated by install.sh)
-VAULT_TOKEN=
-
-# MinIO (S3)
-MINIO_ROOT_USER=minioadmin
-MINIO_ROOT_PASSWORD=minioadmin123
-S3_BUCKET_NAME=svdh-bucket
-
-# Application Versions
-SMIMEKEYS_VERSION=latest
-POLICY_VERSION=latest
-IDAGENT_VERSION=latest
-MXENGINE_VERSION=latest
-
-# Postfix Relay (auto-configures from DNS)
-MAIL_DOMAIN=
-
-# Logging (Promtail -> Loki)
-LOKI_URL=https://loki.k8s.vereign-cdn.com
-PROMTAIL_HOSTNAME=stargate
-EOF
-  fi
-fi
-
-# Prompt for required configuration if not set
-configure_required_settings() {
-  echo ""
-  echo "============================================"
-  echo "  Configuration"
-  echo "============================================"
-  echo ""
-  
-  # Check MAIL_DOMAIN
-  CURRENT_MAIL_DOMAIN=$(grep "^MAIL_DOMAIN=" "$ENV_FILE" | cut -d'=' -f2-)
-  if [ -z "$CURRENT_MAIL_DOMAIN" ]; then
-    read -p "Mail domain for Postfix relay (e.g., example.com): " input_mail_domain
-    if [ -n "$input_mail_domain" ]; then
-      sed -i "s/^MAIL_DOMAIN=.*/MAIL_DOMAIN=$input_mail_domain/" "$ENV_FILE"
-      echo "Set MAIL_DOMAIN=$input_mail_domain"
-    else
-      echo "WARNING: MAIL_DOMAIN not set. Postfix relay will not start."
-    fi
-  fi
-  
-  # Check PROMTAIL_HOSTNAME
-  CURRENT_HOSTNAME=$(grep "^PROMTAIL_HOSTNAME=" "$ENV_FILE" | cut -d'=' -f2-)
-  if [ "$CURRENT_HOSTNAME" = "stargate" ] || [ -z "$CURRENT_HOSTNAME" ]; then
-    SUGGESTED_HOSTNAME=$(hostname -s 2>/dev/null || echo "stargate")
-    read -p "Hostname for log labels [$SUGGESTED_HOSTNAME]: " input_hostname
-    PROMTAIL_HOSTNAME="${input_hostname:-$SUGGESTED_HOSTNAME}"
-    if grep -q "^PROMTAIL_HOSTNAME=" "$ENV_FILE"; then
-      sed -i "s/^PROMTAIL_HOSTNAME=.*/PROMTAIL_HOSTNAME=$PROMTAIL_HOSTNAME/" "$ENV_FILE"
-    else
-      echo "PROMTAIL_HOSTNAME=$PROMTAIL_HOSTNAME" >> "$ENV_FILE"
-    fi
-    echo "Set PROMTAIL_HOSTNAME=$PROMTAIL_HOSTNAME"
-  fi
-  
-  echo ""
-}
-
-configure_required_settings
+# Generate .env file from customer config
+generate_env_file
 
 # Check Docker registry access
 echo "Checking Docker registry access..."
@@ -377,6 +443,9 @@ echo "============================================"
 echo "  Installation Complete!"
 echo "============================================"
 echo ""
+echo "  Customer: $CUSTOMER_NAME"
+echo "  Deployment: $DEPLOYMENT_NAME"
+echo ""
 echo "  Service URLs:"
 echo "  -------------"
 echo "  smimekeys-client:  http://localhost:8081"
@@ -393,7 +462,7 @@ echo ""
 echo "  Monitoring:"
 echo "  -----------"
 echo "  Node Exporter:     http://localhost:9100/metrics"
-echo "  Promtail:          Logs -> Loki"
+echo "  Promtail:          Logs -> $LOKI_URL"
 echo ""
 echo "  Scripts:"
 echo "  --------"
@@ -406,4 +475,11 @@ echo "  Backups:"
 echo "  --------"
 echo "  Daily backups scheduled at 2:00 AM"
 echo "  Backup location: $PROJECT_DIR/backups/"
+echo ""
+echo "  Configuration:"
+echo "  --------------"
+echo "  Customer config:   $CONFIG_FILE"
+echo "  Environment file:  $ENV_FILE"
+echo "  Vault keys:        $KEYS_FILE"
+echo "  CSR file:          $SECRETS_DIR/signing-key.csr"
 echo ""

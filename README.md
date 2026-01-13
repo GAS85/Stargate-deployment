@@ -26,36 +26,53 @@ Local Docker Compose setup for running SVDH services.
 - Ubuntu server (Docker will be installed automatically if missing)
 - Access to `registry.vereign.io` (login with `docker login registry.vereign.io`)
 
-### Deploying to a Server
+### Step 1: Configure Customer Settings
+
+Before installation, fill in the customer configuration file:
+
+```bash
+# Edit the customer config file
+nano customer-config.sh
+```
+
+**Required settings:**
+- `CUSTOMER_NAME` - Customer name for identification
+- `DEPLOYMENT_NAME` - Unique deployment identifier (used in logs)
+- `MAIL_DOMAIN` - Mail relay domain (e.g., example.com)
+- `CERT_DNS_NAMES` - DNS names for S/MIME certificate
+- `CERT_ORGANIZATION` - Organization name for certificate
+- `CERT_COMMON_NAME` - Common name for certificate
+- `CERT_COUNTRIES` - Country codes for certificate
+
+**Optional settings (have defaults):**
+- `POSTGRES_PASSWORD` - Auto-generated if empty
+- `MINIO_ROOT_PASSWORD` - Auto-generated if empty
+- Application versions, advanced mail settings, etc.
+
+### Step 2: Deploy to a Server
 
 ```bash
 # Copy files to the server
-scp -r /home/petar/Repos/svdh/stargate-deployment/docker-compose/* stargate-demo:/root/stargate/
+scp -r docker-compose/* your-server:/path/to/stargate/
 
 # SSH to server and install
-ssh stargate-demo "cd /root/stargate && chmod +x scripts/*.sh && ./scripts/install.sh"
+ssh your-server "cd /path/to/stargate && chmod +x scripts/*.sh && ./scripts/install.sh"
 ```
 
-### First Time Setup (Local)
-
-```bash
-# Make scripts executable
-chmod +x scripts/*.sh
-
-# Run installation
-./scripts/install.sh
-```
+### Step 3: What Install Does
 
 The install script will:
 1. Check for Docker/Docker Compose/jq and offer to install them if missing (Ubuntu)
-2. Create `.env` file from `.env.example` if it doesn't exist
-3. Start infrastructure (PostgreSQL, Vault, MinIO)
-4. Initialize Vault (create keys, unseal, create mounts)
-5. Save Vault keys to `secrets/vault-keys.json`
-6. Update `.env` with the Vault root token
-7. Restart application services to pick up the token
-8. Generate S/MIME signing key and CSR (prompts for certificate details)
-9. Set up daily backup cron job (runs at 2:00 AM)
+2. Load and validate `customer-config.sh`
+3. Generate `.env` file with all configuration (auto-generate passwords if not set)
+4. Start infrastructure (PostgreSQL, Vault, MinIO)
+5. Initialize Vault (create keys, unseal, create mounts)
+6. Save Vault keys to `secrets/vault-keys.json`
+7. Update `.env` with the Vault root token
+8. Restart application services to pick up the token
+9. Generate S/MIME signing key and CSR (using config values)
+10. Save CSR to `secrets/signing-key.csr`
+11. Set up daily backup cron job (runs at 2:00 AM)
 
 ### Subsequent Starts (after reboot)
 
@@ -80,11 +97,20 @@ This stops containers but preserves all data.
 
 | Script | Purpose |
 |--------|--------|
-| `install.sh` | First-time setup (Docker, Vault, S/MIME key, cron backup) |
+| `install.sh` | First-time setup (reads customer-config.sh, Docker, Vault, S/MIME key, cron backup) |
 | `start.sh` | Start services and unseal Vault |
 | `stop.sh` | Stop containers (data preserved) |
 | `backup.sh` | Manual PostgreSQL backup to `./backups/` |
 | `purge.sh` | Delete ALL data (requires confirmation) |
+
+## Configuration Files
+
+| File | Purpose |
+|------|---------|
+| `customer-config.sh` | Customer-specific settings (fill in before install) |
+| `.env` | Generated environment file (created by install.sh) |
+| `secrets/vault-keys.json` | Vault unseal keys and root token (back up securely!) |
+| `secrets/signing-key.csr` | Generated CSR for S/MIME certificate |
 
 ## Backups
 
@@ -134,13 +160,15 @@ MXENGINE_VERSION=latest
 
 ## Service URLs
 
-| Service | URL |
-|---------|-----|
+| Service | URL/Port |
+|---------|----------|
 | smimekeys-client | http://localhost:8081 |
 | policy | http://localhost:8082 |
 | idagent | http://localhost:8083 |
-| mxengine | http://localhost:8084 |
+| mxengine HTTP | http://localhost:8084 |
 | mxengine SMTP | localhost:1587 |
+| Postfix SMTP | localhost:25 |
+| Postfix Reinjection | localhost:10026 (internal) |
 | Vault UI | http://localhost:8200 |
 | MinIO Console | http://localhost:9001 |
 | PostgreSQL | localhost:5432 |
@@ -251,32 +279,59 @@ curl -s http://localhost:9080/targets
 
 ## Postfix Relay
 
-The Postfix relay container automatically configures itself from DNS records:
-- **MX records** → Determines where to relay mail (RELAYHOST)
-- **SPF records** → Determines who can send through the relay (MYNETWORKS)
+The Postfix relay container automatically configures itself from DNS records and integrates with mxengine for mail processing.
 
-### How It Works
+### Mail Flow Architecture
 
-The container is built locally from `boky/postfix` with a wrapper script:
-
-1. **Build phase** (`docker compose build postfix-relay`):
-   - Pulls `boky/postfix:latest` as base image
-   - Installs DNS utilities (`bind-tools`)
-   - Adds `wrapper.sh` script as entrypoint
-
-2. **Runtime** (on every container start):
-   - `wrapper.sh` runs first and reads `MAIL_DOMAIN`
-   - Performs MX lookup → sets `RELAYHOST` environment variable
-   - Parses SPF records recursively → sets `MYNETWORKS` environment variable
-   - Executes the original boky/postfix entrypoint with configured variables
-
-DNS lookups happen fresh on every container restart, so configuration updates automatically if DNS records change.
+```
+External Mail Server (port 25)
+         │
+         ▼
+┌─────────────────────────────────────────────────────┐
+│ Postfix Relay (stargate-postfix-relay)              │
+│                                                     │
+│  Port 25 (main listener)                            │
+│    │                                                │
+│    ▼                                                │
+│  content_filter = smtp:[mxengine]:1587              │
+│    │                                                │
+└────┼────────────────────────────────────────────────┘
+     │
+     ▼
+┌─────────────────────────────────────────────────────┐
+│ MXEngine (stargate-mxengine)                        │
+│                                                     │
+│  Port 1587 (SMTP input)                             │
+│    │                                                │
+│    ▼                                                │
+│  Sign/encrypt/process mail                          │
+│    │                                                │
+│    ▼                                                │
+│  OUTBOUND_SMTP_HOST=postfix-relay                   │
+│  OUTBOUND_SMTP_PORT=10026                           │
+│    │                                                │
+└────┼────────────────────────────────────────────────┘
+     │
+     ▼
+┌─────────────────────────────────────────────────────┐
+│ Postfix Relay (stargate-postfix-relay)              │
+│                                                     │
+│  Port 10026 (reinjection listener)                  │
+│    │                                                │
+│    ▼                                                │
+│  transport_maps → relay to destination MX           │
+│    │                                                │
+└────┼────────────────────────────────────────────────┘
+     │
+     ▼
+Destination Mail Server (via MX lookup)
+```
 
 ### Configuration
 
-Set `MAIL_DOMAIN` in your `.env` file:
+Set `MAIL_DOMAIN` in your `customer-config.sh` (or `.env` file):
 
-```env
+```bash
 # Required: Your mail domain
 MAIL_DOMAIN=example.com
 ```
@@ -284,13 +339,23 @@ MAIL_DOMAIN=example.com
 The container will:
 1. Look up MX records for `example.com` to find relay destination
 2. Parse SPF records recursively to find allowed sender networks
-3. Configure Postfix automatically
+3. Auto-detect Docker networks for the port 10026 listener
+4. Configure content_filter to route mail through mxengine
+5. Set up transport maps to relay processed mail to destination MX
+
+### Ports
+
+| Port | Purpose |
+|------|---------|
+| 25 | Main SMTP listener (external connections) |
+| 10026 | Reinjection port (mxengine → postfix, internal only) |
+| 1587 | MXEngine SMTP input (postfix → mxengine, internal only) |
 
 ### Manual Overrides
 
 If DNS lookups fail or you need custom configuration:
 
-```env
+```bash
 # Skip MX lookup - specify relay host directly
 RELAYHOST=[smtp.office365.com]
 
@@ -304,14 +369,24 @@ POSTFIX_MYNETWORKS=10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
 # Check Postfix status
 docker exec stargate-postfix-relay postfix status
 
-# View configuration
-docker exec stargate-postfix-relay postconf | grep -E 'relayhost|mynetworks|relay_domains'
+# View main configuration
+docker exec stargate-postfix-relay postconf | grep -E 'relayhost|mynetworks|relay_domains|content_filter'
+
+# View transport maps
+docker exec stargate-postfix-relay postconf transport_maps
+docker exec stargate-postfix-relay postmap -q '*' hash:/etc/postfix/transport
+
+# Check master.cf (port 10026 listener)
+docker exec stargate-postfix-relay grep -A5 "10026" /etc/postfix/master.cf
 
 # Check logs
 docker logs stargate-postfix-relay
 
-# Test connection
+# Test connection to port 25
 telnet localhost 25
+
+# Test internal port 10026 (from mxengine container)
+docker exec stargate-mxengine nc -zv postfix-relay 10026
 ```
 
 ### Rebuild After Changes
@@ -325,11 +400,31 @@ docker compose up -d postfix-relay
 
 ### Troubleshooting
 
+**Mail not being processed by mxengine**:
+- Check content_filter is set: `docker exec stargate-postfix-relay postconf content_filter`
+- Should show: `content_filter = smtp:[mxengine]:1587`
+- Verify mxengine is reachable: `docker exec stargate-postfix-relay nc -zv mxengine 1587`
+
+**Mail stuck after mxengine processing**:
+- Check mxengine outbound config: OUTBOUND_SMTP_HOST=postfix-relay, OUTBOUND_SMTP_PORT=10026
+- Verify port 10026 listener: `docker exec stargate-postfix-relay ss -tlnp | grep 10026`
+- Check mynetworks on port 10026 includes Docker network (172.x.x.x/16)
+
+**Greylisting errors (450 4.7.1)**:
+- This is normal! The destination server is temporarily rejecting mail
+- Postfix automatically retries after ~5 minutes
+- Check queue: `docker exec stargate-postfix-relay mailq`
+
+**Microsoft blocking IP (S3140)**:
+- Your server's IP has poor reputation with Microsoft
+- Request delisting at: https://sender.office.com
+- May take 24-48 hours to take effect
+
 **DNS Lookup Failures**:
 - Set `DNS_SERVER=8.8.8.8` to use a specific DNS server
 - Use `RELAYHOST` and `POSTFIX_MYNETWORKS` to skip DNS lookups
 
-**Connection Refused**:
+**Connection Refused on port 25**:
 - Ensure port 25 is not blocked by firewall
 - Check if another service is using port 25: `ss -tlnp | grep :25`
 

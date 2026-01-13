@@ -1,0 +1,90 @@
+#!/bin/bash
+# ==============================================================================
+# Stargate Customer Configuration - EXAMPLE
+# ==============================================================================
+# This is an example configuration for the vrgnservices.eu test deployment.
+# Copy this file to customer-config.sh and modify as needed:
+#   cp customer-config.example customer-config.sh
+# ==============================================================================
+
+# ==============================================================================
+# REQUIRED: Customer Identification
+# ==============================================================================
+
+# Customer/Organization name (used for identification and logging)
+CUSTOMER_NAME="Vereign Test"
+
+# Deployment name (used for log labels and identification)
+DEPLOYMENT_NAME="stargate-alpha"
+
+# ==============================================================================
+# REQUIRED: Mail Configuration
+# ==============================================================================
+
+# Primary mail domain for the Postfix relay
+MAIL_DOMAIN="vrgnservices.eu"
+
+# Mail server hostname (optional, defaults to mail.<MAIL_DOMAIN>)
+MAIL_HOSTNAME="mail.vrgnservices.eu"
+
+# ==============================================================================
+# REQUIRED: S/MIME Certificate Configuration
+# ==============================================================================
+
+# DNS names for the certificate (comma-separated)
+CERT_DNS_NAMES="vrgnservices.eu,mail.vrgnservices.eu"
+
+# Organization name for the certificate subject
+CERT_ORGANIZATION="Vereign AG - alpha"
+
+# Common Name for the certificate subject
+CERT_COMMON_NAME="Vereign AG - alpha"
+
+# Countries for the certificate subject (comma-separated, 2-letter codes)
+CERT_COUNTRIES="CH,BG"
+
+# ==============================================================================
+# OPTIONAL: Database Configuration
+# ==============================================================================
+# Leave empty to auto-generate secure passwords
+
+POSTGRES_USER="postgres"
+POSTGRES_PASSWORD="postgres"
+
+# ==============================================================================
+# OPTIONAL: Object Storage Configuration
+# ==============================================================================
+# Leave empty to auto-generate secure passwords
+
+MINIO_ROOT_USER="minioadmin"
+MINIO_ROOT_PASSWORD="minioadmin123"
+S3_BUCKET_NAME="svdh-bucket"
+
+# ==============================================================================
+# OPTIONAL: Application Versions
+# ==============================================================================
+
+SMIMEKEYS_VERSION="latest"
+POLICY_VERSION="latest"
+IDAGENT_VERSION="latest"
+MXENGINE_VERSION="latest"
+
+# ==============================================================================
+# OPTIONAL: Advanced Mail Configuration
+# ==============================================================================
+
+POSTFIX_ENABLE_IPV6="false"
+RELAYHOST=""
+POSTFIX_MYNETWORKS=""
+DNS_SERVER=""
+DNS_TIMEOUT="2"
+
+# ==============================================================================
+# OPTIONAL: Monitoring Configuration
+# ==============================================================================
+
+LOKI_URL="https://loki.k8s.vereign-cdn.com"
+
+# ==============================================================================
+# END OF CONFIGURATION
+# ==============================================================================
