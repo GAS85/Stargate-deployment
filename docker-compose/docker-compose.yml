@@ -346,6 +346,7 @@ services:
       OUTBOUND_SEAL_ADDR: ""
       OUTBOUND_SMTP_HOST: "postfix-relay"
       OUTBOUND_SMTP_PORT: "10026"
+      OUTBOUND_SMTP_LOCAL_DOMAINS: "localhost,vrgnservices.eu"
       # OUTBOUND_SMTP_USER: "seal@vereign-cdn.com"
       # OUTBOUND_SMTP_PASS: "SecureMessage"
       # OUTBOUND_SMTP_AUTH: "PLAIN"

@@ -64,10 +64,10 @@ S3_BUCKET_NAME="svdh-bucket"
 # OPTIONAL: Application Versions
 # ==============================================================================
 
-SMIMEKEYS_VERSION="latest"
-POLICY_VERSION="latest"
-IDAGENT_VERSION="latest"
-MXENGINE_VERSION="latest"
+SMIMEKEYS_VERSION="dev"
+POLICY_VERSION="dev"
+IDAGENT_VERSION="dev"
+MXENGINE_VERSION="dev"
 
 # ==============================================================================
 # OPTIONAL: Advanced Mail Configuration
