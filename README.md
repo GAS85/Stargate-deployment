@@ -471,6 +471,43 @@ docker exec -it svdh-postgres psql -U postgres
 psql -h localhost -U postgres -d smimekeys_client
 ```
 
+## Policies (Rego)
+
+MXEngine uses OPA/Rego policies stored in PostgreSQL to determine mail delivery strategy.
+
+### View Current Policy
+
+```bash
+# List all policies
+docker exec stargate-postgres psql -U postgres -d policy \
+  -c "SELECT id, name, policy_group, filename, to_timestamp(updated_at) as updated FROM policies;"
+
+# View policy content
+docker exec stargate-postgres psql -U postgres -d policy \
+  -c "SELECT rego FROM policies WHERE name='deliveryStrategy';"
+```
+
+### Update Policy
+
+1. Edit the local policy file:
+   ```bash
+   nano policies/alpha/deliveryStrategy/policy.rego
+   ```
+
+2. Copy to server and reload:
+   ```bash
+   scp policies/alpha/deliveryStrategy/policy.rego server:/root/stargate/policies/alpha/deliveryStrategy/
+   ssh server 'cd /root/stargate && docker compose run --rm policy-init'
+   ```
+
+The `init-policies.sh` script uses upsert (`ON CONFLICT ... DO UPDATE`), so it safely updates existing policies.
+
+### Policy Location
+
+- **Local file:** `policies/alpha/deliveryStrategy/policy.rego`
+- **MXEngine config:** `POLICY_OUTBOUND: "alpha/deliveryStrategy"`
+- **Database:** `policy` database, `policies` table
+
 ## Logs
 
 ```bash

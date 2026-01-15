@@ -1,7 +1,8 @@
 package alpha.deliveryStrategy
 
-default strategy := "smtp"
+default strategy := ["tunnel","smime","seal"]
 
-strategy := "smime" if {
-    contains(lower(input.subject), "[confidential]")
+strategy := "smtp" if {
+    contains(lower(input.subject), "[non-confidential]")
 }
+
