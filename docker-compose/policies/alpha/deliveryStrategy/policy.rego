@@ -2,7 +2,9 @@ package alpha.deliveryStrategy
 
 default strategy := ["tunnel","smime","seal"]
 
-strategy := "smtp" if {
-    contains(lower(input.subject), "[non-confidential]")
+strategy := ["tunnel", "smime", "smtp"] if {
+    subject := lower(input.subject)
+    k := data.keywords[_]
+    contains(subject, lower(k))
 }
 

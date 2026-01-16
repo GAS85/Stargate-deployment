@@ -52,12 +52,22 @@ EOF
 
 # Insert the delivery_strategy policy
 if [ -f "/policies/alpha/deliveryStrategy/policy.rego" ]; then
+  # Load data from data.json if it exists, otherwise use empty object
+  DATA_FILE="/policies/alpha/deliveryStrategy/data.json"
+  if [ -f "$DATA_FILE" ]; then
+    POLICY_DATA=$(cat "$DATA_FILE" | tr -d '\n')
+    echo "Loading data from $DATA_FILE"
+  else
+    POLICY_DATA='{}'
+    echo "No data.json found, using empty object"
+  fi
+  
   upsert_policy \
     "policy.rego" \
     "deliveryStrategy" \
     "alpha" \
     "/policies/alpha/deliveryStrategy/policy.rego" \
-    "{}"
+    "$POLICY_DATA"
 else
   echo "WARNING: /policies/alpha/deliveryStrategy/policy.rego not found"
 fi
