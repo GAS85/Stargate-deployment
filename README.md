@@ -1,6 +1,6 @@
-# SVDH Local Development Environment
+# SVDH Docker Deployment
 
-Local Docker Compose setup for running SVDH services.
+Docker Compose configuration for running the SVDH services used by the Stargate project. Follow the instructions below to install and run all Stargate services with Docker Compose.
 
 ## Services Included
 
@@ -25,6 +25,8 @@ Local Docker Compose setup for running SVDH services.
 ### Prerequisites
 - Ubuntu server (Docker will be installed automatically if missing)
 - Access to `registry.vereign.io` (login with `docker login registry.vereign.io`)
+- Ensure there is an internet connection on the machine where you are instaling Stargate services
+- Ensure traffic is properly configured to reach Stargate instance
 
 ### Step 1: Configure Customer Settings
 

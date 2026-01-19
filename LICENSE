@@ -1,5 +1,5 @@
 SVDH Local Development Environment
-Local Docker Compose setup for running SVDH services.
+Docker Compose setup for running SVDH services.
 All the scripts provided in this project are developed by Vereign AG 
 with a purpuse to install and configure Stargate related applications
 using Docker images. 
