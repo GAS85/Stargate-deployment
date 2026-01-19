@@ -26,7 +26,7 @@ Docker Compose configuration for running the SVDH services used by the Stargate 
 - Ubuntu server (Docker will be installed automatically if missing)
 - Access to `registry.vereign.io` (login with `docker login registry.vereign.io`)
 - Ensure there is an internet connection on the machine where you are instaling Stargate services
-- Emsure trafic is properly configured to reach Stargate instance
+- Ensure trafic is properly configured to reach Stargate instance
 
 ### Step 1: Configure Customer Settings
 
