@@ -157,7 +157,7 @@ load_customer_config() {
   POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-$(generate_password)}"
   MINIO_ROOT_USER="${MINIO_ROOT_USER:-minioadmin}"
   MINIO_ROOT_PASSWORD="${MINIO_ROOT_PASSWORD:-$(generate_password)}"
-  S3_BUCKET_NAME="${S3_BUCKET_NAME:-svdh-bucket}"
+  S3_BUCKET_NAME="${S3_BUCKET_NAME:-stargate-bucket}"
   
   SMIMEKEYS_VERSION="${SMIMEKEYS_VERSION:-latest}"
   POLICY_VERSION="${POLICY_VERSION:-latest}"

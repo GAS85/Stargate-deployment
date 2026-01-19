@@ -21,7 +21,7 @@ services:
       timeout: 5s
       retries: 10
     networks:
-      - svdh-network
+      - stargate-network
 
   # Fix vault data volume permissions
   vault-data-fixer:
@@ -32,7 +32,7 @@ services:
     volumes:
       - vault_data:/vault/data
     networks:
-      - svdh-network
+      - stargate-network
 
   vault:
     image: hashicorp/vault:1.19.0
@@ -58,7 +58,7 @@ services:
       retries: 5
       start_period: 10s
     networks:
-      - svdh-network
+      - stargate-network
 
   minio:
     image: minio/minio:latest
@@ -78,7 +78,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - svdh-network
+      - stargate-network
 
   # MinIO bucket initialization
   minio-init:
@@ -97,9 +97,9 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
-      S3_BUCKET_NAME: ${S3_BUCKET_NAME:-svdh-bucket}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME:-stargate-bucket}
     networks:
-      - svdh-network
+      - stargate-network
 
   # Vault initialization container
   vault-init:
@@ -116,7 +116,7 @@ services:
       - ./secrets:/secrets
     entrypoint: /bin/sh -c "apk add --no-cache jq && /scripts/init-vault.sh"
     networks:
-      - svdh-network
+      - stargate-network
 
   # Policy initialization container
   policy-init:
@@ -135,7 +135,7 @@ services:
       - ./policies:/policies:ro
     entrypoint: /scripts/init-policies.sh
     networks:
-      - svdh-network
+      - stargate-network
 
   # ===================
   # Applications
@@ -188,7 +188,7 @@ services:
       - "8081:8080"
       - "2113:2112"
     networks:
-      - svdh-network
+      - stargate-network
 
   policy:
     image: registry.vereign.io/svdh/policy:${POLICY_VERSION:-dev}
@@ -224,7 +224,7 @@ services:
       - "8082:8080"
       - "2115:2112"
     networks:
-      - svdh-network
+      - stargate-network
 
   idagent:
     image: registry.vereign.io/svdh/idagent:${IDAGENT_VERSION:-dev}
@@ -261,8 +261,8 @@ services:
       S3_ACCESS_KEY: "${MINIO_ROOT_USER:-minioadmin}"
       S3_SECRET_KEY: "${MINIO_ROOT_PASSWORD:-minioadmin}"
       S3_SECURE: "false"
-      S3_BUCKET_NAME: "${S3_BUCKET_NAME:-svdh-bucket}"
-      S3_MESSAGE_BUCKET: "${S3_BUCKET_NAME:-svdh-bucket}"
+      S3_BUCKET_NAME: "${S3_BUCKET_NAME:-stargate-bucket}"
+      S3_MESSAGE_BUCKET: "${S3_BUCKET_NAME:-stargate-bucket}"
       
       # External services
       SERVICE_PUBLIC_ADDR: "http://localhost:8083"
@@ -280,7 +280,7 @@ services:
       - "8083:8080"
       - "2114:2112"
     networks:
-      - svdh-network
+      - stargate-network
 
   mxengine:
     image: registry.vereign.io/svdh/mxengine:${MXENGINE_VERSION:-dev}
@@ -302,7 +302,7 @@ services:
       INBOUND_HTTP_WRITE_TIMEOUT: "10s"
       INBOUND_HTTP_IDLE_TIMEOUT: "60s"
       INBOUND_HTTP_MAX_SIZE: "20971520"
-      INBOUND_HTTP_PUBLIC_ADDRESS: "http://localhost:8084"
+      INBOUND_HTTP_PUBLIC_ADDRESS: "${MXENGINE_PUBLIC_ADDRESS:-http://localhost:8084}"
       
       # SMTP
       INBOUND_SMTP_PUBLIC_HOSTNAME: "localhost"
@@ -321,7 +321,7 @@ services:
       S3_ACCESS_KEY: "${MINIO_ROOT_USER:-minioadmin}"
       S3_SECRET_KEY: "${MINIO_ROOT_PASSWORD:-minioadmin}"
       S3_SECURE: "false"
-      S3_BUCKET_NAME: "${S3_BUCKET_NAME:-svdh-bucket}"
+      S3_BUCKET_NAME: "${S3_BUCKET_NAME:-stargate-bucket}"
       
       # Vault
       VAULT_ADDRESS: "http://vault:8200"
@@ -366,7 +366,7 @@ services:
     tmpfs:
       - /tmp:size=100M
     networks:
-      - svdh-network
+      - stargate-network
 
   # ===================
   # Monitoring
@@ -388,7 +388,7 @@ services:
     ports:
       - "9100:9100"
     networks:
-      - svdh-network
+      - stargate-network
 
   postfix-relay:
     build:
@@ -420,7 +420,7 @@ services:
       - "25:25"
       - "10026:10026"
     networks:
-      - svdh-network
+      - stargate-network
 
   promtail:
     image: grafana/promtail:latest
@@ -435,7 +435,7 @@ services:
       LOKI_URL: "${LOKI_URL:-https://loki.k8s.vereign-cdn.com}"
       HOSTNAME: "${PROMTAIL_HOSTNAME:-stargate}"
     networks:
-      - svdh-network
+      - stargate-network
 
 volumes:
   postgres_data:
@@ -445,5 +445,5 @@ volumes:
   promtail_positions:
 
 networks:
-  svdh-network:
+  stargate-network:
     driver: bridge

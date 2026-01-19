@@ -1,6 +1,6 @@
-# SVDH Local Development Environment
+# Stargate Local Development Environment
 
-Local Docker Compose setup for running SVDH services.
+Local Docker Compose setup for running Stargate services.
 
 ## Services Included
 
@@ -23,8 +23,31 @@ Local Docker Compose setup for running SVDH services.
 ## Quick Start
 
 ### Prerequisites
+
+**Server Requirements:**
 - Ubuntu server (Docker will be installed automatically if missing)
 - Access to `registry.vereign.io` (login with `docker login registry.vereign.io`)
+
+**Inbound Network Access (firewall must allow):**
+| Port | Protocol | Purpose |
+|------|----------|---------|
+| 25 | TCP | SMTP - receiving mail from external servers |
+| 8084 | TCP | HTTP - seal callback from remote sealer service |
+
+**Outbound Network Access (server must reach):**
+| Destination | Port | Purpose |
+|-------------|------|---------|
+| registry.vereign.io | 443 | Docker image registry |
+| mxengine-dev.k8s.vereign-cdn.com | 443 | Remote sealer service |
+| smimekeys-ca-dev.k8s.vereign-cdn.com | 443 | S/MIME CA service |
+| loki.k8s.vereign-cdn.com | 443 | Log shipping (Promtail → Loki) |
+| vereign-issuer.vrgnservices.eu | 443 | Issuer service |
+| vereign-verifier.vrgnservices.eu | 4433 | Verifier service |
+| Destination mail servers | 25 | Outbound mail delivery (via MX lookup) |
+
+**DNS Access:**
+- Server must be able to resolve DNS (MX, SPF, A records)
+- Used for mail routing and SPF-based network allowlisting
 
 ### Step 1: Configure Customer Settings
 
@@ -149,7 +172,7 @@ POSTGRES_PASSWORD=postgres
 # MinIO
 MINIO_ROOT_USER=minioadmin
 MINIO_ROOT_PASSWORD=minioadmin123
-S3_BUCKET_NAME=svdh-bucket
+S3_BUCKET_NAME=stargate-bucket
 
 # Application versions
 SMIMEKEYS_VERSION=latest
@@ -445,13 +468,13 @@ The following KV-v2 secret engines are created:
 
 ```bash
 # Check status
-docker exec svdh-vault vault status
+docker exec stargate-vault vault status
 
 # List mounts
-docker exec -e VAULT_TOKEN=<token> svdh-vault vault secrets list
+docker exec -e VAULT_TOKEN=<token> stargate-vault vault secrets list
 
 # Write a secret
-docker exec -e VAULT_TOKEN=<token> svdh-vault vault kv put secret-smimekeys-client/test key=value
+docker exec -e VAULT_TOKEN=<token> stargate-vault vault kv put secret-smimekeys-client/test key=value
 ```
 
 ## Databases
@@ -465,7 +488,7 @@ PostgreSQL databases created:
 ### Connect to PostgreSQL
 
 ```bash
-docker exec -it svdh-postgres psql -U postgres
+docker exec -it stargate-postgres psql -U postgres
 
 # Or connect externally
 psql -h localhost -U postgres -d smimekeys_client

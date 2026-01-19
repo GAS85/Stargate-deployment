@@ -34,6 +34,11 @@ MAIL_DOMAIN=""
 # Example: "mail.example.com"
 MAIL_HOSTNAME=""
 
+# MXEngine public address (REQUIRED for seal strategy callbacks)
+# This must be the publicly accessible URL where the sealer can reach mxengine
+# Example: "http://203.0.113.10:8084" or "https://mxengine.example.com"
+MXENGINE_PUBLIC_ADDRESS=""
+
 # ==============================================================================
 # REQUIRED: S/MIME Certificate Configuration
 # ==============================================================================
@@ -82,7 +87,7 @@ MINIO_ROOT_USER=""
 # If left empty, a random password will be generated during install
 MINIO_ROOT_PASSWORD=""
 
-# S3 bucket name for storing messages and attachments (default: svdh-bucket)
+# S3 bucket name for storing messages and attachments (default: stargate-bucket)
 S3_BUCKET_NAME=""
 
 # ==============================================================================
