@@ -380,13 +380,41 @@ services:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /:/rootfs:ro
+      - textfile_collector:/textfile_collector:ro
     command:
       - '--path.procfs=/host/proc'
       - '--path.sysfs=/host/sys'
       - '--path.rootfs=/rootfs'
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+      - '--collector.textfile.directory=/textfile_collector'
     ports:
       - "9100:9100"
+    networks:
+      - stargate-network
+
+  # Collects app versions from /liveness endpoints for node-exporter
+  version-collector:
+    image: alpine:latest
+    container_name: stargate-version-collector
+    restart: unless-stopped
+    depends_on:
+      - smimekeys-client
+      - policy
+      - idagent
+      - mxengine
+    volumes:
+      - ./scripts/gather-app-versions.sh:/scripts/gather-app-versions.sh:ro
+      - textfile_collector:/textfile_collector
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        chmod +x /scripts/gather-app-versions.sh
+        echo "Starting version collector (runs every 60s)..."
+        while true; do
+          /scripts/gather-app-versions.sh || echo "Failed to gather versions"
+          sleep 60
+        done
     networks:
       - stargate-network
 
@@ -443,6 +471,7 @@ volumes:
   minio_data:
   postfix_spool:
   promtail_positions:
+  textfile_collector:
 
 networks:
   stargate-network:
