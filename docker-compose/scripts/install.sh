@@ -75,14 +75,8 @@ check_dependencies() {
   if [ ${#missing[@]} -gt 0 ]; then
     echo "Missing dependencies: ${missing[*]}"
     echo ""
-    read -p "Do you want to install Docker and dependencies? (y/N) " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-      install_docker
-    else
-      echo "Please install the missing dependencies and try again."
-      exit 1
-    fi
+    echo "Installing Docker and dependencies..."
+    install_docker
   fi
 }
 
@@ -157,7 +151,7 @@ load_customer_config() {
   POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-$(generate_password)}"
   MINIO_ROOT_USER="${MINIO_ROOT_USER:-minioadmin}"
   MINIO_ROOT_PASSWORD="${MINIO_ROOT_PASSWORD:-$(generate_password)}"
-  S3_BUCKET_NAME="${S3_BUCKET_NAME:-svdh-bucket}"
+  S3_BUCKET_NAME="${S3_BUCKET_NAME:-stargate-bucket}"
   
   SMIMEKEYS_VERSION="${SMIMEKEYS_VERSION:-latest}"
   POLICY_VERSION="${POLICY_VERSION:-latest}"

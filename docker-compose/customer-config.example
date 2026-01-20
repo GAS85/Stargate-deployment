@@ -12,7 +12,7 @@
 # ==============================================================================
 
 # Customer/Organization name (used for identification and logging)
-CUSTOMER_NAME="Vereign Test"
+CUSTOMER_NAME="Vereign Alpha"
 
 # Deployment name (used for log labels and identification)
 DEPLOYMENT_NAME="stargate-alpha"
@@ -58,16 +58,16 @@ POSTGRES_PASSWORD="postgres"
 
 MINIO_ROOT_USER="minioadmin"
 MINIO_ROOT_PASSWORD="minioadmin123"
-S3_BUCKET_NAME="svdh-bucket"
+S3_BUCKET_NAME="stargate-bucket"
 
 # ==============================================================================
 # OPTIONAL: Application Versions
 # ==============================================================================
 
-SMIMEKEYS_VERSION="dev"
-POLICY_VERSION="dev"
-IDAGENT_VERSION="dev"
-MXENGINE_VERSION="dev"
+SMIMEKEYS_VERSION="v0.0.3"
+POLICY_VERSION="v0.0.4"
+IDAgENT_VERSION="v0.0.4-branch"
+MXENGINE_VERSION="v0.0.29-branch"
 
 # ==============================================================================
 # OPTIONAL: Advanced Mail Configuration

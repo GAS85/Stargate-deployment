@@ -17,6 +17,19 @@ until psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POST
   sleep 2
 done
 
+# Wait for the policies table to exist (created by policy service migrations)
+echo "Waiting for policies table (created by policy service)..."
+MAX_WAIT=60
+WAITED=0
+until psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT 1 FROM policies LIMIT 1" 2>/dev/null; do
+  sleep 2
+  WAITED=$((WAITED + 2))
+  if [ $WAITED -ge $MAX_WAIT ]; then
+    echo "ERROR: Timed out waiting for policies table. Is the policy service running?"
+    exit 1
+  fi
+done
+
 echo "PostgreSQL is ready. Inserting policies..."
 
 # Function to upsert a policy
@@ -52,12 +65,22 @@ EOF
 
 # Insert the delivery_strategy policy
 if [ -f "/policies/alpha/deliveryStrategy/policy.rego" ]; then
+  # Load data from data.json if it exists, otherwise use empty object
+  DATA_FILE="/policies/alpha/deliveryStrategy/data.json"
+  if [ -f "$DATA_FILE" ]; then
+    POLICY_DATA=$(cat "$DATA_FILE" | tr -d '\n')
+    echo "Loading data from $DATA_FILE"
+  else
+    POLICY_DATA='{}'
+    echo "No data.json found, using empty object"
+  fi
+  
   upsert_policy \
     "policy.rego" \
     "deliveryStrategy" \
     "alpha" \
     "/policies/alpha/deliveryStrategy/policy.rego" \
-    "{}"
+    "$POLICY_DATA"
 else
   echo "WARNING: /policies/alpha/deliveryStrategy/policy.rego not found"
 fi

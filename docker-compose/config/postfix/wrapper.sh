@@ -358,8 +358,34 @@ configure_postfix() {
     echo "=== MXEngine Integration Complete ==="
 }
 
-# Run configuration in background after postfix starts
-(sleep 5 && configure_postfix) &
+wait_for_postfix() {
+    echo "Waiting for Postfix to be ready..."
+    local max_wait=60
+    local waited=0
+    
+    # Wait for postfix process AND config to be ready
+    while [ $waited -lt $max_wait ]; do
+        if postfix status >/dev/null 2>&1 && grep -q "^myhostname" /etc/postfix/main.cf 2>/dev/null; then
+            # Brief pause to ensure config file is fully flushed
+            sleep 1
+            echo "Postfix is ready (waited ${waited}s)"
+            return 0
+        fi
+        sleep 1
+        waited=$((waited + 1))
+    done
+    
+    # Provide specific error message
+    if ! postfix status >/dev/null 2>&1; then
+        echo "ERROR: Timed out waiting for Postfix process"
+    else
+        echo "ERROR: Timed out waiting for Postfix configuration"
+    fi
+    return 1
+}
+
+# Run configuration in background after postfix fully starts
+(wait_for_postfix && configure_postfix) &
 
 # Execute the original boky/postfix entrypoint
 exec /scripts/run.sh "$@"

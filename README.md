@@ -1,6 +1,6 @@
-# SVDH Docker Deployment
+# Stargate Local Development Environment
 
-Docker Compose configuration for running the SVDH services used by the Stargate project. Follow the instructions below to install and run all Stargate services with Docker Compose.
+Local Docker Compose setup for running Stargate services.
 
 ## Services Included
 
@@ -23,10 +23,37 @@ Docker Compose configuration for running the SVDH services used by the Stargate 
 ## Quick Start
 
 ### Prerequisites
-- Ubuntu server (Docker will be installed automatically if missing)
+
+**Server Requirements:**
+- Ubuntu 24.04 LTS (recommended)
+- 2 CPU cores (minimum)
+- 4 GB RAM (minimum)
+- 20 GB storage (minimum)
+- Docker will be installed automatically if missing
 - Access to `registry.vereign.io` (login with `docker login registry.vereign.io`)
 - Ensure there is an internet connection on the machine where you are instaling Stargate services
 - Ensure traffic is properly configured to reach Stargate instance
+
+**Inbound Network Access (firewall must allow):**
+| Port | Protocol | Purpose |
+|------|----------|---------|
+| 25 | TCP | SMTP - receiving mail from external servers |
+| 8084 | TCP | HTTP - seal callback from remote sealer service |
+
+**Outbound Network Access (server must reach):**
+| Destination | Port | Purpose |
+|-------------|------|---------|
+| registry.vereign.io | 443 | Docker image registry |
+| mxengine-dev.k8s.vereign-cdn.com | 443 | Remote sealer service |
+| smimekeys-ca-dev.k8s.vereign-cdn.com | 443 | S/MIME CA service |
+| loki.k8s.vereign-cdn.com | 443 | Log shipping (Promtail → Loki) |
+| vereign-issuer.vrgnservices.eu | 443 | Issuer service |
+| vereign-verifier.vrgnservices.eu | 4433 | Verifier service |
+| Destination mail servers | 25 | Outbound mail delivery (via MX lookup) |
+
+**DNS Access:**
+- Server must be able to resolve DNS (MX, SPF, A records)
+- Used for mail routing and SPF-based network allowlisting
 
 ### Step 1: Configure Customer Settings
 
@@ -151,7 +178,7 @@ POSTGRES_PASSWORD=postgres
 # MinIO
 MINIO_ROOT_USER=minioadmin
 MINIO_ROOT_PASSWORD=minioadmin123
-S3_BUCKET_NAME=svdh-bucket
+S3_BUCKET_NAME=stargate-bucket
 
 # Application versions
 SMIMEKEYS_VERSION=latest
@@ -447,13 +474,13 @@ The following KV-v2 secret engines are created:
 
 ```bash
 # Check status
-docker exec svdh-vault vault status
+docker exec stargate-vault vault status
 
 # List mounts
-docker exec -e VAULT_TOKEN=<token> svdh-vault vault secrets list
+docker exec -e VAULT_TOKEN=<token> stargate-vault vault secrets list
 
 # Write a secret
-docker exec -e VAULT_TOKEN=<token> svdh-vault vault kv put secret-smimekeys-client/test key=value
+docker exec -e VAULT_TOKEN=<token> stargate-vault vault kv put secret-smimekeys-client/test key=value
 ```
 
 ## Databases
@@ -467,11 +494,48 @@ PostgreSQL databases created:
 ### Connect to PostgreSQL
 
 ```bash
-docker exec -it svdh-postgres psql -U postgres
+docker exec -it stargate-postgres psql -U postgres
 
 # Or connect externally
 psql -h localhost -U postgres -d smimekeys_client
 ```
+
+## Policies (Rego)
+
+MXEngine uses OPA/Rego policies stored in PostgreSQL to determine mail delivery strategy.
+
+### View Current Policy
+
+```bash
+# List all policies
+docker exec stargate-postgres psql -U postgres -d policy \
+  -c "SELECT id, name, policy_group, filename, to_timestamp(updated_at) as updated FROM policies;"
+
+# View policy content
+docker exec stargate-postgres psql -U postgres -d policy \
+  -c "SELECT rego FROM policies WHERE name='deliveryStrategy';"
+```
+
+### Update Policy
+
+1. Edit the local policy file:
+   ```bash
+   nano policies/alpha/deliveryStrategy/policy.rego
+   ```
+
+2. Copy to server and reload:
+   ```bash
+   scp policies/alpha/deliveryStrategy/policy.rego server:/root/stargate/policies/alpha/deliveryStrategy/
+   ssh server 'cd /root/stargate && docker compose run --rm policy-init'
+   ```
+
+The `init-policies.sh` script uses upsert (`ON CONFLICT ... DO UPDATE`), so it safely updates existing policies.
+
+### Policy Location
+
+- **Local file:** `policies/alpha/deliveryStrategy/policy.rego`
+- **MXEngine config:** `POLICY_OUTBOUND: "alpha/deliveryStrategy"`
+- **Database:** `policy` database, `policies` table
 
 ## Logs
 
