@@ -75,14 +75,8 @@ check_dependencies() {
   if [ ${#missing[@]} -gt 0 ]; then
     echo "Missing dependencies: ${missing[*]}"
     echo ""
-    read -p "Do you want to install Docker and dependencies? (y/N) " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-      install_docker
-    else
-      echo "Please install the missing dependencies and try again."
-      exit 1
-    fi
+    echo "Installing Docker and dependencies..."
+    install_docker
   fi
 }
 

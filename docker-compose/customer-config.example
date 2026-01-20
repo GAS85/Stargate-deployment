@@ -64,10 +64,10 @@ S3_BUCKET_NAME="stargate-bucket"
 # OPTIONAL: Application Versions
 # ==============================================================================
 
-SMIMEKEYS_VERSION="dev"
-POLICY_VERSION="dev"
-IDAGENT_VERSION="dev"
-MXENGINE_VERSION="dev"
+SMIMEKEYS_VERSION="v0.0.3"
+POLICY_VERSION="v0.0.4"
+IDAgENT_VERSION="v0.0.4-branch"
+MXENGINE_VERSION="v0.0.29-branch"
 
 # ==============================================================================
 # OPTIONAL: Advanced Mail Configuration

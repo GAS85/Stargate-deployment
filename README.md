@@ -25,7 +25,11 @@ Local Docker Compose setup for running Stargate services.
 ### Prerequisites
 
 **Server Requirements:**
-- Ubuntu server (Docker will be installed automatically if missing)
+- Ubuntu 24.04 LTS (recommended)
+- 2 CPU cores (minimum)
+- 4 GB RAM (minimum)
+- 20 GB storage (minimum)
+- Docker will be installed automatically if missing
 - Access to `registry.vereign.io` (login with `docker login registry.vereign.io`)
 
 **Inbound Network Access (firewall must allow):**
