@@ -17,6 +17,19 @@ until psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POST
   sleep 2
 done
 
+# Wait for the policies table to exist (created by policy service migrations)
+echo "Waiting for policies table (created by policy service)..."
+MAX_WAIT=60
+WAITED=0
+until psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT 1 FROM policies LIMIT 1" 2>/dev/null; do
+  sleep 2
+  WAITED=$((WAITED + 2))
+  if [ $WAITED -ge $MAX_WAIT ]; then
+    echo "ERROR: Timed out waiting for policies table. Is the policy service running?"
+    exit 1
+  fi
+done
+
 echo "PostgreSQL is ready. Inserting policies..."
 
 # Function to upsert a policy
