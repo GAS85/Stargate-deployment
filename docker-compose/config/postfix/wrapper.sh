@@ -358,8 +358,9 @@ configure_postfix() {
     echo "=== MXEngine Integration Complete ==="
 }
 
-# Run configuration in background after postfix starts
-(sleep 5 && configure_postfix) &
+# Run configuration in background after postfix fully starts
+# The boky/postfix run.sh rebuilds main.cf, so we need to wait for it
+(sleep 15 && configure_postfix) &
 
 # Execute the original boky/postfix entrypoint
 exec /scripts/run.sh "$@"

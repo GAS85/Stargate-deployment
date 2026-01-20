@@ -5,7 +5,7 @@ services:
   # ===================
   
   postgres:
-    image: postgres:15-alpine
+    image: postgres:18-alpine
     container_name: stargate-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
@@ -120,7 +120,7 @@ services:
 
   # Policy initialization container
   policy-init:
-    image: postgres:15-alpine
+    image: postgres:18-alpine
     container_name: stargate-policy-init
     depends_on:
       postgres:
@@ -178,10 +178,10 @@ services:
       CERT_CA_PUBLIC_HTTP_ADDR: ""
       CERT_CRL_REFRESH_PERIOD: "30m"
       
-      # LDAP
-      LDAP_ADDR: "ldap://ldap_server:389"
-      LDAP_USERNAME: "cn=admin,dc=seppmailserver,dc=ch"
-      LDAP_BASE_DN: "ou=publicHINKeys,dc=seppmailserver,dc=ch"
+      # LDAP (disabled - uncomment and set LDAP_ADDR to enable)
+      # LDAP_ADDR: "ldap://ldap_server:389"
+      # LDAP_USERNAME: "cn=admin,dc=seppmailserver,dc=ch"
+      # LDAP_BASE_DN: "ou=publicHINKeys,dc=seppmailserver,dc=ch"
       
       LOG_LEVEL: "info"
     ports:
@@ -409,10 +409,9 @@ services:
     command:
       - -c
       - |
-        chmod +x /scripts/gather-app-versions.sh
         echo "Starting version collector (runs every 60s)..."
         while true; do
-          /scripts/gather-app-versions.sh || echo "Failed to gather versions"
+          sh /scripts/gather-app-versions.sh || echo "Failed to gather versions"
           sleep 60
         done
     networks:

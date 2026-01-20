@@ -12,7 +12,7 @@
 # ==============================================================================
 
 # Customer/Organization name (used for identification and logging)
-CUSTOMER_NAME="Vereign Test"
+CUSTOMER_NAME="Vereign Alpha"
 
 # Deployment name (used for log labels and identification)
 DEPLOYMENT_NAME="stargate-alpha"
