@@ -25,6 +25,49 @@ if [ -f "$KEYS_FILE" ]; then
   exit 1
 fi
 
+# Function to configure firewall
+configure_firewall() {
+  echo ""
+  echo "============================================"
+  echo "  Configuring Firewall"
+  echo "============================================"
+  echo ""
+  
+  # Check if ufw is available
+  if ! command -v ufw &> /dev/null; then
+    echo "UFW not found, installing..."
+    sudo apt update
+    sudo apt install -y ufw
+  fi
+  
+  # Enable UFW if not already enabled
+  if ! sudo ufw status | grep -q "Status: active"; then
+    echo "Enabling UFW..."
+    # Allow SSH first to prevent lockout
+    sudo ufw allow ssh comment "SSH"
+    sudo ufw --force enable
+  fi
+  
+  # Required inbound ports
+  echo "Opening required ports..."
+  
+  # SMTP - receiving mail from external servers
+  sudo ufw allow 25/tcp comment "SMTP inbound"
+  
+  # HTTP - seal callback from remote sealer service
+  sudo ufw allow 8084/tcp comment "MXEngine seal callback"
+  
+  # WireGuard - encrypted tunnel for agent-to-agent communication
+  sudo ufw allow 51820/udp comment "WireGuard tunnel"
+  
+  echo ""
+  echo "Firewall configured. Current status:"
+  sudo ufw status verbose | grep -E "^(Status|25|8084|51820)"
+  echo ""
+  echo "Note: UFW rules persist after reboot."
+  echo ""
+}
+
 # Function to install Docker on Ubuntu
 install_docker() {
   echo "Installing Docker from official repository..."
@@ -342,6 +385,9 @@ setup_backup_cron() {
 
 # Check dependencies first
 check_dependencies
+
+# Configure firewall
+configure_firewall
 
 # Load and validate customer configuration
 load_customer_config

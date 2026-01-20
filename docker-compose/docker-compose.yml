@@ -274,11 +274,13 @@ services:
       
       # WireGuard
       WG_LOCAL_IP: "10.0.0.4"
+      WG_INTERFACE_PORT: "${WG_INTERFACE_PORT:-51820}"
       
       LOG_LEVEL: "info"
     ports:
       - "8083:8080"
       - "2114:2112"
+      - "${WG_INTERFACE_PORT:-51820}:${WG_INTERFACE_PORT:-51820}/udp"  # WireGuard tunnel
     networks:
       - stargate-network
 

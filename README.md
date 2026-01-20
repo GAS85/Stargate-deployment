@@ -39,6 +39,7 @@ Local Docker Compose setup for running Stargate services.
 |------|----------|---------|
 | 25 | TCP | SMTP - receiving mail from external servers |
 | 8084 | TCP | HTTP - seal callback from remote sealer service |
+| 51820 | UDP | WireGuard - encrypted tunnel for agent-to-agent communication |
 
 **Outbound Network Access (server must reach):**
 | Destination | Port | Purpose |
