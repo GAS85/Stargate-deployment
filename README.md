@@ -30,8 +30,7 @@ Local Docker Compose setup for running Stargate services.
 - 4 GB RAM (minimum)
 - 20 GB storage (minimum)
 - Docker will be installed automatically if missing
-- Access to `registry.vereign.io` (login with `docker login registry.vereign.io`)
-- Ensure there is an internet connection on the machine where you are instaling Stargate services
+- Ensure there is an internet connection on the machine where you are installing Stargate services
 - Ensure traffic is properly configured to reach Stargate instance
 
 **Inbound Network Access (firewall must allow):**
@@ -39,6 +38,7 @@ Local Docker Compose setup for running Stargate services.
 |------|----------|---------|
 | 25 | TCP | SMTP - receiving mail from external servers |
 | 8084 | TCP | HTTP - seal callback from remote sealer service |
+| 51820 | UDP | WireGuard - encrypted tunnel for agent-to-agent communication |
 
 **Outbound Network Access (server must reach):**
 | Destination | Port | Purpose |

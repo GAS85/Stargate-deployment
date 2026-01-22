@@ -232,11 +232,13 @@ else
     SPF_NETWORKS=$(get_spf_networks "$MAIL_DOMAIN")
     if [ -z "$SPF_NETWORKS" ]; then
         echo "WARNING: No SPF records found, using Docker networks only"
-        SPF_NETWORKS="10.0.0.0/8 172.16.0.0/12 192.168.0.0/16"
+        SPF_NETWORKS=""
     fi
-    # Add localhost and Docker networks
-    export MYNETWORKS="127.0.0.0/8 $SPF_NETWORKS"
-    echo "Networks from SPF: $MYNETWORKS"
+    # Always include localhost and common Docker network ranges
+    # Docker compose creates networks in 172.16.0.0/12 range
+    DOCKER_RANGES="10.0.0.0/8 172.16.0.0/12 192.168.0.0/16"
+    export MYNETWORKS="127.0.0.0/8 $DOCKER_RANGES $SPF_NETWORKS"
+    echo "Networks (Docker + SPF): $MYNETWORKS"
 fi
 
 # Set allowed sender domains
