@@ -257,6 +257,7 @@ POSTFIX_ENABLE_IPV6=$POSTFIX_ENABLE_IPV6
 DNS_TIMEOUT=$DNS_TIMEOUT
 DNS_SERVER=${DNS_SERVER:-}
 RELAYHOST=${RELAYHOST:-}
+# Leave empty for auto-detection (Docker networks + SPF records)
 POSTFIX_MYNETWORKS=${POSTFIX_MYNETWORKS:-}
 
 # Logging (Promtail -> Loki)
@@ -398,20 +399,6 @@ mkdir -p "$PROJECT_DIR/backups"
 
 # Generate .env file from customer config
 generate_env_file
-
-# Check Docker registry access
-echo "Checking Docker registry access..."
-if ! docker pull registry.vereign.io/svdh/smimekeys:latest --quiet 2>/dev/null; then
-  echo ""
-  echo "WARNING: Cannot pull from registry.vereign.io"
-  echo "Please login first: docker login registry.vereign.io"
-  echo ""
-  read -p "Do you want to continue anyway? (y/N) " -n 1 -r
-  echo
-  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    exit 1
-  fi
-fi
 
 # Start all services
 echo ""
