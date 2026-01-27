@@ -111,6 +111,8 @@ services:
         condition: service_healthy
     environment:
       VAULT_ADDR: "http://vault:8200"
+      # Predefined root token for reproducible deployments (used only during first init)
+      VAULT_ROOT_TOKEN: ${VAULT_TOKEN:-}
     volumes:
       - ./scripts:/scripts:ro
       - ./secrets:/secrets

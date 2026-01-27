@@ -52,12 +52,16 @@ if [ "$INITIALIZED" = "true" ]; then
 else
   echo "Initializing Vault for the first time..."
   
+  # Use predefined root token if VAULT_ROOT_TOKEN is set (for reproducible deployments)
+  # Otherwise Vault will generate a random token
+  INIT_ARGS="-address=http://vault:8200 -key-shares=5 -key-threshold=3 -format=json"
+  if [ -n "$VAULT_ROOT_TOKEN" ]; then
+    echo "Using predefined root token from VAULT_ROOT_TOKEN environment variable"
+    INIT_ARGS="$INIT_ARGS -root-token-id=$VAULT_ROOT_TOKEN"
+  fi
+  
   # Initialize Vault with 5 key shares and 3 key threshold
-  vault operator init \
-    -address=http://vault:8200 \
-    -key-shares=5 \
-    -key-threshold=3 \
-    -format=json > "$KEYS_FILE"
+  vault operator init $INIT_ARGS > "$KEYS_FILE"
   
   chmod 600 "$KEYS_FILE"
   
