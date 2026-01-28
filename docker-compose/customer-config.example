@@ -44,6 +44,15 @@ CERT_COMMON_NAME="Vereign AG - alpha"
 CERT_COUNTRIES="CH,BG"
 
 # ==============================================================================
+# OPTIONAL: Vault Configuration
+# ==============================================================================
+# Predefined root token (used during first Vault initialization)
+# This ensures the same token is used across fresh deployments
+# The token never expires. Leave empty to let Vault generate a random token.
+
+VAULT_TOKEN="hvs.stargate-root-token-v1"
+
+# ==============================================================================
 # OPTIONAL: Database Configuration
 # ==============================================================================
 # Leave empty to auto-generate secure passwords
@@ -67,7 +76,7 @@ S3_BUCKET_NAME="stargate-bucket"
 SMIMEKEYS_VERSION="v0.0.3"
 POLICY_VERSION="v0.0.4"
 IDAGENT_VERSION="v0.0.5-branch"
-MXENGINE_VERSION="v0.0.29-branch"
+MXENGINE_VERSION="v0.0.30
 
 # ==============================================================================
 # OPTIONAL: Advanced Mail Configuration

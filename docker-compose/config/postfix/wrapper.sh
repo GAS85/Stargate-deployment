@@ -163,9 +163,17 @@ despf() {
     # Extract IP4
     echo "$spf" | grep -Eio 'ip4:[^ ]+' | sed 's/ip4://' | printip
     
-    # Extract IP6
+    # Extract IP6 - format as [ipv6]/cidr for Postfix mynetworks
     echo "$spf" | grep -Eio 'ip6:[^ ]+' | sed 's/ip6://' | while read -r ip6; do
-        echo "[$ip6]"
+        if echo "$ip6" | grep -q '/'; then
+            # Has CIDR - format as [address]/cidr
+            local addr="${ip6%/*}"
+            local cidr="${ip6##*/}"
+            echo "[${addr}]/${cidr}"
+        else
+            # No CIDR - just bracket the address
+            echo "[${ip6}]"
+        fi
     done
     
     # Process a: mechanism

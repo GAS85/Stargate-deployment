@@ -116,7 +116,7 @@ MXENGINE_VERSION=""
 
 # Enable IPv6 for Postfix (default: false)
 # Note: Microsoft Exchange connector GUI doesn't support IPv6
-POSTFIX_ENABLE_IPV6=""
+POSTFIX_ENABLE_IPV6="false"
 
 # Manual relay host override (skips MX lookup)
 # Format: [hostname] or [hostname]:port
