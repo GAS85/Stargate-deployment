@@ -120,25 +120,6 @@ services:
     networks:
       - stargate-network
 
-  # Policy initialization container
-  policy-init:
-    image: postgres:18-alpine
-    container_name: stargate-policy-init
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      POSTGRES_HOST: postgres
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: policy
-    volumes:
-      - ./scripts:/scripts:ro
-      - ./policies:/policies:ro
-    entrypoint: /scripts/init-policies.sh
-    networks:
-      - stargate-network
-
   # ===================
   # Applications
   # ===================
@@ -466,6 +447,32 @@ services:
     environment:
       LOKI_URL: "${LOKI_URL:-https://loki.k8s.vereign-cdn.com}"
       HOSTNAME: "${PROMTAIL_HOSTNAME:-stargate}"
+    networks:
+      - stargate-network
+
+  # Policy sync service - syncs policies from Git repository to database
+  # Only starts if POLICY_SYNC_REPO_URL is configured
+  policy-sync:
+    image: registry.vereign.io/svdh/policy-sync:${POLICY_SYNC_VERSION:-dev}
+    container_name: stargate-policy-sync
+    restart: unless-stopped
+    profiles:
+      - policy-sync
+    depends_on:
+      policy:
+        condition: service_started
+    environment:
+      # Database connection (same as policy service)
+      DB_ADDR: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/policy?sslmode=disable"
+      # Git repository settings
+      POLICY_REPO: "${POLICY_SYNC_REPO_URL}"
+      POLICY_REPO_USER: "${POLICY_SYNC_REPO_USER:-}"
+      POLICY_REPO_PASS: "${POLICY_SYNC_REPO_PASS:-}"
+      POLICY_REPO_BRANCH: "${POLICY_SYNC_REPO_BRANCH:-}"
+      POLICY_REPO_FOLDER: "${POLICY_SYNC_REPO_FOLDER:-}"
+      # Service mode
+      KEEP_ALIVE: "true"
+      SYNC_INTERVAL: "${POLICY_SYNC_INTERVAL:-1h}"
     networks:
       - stargate-network
 

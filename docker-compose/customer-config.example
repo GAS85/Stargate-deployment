@@ -89,6 +89,20 @@ DNS_SERVER=""
 DNS_TIMEOUT="2"
 
 # ==============================================================================
+# OPTIONAL: Policy Sync Configuration
+# ==============================================================================
+# policy-sync syncs OPA/Rego policies from a Git repository to the database.
+# If POLICY_SYNC_REPO_URL is set, run: docker compose --profile policy-sync up -d
+
+POLICY_SYNC_REPO_URL=""
+POLICY_SYNC_REPO_USER=""
+POLICY_SYNC_REPO_PASS=""
+POLICY_SYNC_REPO_BRANCH=""
+POLICY_SYNC_REPO_FOLDER=""
+POLICY_SYNC_INTERVAL="1h"
+POLICY_SYNC_VERSION="dev"
+
+# ==============================================================================
 # OPTIONAL: Monitoring Configuration
 # ==============================================================================
 
