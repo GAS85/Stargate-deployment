@@ -27,6 +27,11 @@ MAIL_DOMAIN="vrgnservices.eu"
 # Mail server hostname (optional, defaults to mail.<MAIL_DOMAIN>)
 MAIL_HOSTNAME="mail.vrgnservices.eu"
 
+# MXEngine public address (REQUIRED for seal strategy callbacks)
+# This must be the publicly accessible URL where the sealer can reach mxengine
+# Example: "http://203.0.113.10:8084" or "https://mxengine.example.com"
+MXENGINE_PUBLIC_ADDRESS="http://49.12.193.236:8084"
+
 # ==============================================================================
 # REQUIRED: S/MIME Certificate Configuration
 # ==============================================================================
@@ -76,7 +81,7 @@ S3_BUCKET_NAME="stargate-bucket"
 SMIMEKEYS_VERSION="v0.0.3"
 POLICY_VERSION="v0.0.4"
 IDAGENT_VERSION="v0.0.5-branch"
-MXENGINE_VERSION="v0.0.30
+MXENGINE_VERSION="v0.0.30"
 
 # ==============================================================================
 # OPTIONAL: Advanced Mail Configuration
@@ -94,7 +99,7 @@ DNS_TIMEOUT="2"
 # policy-sync syncs OPA/Rego policies from a Git repository to the database.
 # If POLICY_SYNC_REPO_URL is set, run: docker compose --profile policy-sync up -d
 
-POLICY_SYNC_REPO_URL=""
+POLICY_SYNC_REPO_URL="https://code.vereign.com/svdh/policies-public.git"
 POLICY_SYNC_REPO_USER=""
 POLICY_SYNC_REPO_PASS=""
 POLICY_SYNC_REPO_BRANCH=""
@@ -107,6 +112,52 @@ POLICY_SYNC_VERSION="dev"
 # ==============================================================================
 
 LOKI_URL="https://loki.k8s.vereign-cdn.com"
+
+# ==============================================================================
+# REQUIRED: WireGuard Configuration
+# ==============================================================================
+# Local WireGuard settings for this IDAgent instance.
+
+# Local WireGuard IP address for this instance (MUST BE UNIQUE per deployment)
+# Each Stargate deployment must have a unique IP in the WireGuard network.
+# Example: 10.0.0.1, 10.0.0.2, 10.0.0.3, etc.
+WG_LOCAL_IP="10.0.0.233"
+
+# WireGuard interface port (default: 51820)
+WG_INTERFACE_PORT="51820"
+
+# ==============================================================================
+# REQUIRED: WireGuard Peer Configuration
+# ==============================================================================
+# Configuration for WireGuard tunnel connection to remote IDAgent instance.
+# This enables secure agent-to-agent communication for sealed message delivery.
+
+# Unique connection identifier (auto-generated UUID v7 if left empty)
+WG_PEER_CONNECTION_ID=""
+
+# Human-readable name for this connection
+WG_PEER_NAME="dev"
+
+# WireGuard public key of the remote peer (REQUIRED)
+WG_PEER_PUBLIC_KEY="WhTN0ekf/jT+wAv9kIIHmwMLPWr9Gv1MXxnvAkJKbHU="
+
+# Remote peer endpoint (host:port) (REQUIRED)
+WG_PEER_ENDPOINT="46.225.6.233:31820"
+
+# WireGuard IP address of the remote peer
+WG_PEER_IP="10.0.0.2"
+
+# Port to use for communication with the remote peer
+WG_PEER_PORT="9090"
+
+# Allowed IPs for routing (defaults to WG_PEER_IP/32)
+WG_PEER_ALLOWED_IPS="10.0.0.2/32"
+
+# External identifier for the remote organization/domain
+WG_PEER_EXTERNAL_ID="vereign-cdn.com"
+
+# Description of this connection
+WG_PEER_DESCRIPTION="Connection to idagent2 instance for testing"
 
 # ==============================================================================
 # END OF CONFIGURATION
