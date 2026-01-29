@@ -97,7 +97,7 @@ DNS_TIMEOUT="2"
 # OPTIONAL: Policy Sync Configuration
 # ==============================================================================
 # policy-sync syncs OPA/Rego policies from a Git repository to the database.
-# If POLICY_SYNC_REPO_URL is set, run: docker compose --profile policy-sync up -d
+# The service runs automatically and syncs at the configured interval.
 
 POLICY_SYNC_REPO_URL="https://code.vereign.com/svdh/policies-public.git"
 POLICY_SYNC_REPO_USER=""

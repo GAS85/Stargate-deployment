@@ -7,14 +7,19 @@ Local Docker Compose setup for running Stargate services.
 ### Applications
 - **smimekeys-client** - S/MIME keys client service (port 8081)
 - **policy** - Policy service (port 8082)
-- **idagent** - ID Agent service (port 8083)
+- **idagent** - ID Agent service (port 8083, WireGuard: 51820/udp)
 - **mxengine** - MX Engine service (port 8084, SMTP: 1587)
+- **policy-sync** - Syncs OPA/Rego policies from Git repository to database (runs continuously)
 
 ### Infrastructure
 - **PostgreSQL** - Database (port 5432)
 - **Vault** - Secrets management (port 8200)
 - **MinIO** - S3-compatible storage (API: 9000, Console: 9001)
 - **Postfix Relay** - Mail relay server (port 25) - auto-configures from DNS
+
+### Init Containers
+- **vault-init** - Initializes and unseals Vault on first run
+- **idagent-init** - Creates WireGuard peer connection in idagent database
 
 ### Monitoring
 - **node-exporter** - Host metrics for Prometheus (port 9100)
@@ -68,14 +73,26 @@ nano customer-config.sh
 - `CUSTOMER_NAME` - Customer name for identification
 - `DEPLOYMENT_NAME` - Unique deployment identifier (used in logs)
 - `MAIL_DOMAIN` - Mail relay domain (e.g., example.com)
+- `MXENGINE_PUBLIC_ADDRESS` - Publicly accessible URL for seal callbacks (e.g., `http://203.0.113.10:8084`)
 - `CERT_DNS_NAMES` - DNS names for S/MIME certificate
 - `CERT_ORGANIZATION` - Organization name for certificate
 - `CERT_COMMON_NAME` - Common name for certificate
 - `CERT_COUNTRIES` - Country codes for certificate
 
+**WireGuard settings (for agent-to-agent communication):**
+- `WG_LOCAL_IP` - Local WireGuard IP (**MUST BE UNIQUE** per deployment, e.g., 10.0.0.1, 10.0.0.2)
+- `WG_INTERFACE_PORT` - WireGuard port (default: 51820)
+- `WG_PEER_PUBLIC_KEY` - Remote peer's WireGuard public key
+- `WG_PEER_ENDPOINT` - Remote peer endpoint (host:port)
+- `WG_PEER_IP` - WireGuard IP of remote peer
+- `WG_PEER_PORT` - Communication port on remote peer
+- `WG_PEER_EXTERNAL_ID` - External identifier (e.g., domain) for routing
+
 **Optional settings (have defaults):**
 - `POSTGRES_PASSWORD` - Auto-generated if empty
 - `MINIO_ROOT_PASSWORD` - Auto-generated if empty
+- `VAULT_TOKEN` - Predefined Vault token (auto-generated if empty)
+- `POLICY_SYNC_REPO_URL` - Git repo for policy sync (enables policy-sync service)
 - Application versions, advanced mail settings, etc.
 
 ### Step 2: Deploy to a Server
@@ -131,6 +148,8 @@ This stops containers but preserves all data.
 | `stop.sh` | Stop containers (data preserved) |
 | `backup.sh` | Manual PostgreSQL backup to `./backups/` |
 | `purge.sh` | Delete ALL data (requires confirmation) |
+| `init-vault.sh` | Vault initialization (used by vault-init container) |
+| `init-idagent.sh` | WireGuard peer connection setup (used by idagent-init container) |
 
 ## Configuration Files
 
@@ -457,6 +476,146 @@ docker compose up -d postfix-relay
 - Ensure port 25 is not blocked by firewall
 - Check if another service is using port 25: `ss -tlnp | grep :25`
 
+## WireGuard (Agent-to-Agent Communication)
+
+IDAgent uses WireGuard to establish secure encrypted tunnels between Stargate instances for delivering sealed messages.
+
+### How It Works
+
+```
+┌─────────────────────────────────────────┐       ┌─────────────────────────────────────────┐
+│ Stargate Instance A                     │       │ Stargate Instance B                     │
+│                                         │       │                                         │
+│  IDAgent (10.0.0.1:51820)               │◄─────►│  IDAgent (10.0.0.2:51820)               │
+│     │                                   │  WG   │     │                                   │
+│     ▼                                   │ Tunnel│     ▼                                   │
+│  Sealed message delivery via WG tunnel  │       │  Receive sealed message                 │
+│                                         │       │                                         │
+└─────────────────────────────────────────┘       └─────────────────────────────────────────┘
+```
+
+### Configuration
+
+WireGuard settings in `customer-config.sh`:
+
+```bash
+# Local WireGuard settings (this instance)
+WG_LOCAL_IP="10.0.0.1"          # MUST BE UNIQUE per deployment
+WG_INTERFACE_PORT="51820"        # Default WireGuard port
+
+# Peer configuration (remote instance to connect to)
+WG_PEER_NAME="remote-agent"                          # Human-readable name
+WG_PEER_PUBLIC_KEY="WhTN0ekf/jT+wAv9kIIHmwMLPWr9Gv1MXxnvAkJKbHU="  # Remote's WG public key
+WG_PEER_ENDPOINT="203.0.113.10:51820"                # Remote's public endpoint
+WG_PEER_IP="10.0.0.2"                                # Remote's WireGuard IP
+WG_PEER_PORT="9090"                                  # Communication port
+WG_PEER_EXTERNAL_ID="example.com"                    # Used for routing decisions
+```
+
+**Important:** Each Stargate deployment MUST have a unique `WG_LOCAL_IP` within the WireGuard network (e.g., 10.0.0.1, 10.0.0.2, 10.0.0.3, etc.).
+
+### Peer Connection Setup
+
+The `idagent-init` container automatically creates the WireGuard peer connection in the database during installation. It:
+
+1. Waits for IDAgent to generate its WireGuard keypair
+2. Creates a connection entry in the `connections` table
+3. Links the peer with endpoint, IP, and routing information
+
+### Verification
+
+```bash
+# Check IDAgent WireGuard interface
+docker exec stargate-idagent wg show
+
+# Check connection in database
+docker exec stargate-postgres psql -U postgres -d idagent \
+  -c "SELECT id, name, external_id, endpoint, wireguard_ip FROM connections;"
+
+# Test WireGuard connectivity (ping remote peer IP)
+docker exec stargate-idagent ping -c 3 10.0.0.2
+
+# Check IDAgent logs for tunnel activity
+docker logs stargate-idagent | grep -i wireguard
+```
+
+### Troubleshooting
+
+**No WireGuard interface:**
+- Check IDAgent logs: `docker logs stargate-idagent`
+- Verify `WG_LOCAL_IP` is set in `.env`
+
+**Peer not reachable:**
+- Verify remote endpoint is accessible: `nc -zv <endpoint_host> <endpoint_port> -u`
+- Check firewall allows UDP port 51820
+- Verify public keys match on both ends
+
+**Connection not in database:**
+- Run idagent-init manually: `docker compose run --rm idagent-init`
+- Check idagent-init logs: `docker logs stargate-idagent-init`
+
+## Policy Sync
+
+The `policy-sync` service automatically syncs OPA/Rego policies from a Git repository to the PostgreSQL database.
+
+### How It Works
+
+```
+┌─────────────────────┐      ┌─────────────────────┐      ┌─────────────────────┐
+│ Git Repository      │      │ policy-sync         │      │ PostgreSQL          │
+│                     │      │                     │      │                     │
+│ policies/           │─────►│ Clone/Pull repo     │─────►│ policy database     │
+│   alpha/            │      │ Parse .rego files   │      │ policies table      │
+│   outbound/         │      │ Upsert to database  │      │                     │
+│   ...               │      │ (runs every 1h)     │      │                     │
+└─────────────────────┘      └─────────────────────┘      └─────────────────────┘
+```
+
+### Configuration
+
+Settings in `customer-config.sh`:
+
+```bash
+# Git repository containing policies
+POLICY_SYNC_REPO_URL="https://code.vereign.com/svdh/policies-public.git"
+
+# Optional: Authentication for private repos
+POLICY_SYNC_REPO_USER=""
+POLICY_SYNC_REPO_PASS=""
+
+# Optional: Specific branch (default: main)
+POLICY_SYNC_REPO_BRANCH=""
+
+# Optional: Subfolder within repo containing policies
+POLICY_SYNC_REPO_FOLDER=""
+
+# Sync interval (default: 1h)
+POLICY_SYNC_INTERVAL="1h"
+```
+
+### Verification
+
+```bash
+# Check policy-sync status
+docker logs stargate-policy-sync
+
+# View synced policies
+docker exec stargate-postgres psql -U postgres -d policy \
+  -c "SELECT name, policy_group, filename, to_timestamp(updated_at) as updated FROM policies ORDER BY name;"
+
+# View specific policy content
+docker exec stargate-postgres psql -U postgres -d policy \
+  -c "SELECT rego FROM policies WHERE name='deliveryStrategy' AND policy_group='alpha';"
+```
+
+### Manual Trigger
+
+To force an immediate sync:
+
+```bash
+docker restart stargate-policy-sync
+```
+
 ## Vault
 
 ### Access Vault UI
@@ -503,6 +662,8 @@ psql -h localhost -U postgres -d smimekeys_client
 ## Policies (Rego)
 
 MXEngine uses OPA/Rego policies stored in PostgreSQL to determine mail delivery strategy.
+
+**Recommended:** Use `policy-sync` to automatically sync policies from a Git repository. See [Policy Sync](#policy-sync) section.
 
 ### View Current Policy
 
@@ -599,6 +760,7 @@ stargate/
 │   ├── backup.sh           # Manual database backup
 │   ├── purge.sh            # Delete all data (destructive!)
 │   ├── init-vault.sh       # Vault initialization (used by container)
+│   ├── init-idagent.sh     # WireGuard peer connection setup (used by container)
 │   └── init-policies.sh    # Policy initialization (used by container)
 ├── secrets/                # Created on first run (gitignored)
 │   └── vault-keys.json     # Vault unseal keys (BACK THIS UP!)
