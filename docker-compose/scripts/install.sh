@@ -144,6 +144,30 @@ generate_password() {
   tr -dc 'A-Za-z0-9' < /dev/urandom | head -c "$length"
 }
 
+# Generate UUID v7 (time-ordered UUID)
+# Format: tttttttt-tttt-7xxx-yxxx-xxxxxxxxxxxx
+# where t=timestamp(ms), 7=version, y=variant(8-b), x=random
+generate_uuid7() {
+  # Get current timestamp in milliseconds
+  local ts_ms=$(date +%s%3N)
+  # Convert to hex (48 bits = 12 hex chars)
+  local ts_hex=$(printf '%012x' "$ts_ms")
+  # Generate random bytes (need 10 bytes = 20 hex chars) using od (more portable than xxd)
+  local rand=$(head -c 10 /dev/urandom | od -An -tx1 | tr -d ' \n')
+  # Build UUID v7:
+  # Positions: tttttttt-tttt-7rrr-Vrrr-rrrrrrrrrrrr
+  # Extract parts
+  local time_high="${ts_hex:0:8}"
+  local time_mid="${ts_hex:8:4}"
+  local rand_a="${rand:0:3}"
+  local variant_byte=$((0x80 | (0x${rand:3:2} & 0x3f)))
+  local variant_hex=$(printf '%02x' "$variant_byte")
+  local rand_b="${rand:5:2}"
+  local rand_c="${rand:7:12}"
+  # Format: xxxxxxxx-xxxx-7xxx-yxxx-xxxxxxxxxxxx
+  echo "${time_high}-${time_mid}-7${rand_a}-${variant_hex}${rand_b}-${rand_c}"
+}
+
 # ==============================================================================
 # Customer Configuration Loading
 # ==============================================================================
@@ -207,9 +231,42 @@ load_customer_config() {
   
   LOKI_URL="${LOKI_URL:-https://loki.k8s.vereign-cdn.com}"
   
+  # WireGuard local configuration
+  WG_LOCAL_IP="${WG_LOCAL_IP:-10.0.0.1}"
+  WG_INTERFACE_PORT="${WG_INTERFACE_PORT:-51820}"
+  
+  # WireGuard peer configuration - validate required fields
+  if [ -z "$WG_PEER_PUBLIC_KEY" ]; then
+    missing_required+=("WG_PEER_PUBLIC_KEY")
+  fi
+  if [ -z "$WG_PEER_ENDPOINT" ]; then
+    missing_required+=("WG_PEER_ENDPOINT")
+  fi
+  
+  if [ ${#missing_required[@]} -gt 0 ]; then
+    echo "ERROR: Missing required configuration values:"
+    for field in "${missing_required[@]}"; do
+      echo "  - $field"
+    done
+    echo ""
+    echo "Please fill in all required fields in:"
+    echo "  $CONFIG_FILE"
+    exit 1
+  fi
+  
+  # Generate UUID v7 for connection if not provided
+  WG_PEER_CONNECTION_ID="${WG_PEER_CONNECTION_ID:-$(generate_uuid7)}"
+  WG_PEER_NAME="${WG_PEER_NAME:-default}"
+  WG_PEER_IP="${WG_PEER_IP:-10.0.0.2}"
+  WG_PEER_PORT="${WG_PEER_PORT:-9090}"
+  WG_PEER_ALLOWED_IPS="${WG_PEER_ALLOWED_IPS:-${WG_PEER_IP}/32}"
+  WG_PEER_EXTERNAL_ID="${WG_PEER_EXTERNAL_ID:-}"
+  WG_PEER_DESCRIPTION="${WG_PEER_DESCRIPTION:-WireGuard peer connection}"
+  
   echo "Customer: $CUSTOMER_NAME"
   echo "Deployment: $DEPLOYMENT_NAME"
   echo "Mail Domain: $MAIL_DOMAIN"
+  echo "WireGuard Peer: $WG_PEER_NAME ($WG_PEER_ENDPOINT)"
   echo ""
 }
 
@@ -263,6 +320,32 @@ POSTFIX_MYNETWORKS=${POSTFIX_MYNETWORKS:-}
 # Logging (Promtail -> Loki)
 LOKI_URL=$LOKI_URL
 PROMTAIL_HOSTNAME=$DEPLOYMENT_NAME
+
+# Policy Sync (optional - syncs policies from Git repo)
+# To enable: docker compose --profile policy-sync up -d
+POLICY_SYNC_VERSION=${POLICY_SYNC_VERSION:-dev}
+POLICY_SYNC_REPO_URL=${POLICY_SYNC_REPO_URL:-}
+POLICY_SYNC_REPO_USER=${POLICY_SYNC_REPO_USER:-}
+POLICY_SYNC_REPO_PASS=${POLICY_SYNC_REPO_PASS:-}
+POLICY_SYNC_REPO_BRANCH=${POLICY_SYNC_REPO_BRANCH:-}
+POLICY_SYNC_REPO_FOLDER=${POLICY_SYNC_REPO_FOLDER:-}
+POLICY_SYNC_INTERVAL=${POLICY_SYNC_INTERVAL:-1h}
+
+# WireGuard Local Configuration
+WG_LOCAL_IP=$WG_LOCAL_IP
+WG_INTERFACE_PORT=$WG_INTERFACE_PORT
+
+# WireGuard Peer Configuration
+# Connection to remote IDAgent for sealed message delivery
+WG_PEER_CONNECTION_ID=$WG_PEER_CONNECTION_ID
+WG_PEER_NAME=$WG_PEER_NAME
+WG_PEER_PUBLIC_KEY=$WG_PEER_PUBLIC_KEY
+WG_PEER_ENDPOINT=$WG_PEER_ENDPOINT
+WG_PEER_IP=$WG_PEER_IP
+WG_PEER_PORT=$WG_PEER_PORT
+WG_PEER_ALLOWED_IPS=$WG_PEER_ALLOWED_IPS
+WG_PEER_EXTERNAL_ID=$WG_PEER_EXTERNAL_ID
+WG_PEER_DESCRIPTION=$WG_PEER_DESCRIPTION
 EOF
 
   echo "Environment file created: $ENV_FILE"

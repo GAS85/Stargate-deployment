@@ -110,6 +110,37 @@ IDAGENT_VERSION=""
 MXENGINE_VERSION=""
 
 # ==============================================================================
+# OPTIONAL: Policy Sync Configuration
+# ==============================================================================
+# policy-sync syncs OPA/Rego policies from a Git repository to the database.
+# If POLICY_SYNC_REPO_URL is set, the service will be enabled.
+# Leave empty to disable policy-sync (policies must be managed manually).
+
+# Git repository URL containing policies (required to enable policy-sync)
+# Example: "https://github.com/your-org/policies.git"
+POLICY_SYNC_REPO_URL=""
+
+# Git username for private repositories (optional)
+POLICY_SYNC_REPO_USER=""
+
+# Git password/token for private repositories (optional)
+POLICY_SYNC_REPO_PASS=""
+
+# Git branch to checkout (optional, defaults to repo's default branch)
+POLICY_SYNC_REPO_BRANCH=""
+
+# Subfolder within repo to scan for policies (optional)
+# Policies must follow structure: {folder}/{group}/{name}/policy.rego
+POLICY_SYNC_REPO_FOLDER=""
+
+# Sync interval (optional, default: 1h, minimum: 1m)
+# Examples: "5m", "1h", "30m"
+POLICY_SYNC_INTERVAL=""
+
+# Policy sync service version (default: dev)
+POLICY_SYNC_VERSION=""
+
+# ==============================================================================
 # OPTIONAL: Advanced Mail Configuration
 # ==============================================================================
 # These are typically auto-configured from DNS. Only set if you need overrides.
