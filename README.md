@@ -33,9 +33,9 @@ Local Docker Compose setup for running Stargate services.
 - Ensure traffic is properly configured to reach Stargate instance
 
 **Supported Linux Distributions:**
-- RHEL 8,9,10 compatible distribution such as Alma Linux,Rocky Linux,Centos Stream
+- RHEL 8, 9 and 10 compatible distributions such as Alma Linux, Rocky Linux, Centos Stream
 - Ubuntu 22 and 24
-- Debian 11,12,13 
+- Debian 11, 12 and 13
 
 **Inbound Network Access (firewall must allow):**
 | Port | Protocol | Purpose |
