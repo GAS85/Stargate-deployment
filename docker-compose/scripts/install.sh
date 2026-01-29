@@ -57,7 +57,7 @@ install_docker() {
   else 	
 	  sudo $PKGMGR update -y
 	  sudo $PKGMGR remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine podman runc
-	  rpm --import https://download.docker.com/linux/rhel/gpg
+	  sudo rpm --import https://download.docker.com/linux/rhel/gpg
 	  sudo $PKGMGR -y install dnf-plugins-core
 	  sudo $PKGMGR config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
   fi
