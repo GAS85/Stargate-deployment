@@ -56,17 +56,17 @@ install_docker() {
 	  sudo $PKGMGR update -y
   else 	
 	  sudo $PKGMGR update -y
-	  $PKGMGR remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine podman runc
+	  sudo $PKGMGR remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine podman runc
 	  rpm --import https://download.docker.com/linux/rhel/gpg
-	  $PKGMGR -y install dnf-plugins-core
-	  $PKGMGR config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
+	  sudo $PKGMGR -y install dnf-plugins-core
+	  sudo $PKGMGR config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
   fi
   # Install Docker
   sudo $PKGMGR install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin jq
   echo "Docker installed successfully!"
+  sudo systemctl enable --now docker
   docker --version
   docker compose version
- systemctl enable --now docker
 }
 
 check_dependencies() {
