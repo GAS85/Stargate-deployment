@@ -30,13 +30,17 @@ Local Docker Compose setup for running Stargate services.
 ### Prerequisites
 
 **Server Requirements:**
-- Ubuntu 24.04 LTS (recommended)
 - 2 CPU cores (minimum)
 - 4 GB RAM (minimum)
 - 20 GB storage (minimum)
 - Docker will be installed automatically if missing
 - Ensure there is an internet connection on the machine where you are installing Stargate services
 - Ensure traffic is properly configured to reach Stargate instance
+
+**Supported Linux Distributions:**
+- RHEL 8, 9 and 10 compatible distributions such as Alma Linux, Rocky Linux, Centos Stream
+- Ubuntu 22 and 24
+- Debian 11, 12 and 13
 
 **Inbound Network Access (firewall must allow):**
 | Port | Protocol | Purpose |
