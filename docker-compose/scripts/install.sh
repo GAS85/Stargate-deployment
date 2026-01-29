@@ -1,12 +1,25 @@
 #!/bin/bash
 set -e
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 SECRETS_DIR="$PROJECT_DIR/secrets"
 KEYS_FILE="$SECRETS_DIR/vault-keys.json"
 ENV_FILE="$PROJECT_DIR/.env"
 CONFIG_FILE="$PROJECT_DIR/customer-config.sh"
+
+# Determine Linux distribution:
+if [ -f /etc/os-release ]; then
+	DIST_ID=$(grep ^ID= /etc/os-release |cut -f2 -d=|sed s/\"//g)
+else
+	echo "File /etc/os-release not found, cannot determine Linux distribution."
+	exit 1
+fi
+
+if [[ $DIST_ID == debian || $DIST_ID == ubuntu || $DIST_ID == linuxmint || $DIST_ID == kali  ]] ; then
+	PKGMGR=apt
+else
+	PKGMGR=dnf
+fi
 
 cd "$PROJECT_DIR"
 
@@ -25,81 +38,37 @@ if [ -f "$KEYS_FILE" ]; then
   exit 1
 fi
 
-# Function to configure firewall
-configure_firewall() {
-  echo ""
-  echo "============================================"
-  echo "  Configuring Firewall"
-  echo "============================================"
-  echo ""
-  
-  # Check if ufw is available
-  if ! command -v ufw &> /dev/null; then
-    echo "UFW not found, installing..."
-    sudo apt update
-    sudo apt install -y ufw
-  fi
-  
-  # Enable UFW if not already enabled
-  if ! sudo ufw status | grep -q "Status: active"; then
-    echo "Enabling UFW..."
-    # Allow SSH first to prevent lockout
-    sudo ufw allow ssh comment "SSH"
-    sudo ufw --force enable
-  fi
-  
-  # Required inbound ports
-  echo "Opening required ports..."
-  
-  # SMTP - receiving mail from external servers
-  sudo ufw allow 25/tcp comment "SMTP inbound"
-  
-  # HTTP - seal callback from remote sealer service
-  sudo ufw allow 8084/tcp comment "MXEngine seal callback"
-  
-  # WireGuard - encrypted tunnel for agent-to-agent communication
-  sudo ufw allow 51820/udp comment "WireGuard tunnel"
-  
-  echo ""
-  echo "Firewall configured. Current status:"
-  sudo ufw status verbose | grep -E "^(Status|25|8084|51820)"
-  echo ""
-  echo "Note: UFW rules persist after reboot."
-  echo ""
-}
-
-# Function to install Docker on Ubuntu
 install_docker() {
   echo "Installing Docker from official repository..."
-  
-  # Remove old packages
-  sudo apt remove -y docker.io docker-doc docker-compose podman-docker containerd runc 2>/dev/null || true
-  
-  # Install prerequisites
-  sudo apt update
-  sudo apt install -y ca-certificates curl
-  
-  # Add Docker's official GPG key
-  sudo install -m 0755 -d /etc/apt/keyrings
-  sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
-  sudo chmod a+r /etc/apt/keyrings/docker.asc
-  
-  # Add the repository
-  echo \
-    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
-    $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-    sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-  
+  if [[ $PKGMGR == apt ]] ; then
+	  sudo $PKGMGR update -y && sudo $PKGMGR upgrade -y
+	  sudo $PKGMGR remove -y docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc 2>/dev/null || true
+	  sudo $PKGMGR install -y ca-certificates curl
+	  # Add Docker's official GPG key
+	  sudo install -m 0755 -d /etc/apt/keyrings
+	  sudo curl -fsSL https://download.docker.com/linux/$DIST_ID/gpg -o /etc/apt/keyrings/docker.asc
+	  sudo chmod a+r /etc/apt/keyrings/docker.asc
+	  # Add the repository
+	    echo \
+		    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/$DIST_ID \
+		    $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+		    sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+	  sudo $PKGMGR update -y
+  else 	
+	  sudo $PKGMGR update -y
+	  sudo $PKGMGR remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine podman runc
+	  sudo rpm --import https://download.docker.com/linux/rhel/gpg
+	  sudo $PKGMGR -y install dnf-plugins-core
+	  sudo $PKGMGR config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
+  fi
   # Install Docker
-  sudo apt update
-  sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin jq
-  
+  sudo $PKGMGR install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin jq
   echo "Docker installed successfully!"
+  sudo systemctl enable --now docker
   docker --version
   docker compose version
 }
 
-# Check for required commands
 check_dependencies() {
   local missing=()
   
@@ -127,11 +96,7 @@ check_dependencies() {
 update_env_token() {
   local token="$1"
   if grep -q "^VAULT_TOKEN=" "$ENV_FILE"; then
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-      sed -i '' "s/^VAULT_TOKEN=.*/VAULT_TOKEN=$token/" "$ENV_FILE"
-    else
       sed -i "s/^VAULT_TOKEN=.*/VAULT_TOKEN=$token/" "$ENV_FILE"
-    fi
   else
     echo "VAULT_TOKEN=$token" >> "$ENV_FILE"
   fi
@@ -470,8 +435,6 @@ setup_backup_cron() {
 # Check dependencies first
 check_dependencies
 
-# Configure firewall
-configure_firewall
 
 # Load and validate customer configuration
 load_customer_config
