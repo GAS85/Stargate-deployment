@@ -84,7 +84,8 @@ nano customer-config.sh
 - `CERT_COUNTRIES` - Country codes for certificate
 
 **WireGuard settings (for agent-to-agent communication):**
-- `WG_LOCAL_IP` - Local WireGuard IP (**MUST BE UNIQUE** per deployment, e.g., 10.0.0.1, 10.0.0.2)
+- `WG_PRIVATE_KEY` - WireGuard private key (auto-generated on first install, then saved to config)
+- `WG_LOCAL_IP` - Local WireGuard IP (**MUST BE UNIQUE** - sync with Vereign to avoid conflicts)
 - `WG_INTERFACE_PORT` - WireGuard port (default: 51820)
 - `WG_PEER_PUBLIC_KEY` - Remote peer's WireGuard public key
 - `WG_PEER_ENDPOINT` - Remote peer endpoint (host:port)
@@ -150,7 +151,8 @@ This stops containers but preserves all data.
 | `install.sh` | First-time setup (reads customer-config.sh, Docker, Vault, S/MIME key, cron backup) |
 | `start.sh` | Start services and unseal Vault |
 | `stop.sh` | Stop containers (data preserved) |
-| `backup.sh` | Manual PostgreSQL backup to `./backups/` |
+| `backup.sh` | Full backup (database, Vault keys, config, certificates) |
+| `restore.sh` | Restore from backup archive (works on fresh machine) |
 | `purge.sh` | Delete ALL data (requires confirmation) |
 | `init-vault.sh` | Vault initialization (used by vault-init container) |
 | `init-idagent.sh` | WireGuard peer connection setup (used by idagent-init container) |
@@ -171,22 +173,51 @@ This stops containers but preserves all data.
 - Backups stored in `./backups/` as timestamped `.tar.gz` files
 - Old backups (>7 days) are automatically cleaned up
 
+### What's Included in Backups
+- **Full PostgreSQL dump** (all databases with users and permissions)
+- **Individual database dumps** (for partial restore if needed)
+- **Vault keys** (`vault-keys.json` for unsealing)
+- **Customer configuration** (`customer-config.sh` with WireGuard key)
+- **S/MIME CSR and certificates** (any `.crt`, `.pem`, `.cer` files)
+- **Backup manifest** (`manifest.json` with metadata)
+
 ### Manual Backup
 
 ```bash
 ./scripts/backup.sh
 ```
 
-Creates a compressed archive of all PostgreSQL databases.
+Creates a compressed archive in `./backups/YYYYMMDD_HHMMSS.tar.gz`.
 
 ### Restore from Backup
 
+To restore on a **new machine** or after a **purge**:
+
+```bash
+# Copy the backup archive to the new machine, then:
+./scripts/restore.sh backups/20260130_143022.tar.gz
+```
+
+The restore script will:
+1. Stop any running services
+2. Extract and validate the backup
+3. Install Docker if needed
+4. Restore customer configuration
+5. Start infrastructure services (PostgreSQL, Vault, MinIO)
+6. Restore the database
+7. Unseal Vault with backed-up keys
+8. Start application services
+
+### Partial Restore (single database)
+
+If you only need to restore one database:
+
 ```bash
 # Extract backup
-tar -xzf backups/20260109_020000.tar.gz -C backups/
+tar -xzf backups/20260130_143022.tar.gz -C /tmp/
 
 # Restore a specific database
-cat backups/20260109_020000/mxengine.sql | docker exec -i stargate-postgres psql -U postgres -d mxengine
+cat /tmp/20260130_143022/database/mxengine.sql | docker exec -i stargate-postgres psql -U postgres -d mxengine
 ```
 
 ## Configuration
@@ -504,6 +535,7 @@ WireGuard settings in `customer-config.sh`:
 
 ```bash
 # Local WireGuard settings (this instance)
+WG_PRIVATE_KEY=""               # Auto-generated, then saved back to config
 WG_LOCAL_IP="10.0.0.1"          # MUST BE UNIQUE per deployment
 WG_INTERFACE_PORT="51820"        # Default WireGuard port
 
@@ -516,7 +548,7 @@ WG_PEER_PORT="9090"                                  # Communication port
 WG_PEER_EXTERNAL_ID="example.com"                    # Used for routing decisions
 ```
 
-**Important:** Each Stargate deployment MUST have a unique `WG_LOCAL_IP` within the WireGuard network (e.g., 10.0.0.1, 10.0.0.2, 10.0.0.3, etc.).
+**Important:** Each Stargate deployment *MUST HAVE A UNIQUE IP* in the WireGuard network. Best sync with Vereign to avoid IP conflicts.
 
 ### Peer Connection Setup
 
@@ -745,7 +777,7 @@ docker compose logs <service-name>
 stargate/
 ├── docker-compose.yml      # Main compose file
 ├── .env                    # Environment variables (auto-created)
-├── .env.example            # Template for .env
+├── customer-config.sh      # Customer-specific settings
 ├── README.md               # This file
 ├── config/
 │   └── vault/
@@ -761,14 +793,16 @@ stargate/
 │   ├── install.sh          # First-time installation
 │   ├── start.sh            # Start services + unseal Vault
 │   ├── stop.sh             # Stop containers (preserves data)
-│   ├── backup.sh           # Manual database backup
+│   ├── backup.sh           # Full backup (DB, Vault, config, certs)
+│   ├── restore.sh          # Restore from backup archive
 │   ├── purge.sh            # Delete all data (destructive!)
 │   ├── init-vault.sh       # Vault initialization (used by container)
 │   ├── init-idagent.sh     # WireGuard peer connection setup (used by container)
 │   └── init-policies.sh    # Policy initialization (used by container)
 ├── secrets/                # Created on first run (gitignored)
-│   └── vault-keys.json     # Vault unseal keys (BACK THIS UP!)
-└── backups/                # Database backups (gitignored)
+│   ├── vault-keys.json     # Vault unseal keys (BACK THIS UP!)
+│   └── signing-key.csr     # S/MIME certificate signing request
+└── backups/                # Full backups (gitignored)
     └── *.tar.gz
 ```
 

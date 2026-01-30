@@ -118,10 +118,15 @@ LOKI_URL="https://loki.k8s.vereign-cdn.com"
 # ==============================================================================
 # Local WireGuard settings for this IDAgent instance.
 
+# WireGuard private key (optional - auto-generated if empty, then saved back here)
+# After first install, this will be populated automatically so the key persists
+# across VM recreations. KEEP THIS FILE BACKED UP!
+WG_PRIVATE_KEY=""
+
 # Local WireGuard IP address for this instance (MUST BE UNIQUE per deployment)
-# Each Stargate deployment must have a unique IP in the WireGuard network.
+# Each Stargate deployment *MUST HAVE A UNIQUE IP* in the WireGuard network.
 # Example: 10.0.0.1, 10.0.0.2, 10.0.0.3, etc.
-WG_LOCAL_IP="10.0.0.233"
+WG_LOCAL_IP="10.0.0.4"
 
 # WireGuard interface port (default: 51820)
 WG_INTERFACE_PORT="51820"

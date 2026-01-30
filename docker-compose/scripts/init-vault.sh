@@ -98,6 +98,15 @@ else
   
   echo "Vault mounts created!"
   
+  # Write WireGuard private key to Vault if provided
+  if [ -n "$WG_PRIVATE_KEY" ]; then
+    echo "Writing pre-configured WireGuard private key to Vault..."
+    vault kv put -address=http://vault:8200 secret-idagent/wg_private_key wg_private_key="$WG_PRIVATE_KEY"
+    echo "WireGuard private key written to Vault!"
+  else
+    echo "No WG_PRIVATE_KEY provided - idagent will generate a new key on first start."
+  fi
+  
   # Save root token to .env file hint
   echo ""
   echo "=========================================="

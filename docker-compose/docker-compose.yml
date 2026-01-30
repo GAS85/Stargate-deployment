@@ -113,6 +113,8 @@ services:
       VAULT_ADDR: "http://vault:8200"
       # Predefined root token for reproducible deployments (used only during first init)
       VAULT_ROOT_TOKEN: ${VAULT_TOKEN:-}
+      # WireGuard private key (optional - if set, will be written to Vault for idagent)
+      WG_PRIVATE_KEY: ${WG_PRIVATE_KEY:-}
     volumes:
       - ./scripts:/scripts:ro
       - ./secrets:/secrets
