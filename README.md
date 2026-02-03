@@ -220,6 +220,64 @@ tar -xzf backups/20260130_143022.tar.gz -C /tmp/
 cat /tmp/20260130_143022/database/mxengine.sql | docker exec -i stargate-postgres psql -U postgres -d mxengine
 ```
 
+## Updating Service Images
+
+### Update a Single Service
+
+Edit the version in `.env`, then pull and recreate:
+
+```bash
+# Edit version in .env
+sed -i 's/MXENGINE_VERSION=.*/MXENGINE_VERSION=v0.0.31/' .env
+
+# Pull new image and recreate the service
+docker compose pull mxengine
+docker compose up -d --force-recreate mxengine
+```
+
+### Quick Test (without editing .env)
+
+Override the version directly:
+
+```bash
+MXENGINE_VERSION=v0.0.31 docker compose up -d --force-recreate mxengine
+```
+
+### Update Multiple Services
+
+```bash
+# Edit versions in .env, then:
+docker compose pull smimekeys-client policy idagent mxengine
+docker compose up -d --force-recreate smimekeys-client policy idagent mxengine
+```
+
+### Update All Services
+
+```bash
+# Pull all latest images
+docker compose pull
+
+# Recreate all services
+docker compose up -d --force-recreate
+```
+
+### Cleanup Old Images
+
+After updates, remove unused images to free disk space:
+
+```bash
+docker image prune -f
+```
+
+### Rollback
+
+To rollback, edit `.env` to the previous version and recreate:
+
+```bash
+sed -i 's/MXENGINE_VERSION=.*/MXENGINE_VERSION=v0.0.30/' .env
+docker compose up -d --force-recreate mxengine
+```
+
 ## Configuration
 
 The `.env` file is automatically created from `.env.example` on first run. Edit it to customize:
@@ -731,7 +789,7 @@ The `init-policies.sh` script uses upsert (`ON CONFLICT ... DO UPDATE`), so it s
 ### Policy Location
 
 - **Local file:** `policies/alpha/deliveryStrategy/policy.rego`
-- **MXEngine config:** `POLICY_OUTBOUND: "alpha/deliveryStrategy"`
+- **MXEngine config:** `POLICY_OUTBOUND: "outbound/delivery_strategy"`
 - **Database:** `policy` database, `policies` table
 
 ## Logs
