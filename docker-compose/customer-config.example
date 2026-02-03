@@ -125,6 +125,7 @@ WG_PRIVATE_KEY=""
 
 # Local WireGuard IP address for this instance (MUST BE UNIQUE per deployment)
 # Each Stargate deployment *MUST HAVE A UNIQUE IP* in the WireGuard network.
+# Best sync with Vereign to avoid IP conflicts.
 # Example: 10.0.0.1, 10.0.0.2, 10.0.0.3, etc.
 WG_LOCAL_IP="10.0.0.4"
 
