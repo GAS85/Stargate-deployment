@@ -81,10 +81,10 @@ S3_BUCKET_NAME="stargate-bucket"
 # Use "dev" for the latest development builds,
 # or specify exact versions like "v0.0.3"
 
-SMIMEKEYS_VERSION="dev"
-POLICY_VERSION="dev"
-IDAGENT_VERSION="dev"
-MXENGINE_VERSION="dev"
+SMIMEKEYS_VERSION="v0.0.3"
+POLICY_VERSION="v0.0.4"
+IDAGENT_VERSION="v0.0.5-branch"
+MXENGINE_VERSION="v0.0.32"
 
 # ==============================================================================
 # OPTIONAL: Advanced Mail Configuration
@@ -109,7 +109,7 @@ POLICY_SYNC_REPO_PASS=""
 POLICY_SYNC_REPO_BRANCH=""
 POLICY_SYNC_REPO_FOLDER=""
 POLICY_SYNC_INTERVAL="1h"
-POLICY_SYNC_VERSION="latest"
+POLICY_SYNC_VERSION="dev"
 
 # ==============================================================================
 # OPTIONAL: Monitoring Configuration
