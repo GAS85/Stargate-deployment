@@ -150,8 +150,8 @@ WG_PEER_CONNECTION_ID=""
 # Human-readable name for this connection
 WG_PEER_NAME="example-company-connection"
 
-# WireGuard public key of the remote peer (REQUIRED - get from Vereign)
-WG_PEER_PUBLIC_KEY=""
+# WireGuard public key of the REMOTE peer (REQUIRED - get from Vereign)
+WG_PEER_PUBLIC_KEY="WhTN0ekf/jT+wAv9kIIHmwMLPWr9Gv1MXxnvAkJKbHU="
 
 # Remote peer endpoint (host:port) (REQUIRED - get from Vereign)
 WG_PEER_ENDPOINT=""

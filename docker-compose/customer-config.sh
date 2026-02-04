@@ -204,8 +204,8 @@ WG_PEER_CONNECTION_ID=""
 # Human-readable name for this connection
 WG_PEER_NAME=""
 
-# WireGuard public key of the remote peer (REQUIRED)
-WG_PEER_PUBLIC_KEY=""
+# WireGuard public key of the REMOTE peer (REQUIRED)
+WG_PEER_PUBLIC_KEY="WhTN0ekf/jT+wAv9kIIHmwMLPWr9Gv1MXxnvAkJKbHU="
 
 # Remote peer endpoint (host:port) (REQUIRED)
 WG_PEER_ENDPOINT=""
