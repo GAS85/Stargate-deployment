@@ -432,6 +432,37 @@ setup_backup_cron() {
   mkdir -p "$PROJECT_DIR/backups"
 }
 
+# Function to save Vault token to customer-config.sh for persistence
+save_vault_token_to_config() {
+  local token="$1"
+  
+  echo ""
+  echo "============================================"
+  echo "  Saving Vault Token to Config"
+  echo "============================================"
+  echo ""
+  
+  # Check if VAULT_TOKEN is empty or missing in customer-config.sh
+  if grep -q '^VAULT_TOKEN=""' "$CONFIG_FILE" || grep -q '^VAULT_TOKEN=$' "$CONFIG_FILE" || ! grep -q '^VAULT_TOKEN=' "$CONFIG_FILE"; then
+    # Update or add the token
+    if grep -q '^VAULT_TOKEN=' "$CONFIG_FILE"; then
+      sed -i "s|^VAULT_TOKEN=.*|VAULT_TOKEN=\"$token\"|" "$CONFIG_FILE"
+    else
+      # Add to file if not present
+      echo "" >> "$CONFIG_FILE"
+      echo "VAULT_TOKEN=\"$token\"" >> "$CONFIG_FILE"
+    fi
+    echo "Vault token saved to customer-config.sh"
+    echo ""
+    echo "  Token: ${token:0:15}...${token: -10}"
+    echo ""
+    echo "  IMPORTANT: Back up customer-config.sh before recreating the VM!"
+    echo "  The same token will be used on restore."
+  else
+    echo "Vault token already configured in customer-config.sh"
+  fi
+}
+
 # Function to extract WireGuard key from Vault and save to customer-config.sh
 save_wireguard_key_to_config() {
   echo ""
@@ -532,6 +563,9 @@ if [ -f "$KEYS_FILE" ]; then
   echo "Keys saved to: $KEYS_FILE"
   echo "IMPORTANT: Back up this file securely!"
   echo ""
+  
+  # Save Vault token to customer-config.sh for persistence across VM recreations
+  save_vault_token_to_config "$ROOT_TOKEN"
   
   # Restart application services to pick up the new VAULT_TOKEN
   echo "Restarting application services with Vault token..."

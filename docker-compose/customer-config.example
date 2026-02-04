@@ -50,13 +50,14 @@ CERT_COMMON_NAME="Example Corp Mail"
 CERT_COUNTRIES="US"
 
 # ==============================================================================
-# OPTIONAL: Vault Configuration
+# AUTO-GENERATED: Vault Configuration
 # ==============================================================================
-# Predefined root token (used during first Vault initialization)
-# This ensures the same token is used across fresh deployments
-# The token never expires. Leave empty to let Vault generate a random token.
+# The Vault root token is auto-generated during first installation.
+# After install.sh runs, this value will be populated automatically.
+# DO NOT set this manually - Vault 1.19+ does not support custom root tokens.
+# The token is saved here so it persists across VM recreations.
 
-VAULT_TOKEN="hvs.example-root-token-v1"
+VAULT_TOKEN=""
 
 # ==============================================================================
 # OPTIONAL: Database Configuration

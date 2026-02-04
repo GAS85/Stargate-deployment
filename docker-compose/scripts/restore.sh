@@ -403,7 +403,7 @@ echo "============================================"
 echo ""
 
 echo "Starting PostgreSQL, Vault, MinIO, Postfix..."
-docker compose up -d postgres vault minio postfix
+docker compose up -d postgres vault minio postfix-relay
 
 echo "Waiting for PostgreSQL to be ready..."
 for i in {1..30}; do
@@ -447,37 +447,136 @@ done
 echo ""
 
 # ==============================================================================
-# 9. Unseal Vault
+# 9. Handle Vault (unseal existing or initialize fresh)
 # ==============================================================================
 echo "============================================"
-echo "  9. Unsealing Vault"
+echo "  9. Setting up Vault"
 echo "============================================"
 echo ""
 
-if [ -f "$SECRETS_DIR/vault-keys.json" ]; then
-  echo "Waiting for Vault to be ready..."
-  for i in {1..30}; do
-    if curl -s http://localhost:8200/v1/sys/health > /dev/null 2>&1; then
-      break
+echo "Waiting for Vault to be ready..."
+for i in {1..30}; do
+  if curl -s http://localhost:8200/v1/sys/health > /dev/null 2>&1; then
+    break
+  fi
+  sleep 2
+done
+
+# Check if Vault is initialized
+VAULT_STATUS=$(curl -s http://localhost:8200/v1/sys/seal-status)
+INITIALIZED=$(echo "$VAULT_STATUS" | jq -r '.initialized')
+SEALED=$(echo "$VAULT_STATUS" | jq -r '.sealed')
+
+if [ "$INITIALIZED" = "true" ]; then
+  echo "  Vault is already initialized"
+  
+  if [ "$SEALED" = "true" ]; then
+    if [ -f "$SECRETS_DIR/vault-keys.json" ]; then
+      echo "  Unsealing Vault with restored keys..."
+      UNSEAL_KEYS=$(jq -r '.unseal_keys_b64[]' "$SECRETS_DIR/vault-keys.json")
+      for key in $UNSEAL_KEYS; do
+        curl -s --request POST --data "{\"key\": \"$key\"}" http://localhost:8200/v1/sys/unseal > /dev/null
+      done
+      echo "  ✓ Vault unsealed"
+    else
+      echo "  ✗ ERROR: Vault is sealed but no keys file found!"
+      echo "    Cannot unseal Vault automatically."
+      exit 1
     fi
+  else
+    echo "  ✓ Vault is already unsealed"
+  fi
+else
+  # Fresh Vault - needs initialization
+  echo "  Vault is not initialized (fresh VM)"
+  echo "  Running Vault initialization..."
+  
+  # Run vault-init to initialize Vault
+  docker compose up vault-init
+  
+  # Wait for vault-init to complete
+  while docker compose ps vault-init 2>/dev/null | grep -q "running"; do
     sleep 2
   done
   
-  # Check if Vault is sealed
-  SEALED=$(curl -s http://localhost:8200/v1/sys/seal-status | jq -r '.sealed')
-  
-  if [ "$SEALED" = "true" ]; then
-    echo "Unsealing Vault..."
-    UNSEAL_KEYS=$(jq -r '.unseal_keys_b64[]' "$SECRETS_DIR/vault-keys.json")
-    for key in $UNSEAL_KEYS; do
-      curl -s --request POST --data "{\"key\": \"$key\"}" http://localhost:8200/v1/sys/unseal > /dev/null
-    done
-    echo "  ✓ Vault unsealed"
+  # Check if new keys were generated
+  if [ -f "$SECRETS_DIR/vault-keys.json" ]; then
+    NEW_TOKEN=$(jq -r '.root_token' "$SECRETS_DIR/vault-keys.json")
+    
+    echo "  ✓ Vault initialized with new token"
+    echo ""
+    echo "  IMPORTANT: New Vault token generated!"
+    echo "  Token: $NEW_TOKEN"
+    echo ""
+    
+    # Update .env with new token
+    sed -i "s/^VAULT_TOKEN=.*/VAULT_TOKEN=$NEW_TOKEN/" "$ENV_FILE"
+    echo "  ✓ Updated .env with new token"
+    
+    # Update customer-config.sh with new token
+    if grep -q '^VAULT_TOKEN=' "$CONFIG_FILE"; then
+      sed -i "s|^VAULT_TOKEN=.*|VAULT_TOKEN=\"$NEW_TOKEN\"|" "$CONFIG_FILE"
+    else
+      echo "" >> "$CONFIG_FILE"
+      echo "VAULT_TOKEN=\"$NEW_TOKEN\"" >> "$CONFIG_FILE"
+    fi
+    echo "  ✓ Updated customer-config.sh with new token"
+    
+    # Update ROOT_TOKEN for any subsequent operations
+    ROOT_TOKEN="$NEW_TOKEN"
+    
+    # -----------------------------------------------------------------
+    # Restore Vault secrets from backup (if present)
+    # -----------------------------------------------------------------
+    if [ -d "$RESTORE_DIR/vault" ]; then
+      echo ""
+      echo "  Restoring Vault secrets from backup..."
+      
+      RESTORED_SECRETS=0
+      
+      # Iterate through each mount directory
+      for mount_dir in "$RESTORE_DIR/vault"/*/; do
+        [ -d "$mount_dir" ] || continue
+        
+        mount_name=$(basename "$mount_dir")
+        echo "    Restoring: $mount_name..."
+        
+        # Iterate through each secret JSON file
+        for secret_file in "$mount_dir"*.json; do
+          [ -f "$secret_file" ] || continue
+          
+          key_name=$(basename "$secret_file" .json)
+          
+          # Extract just the data portion from the backup
+          SECRET_DATA=$(jq -r '.data.data // empty' "$secret_file" 2>/dev/null)
+          
+          if [ -n "$SECRET_DATA" ]; then
+            # Write the secret back to Vault
+            if echo "$SECRET_DATA" | docker exec -i -e VAULT_TOKEN="$ROOT_TOKEN" stargate-vault \
+              vault kv put -address=http://127.0.0.1:8200 "$mount_name/$key_name" - > /dev/null 2>&1; then
+              echo "      ✓ $key_name"
+              ((RESTORED_SECRETS++)) || true
+            else
+              echo "      ✗ Failed to restore $key_name"
+            fi
+          fi
+        done
+      done
+      
+      if [ $RESTORED_SECRETS -gt 0 ]; then
+        echo ""
+        echo "  ✓ $RESTORED_SECRETS Vault secrets restored"
+      fi
+    else
+      echo ""
+      echo "  ⚠ No Vault secrets in backup (older backup format)"
+      echo "    S/MIME keys and other secrets will need to be regenerated"
+    fi
   else
-    echo "  - Vault is already unsealed (or not initialized)"
+    echo "  ✗ ERROR: Vault initialization failed!"
+    echo "    Check logs: docker compose logs vault-init"
+    exit 1
   fi
-else
-  echo "  ✗ No vault-keys.json - Vault needs manual initialization"
 fi
 echo ""
 
@@ -543,6 +642,9 @@ echo "  ------------------"
 echo "  ✓ Customer configuration"
 echo "  ✓ Database (all tables and data)"
 echo "  ✓ Vault keys"
+if [ -d "$RESTORE_DIR/vault" ]; then
+  echo "  ✓ Vault secrets (S/MIME keys, WG keys, etc.)"
+fi
 if [ $CERT_COUNT -gt 0 ]; then
   echo "  ✓ S/MIME certificates ($CERT_COUNT files)"
 fi

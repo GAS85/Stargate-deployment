@@ -148,11 +148,87 @@ if [ $CERT_COUNT -eq 0 ]; then
 fi
 
 # ==============================================================================
-# 5. Create Backup Manifest
+# 5. Vault Secrets Backup
 # ==============================================================================
 echo ""
 echo "============================================"
-echo "  5. Creating Backup Manifest"
+echo "  5. Backing up Vault Secrets"
+echo "============================================"
+echo ""
+
+mkdir -p "$BACKUP_SUBDIR/vault"
+
+# Check if Vault is running and we have a token
+VAULT_TOKEN="${VAULT_TOKEN:-}"
+if [ -z "$VAULT_TOKEN" ] && [ -f "$SECRETS_DIR/vault-keys.json" ]; then
+  VAULT_TOKEN=$(jq -r '.root_token' "$SECRETS_DIR/vault-keys.json" 2>/dev/null || echo "")
+fi
+
+if [ -z "$VAULT_TOKEN" ]; then
+  echo "  ✗ WARNING: No Vault token available!"
+  echo "    Vault secrets will NOT be backed up."
+  VAULT_SECRETS_COUNT=0
+else
+  # Check if Vault is accessible
+  if ! docker exec stargate-vault vault status -address=http://127.0.0.1:8200 > /dev/null 2>&1; then
+    echo "  ✗ WARNING: Vault is not accessible!"
+    echo "    Vault secrets will NOT be backed up."
+    VAULT_SECRETS_COUNT=0
+  else
+    VAULT_SECRETS_COUNT=0
+    
+    # List of KV mounts to backup
+    VAULT_MOUNTS=("secret-smimekeys-client" "secret-idagent" "secret-policy" "secret-mxengine")
+    
+    for mount in "${VAULT_MOUNTS[@]}"; do
+      echo "  Backing up: $mount..."
+      
+      # List all keys in the mount
+      KEYS=$(docker exec -e VAULT_TOKEN="$VAULT_TOKEN" stargate-vault \
+        vault kv list -address=http://127.0.0.1:8200 -format=json "$mount" 2>/dev/null || echo "[]")
+      
+      if [ "$KEYS" = "[]" ] || [ -z "$KEYS" ]; then
+        echo "    - No secrets found"
+        continue
+      fi
+      
+      # Create mount directory
+      mkdir -p "$BACKUP_SUBDIR/vault/$mount"
+      
+      # Export each secret
+      for key in $(echo "$KEYS" | jq -r '.[]' 2>/dev/null); do
+        # Skip directory entries (ending with /)
+        if [[ "$key" == */ ]]; then
+          continue
+        fi
+        
+        # Get the secret data
+        SECRET_DATA=$(docker exec -e VAULT_TOKEN="$VAULT_TOKEN" stargate-vault \
+          vault kv get -address=http://127.0.0.1:8200 -format=json "$mount/$key" 2>/dev/null || echo "{}")
+        
+        if [ -n "$SECRET_DATA" ] && [ "$SECRET_DATA" != "{}" ]; then
+          echo "$SECRET_DATA" > "$BACKUP_SUBDIR/vault/$mount/${key}.json"
+          echo "    ✓ $key"
+          ((VAULT_SECRETS_COUNT++)) || true
+        fi
+      done
+    done
+    
+    if [ $VAULT_SECRETS_COUNT -gt 0 ]; then
+      echo ""
+      echo "  ✓ $VAULT_SECRETS_COUNT Vault secrets backed up"
+    else
+      echo "  - No Vault secrets found to backup"
+    fi
+  fi
+fi
+
+# ==============================================================================
+# 6. Create Backup Manifest
+# ==============================================================================
+echo ""
+echo "============================================"
+echo "  6. Creating Backup Manifest"
 echo "============================================"
 echo ""
 
@@ -168,6 +244,7 @@ cat > "$BACKUP_SUBDIR/manifest.json" << EOF
       "individual_dumps": $(ls "$BACKUP_SUBDIR/database"/*.sql 2>/dev/null | wc -l)
     },
     "vault_keys": $([ -f "$BACKUP_SUBDIR/secrets/vault-keys.json" ] && echo "true" || echo "false"),
+    "vault_secrets": ${VAULT_SECRETS_COUNT:-0},
     "customer_config": $([ -f "$BACKUP_SUBDIR/config/customer-config.sh" ] && echo "true" || echo "false"),
     "smime_csr": $([ -f "$BACKUP_SUBDIR/secrets/signing-key.csr" ] && echo "true" || echo "false"),
     "certificates": $CERT_COUNT
@@ -178,11 +255,11 @@ EOF
 echo "  ✓ manifest.json created"
 
 # ==============================================================================
-# 6. Create Compressed Archive
+# 7. Create Compressed Archive
 # ==============================================================================
 echo ""
 echo "============================================"
-echo "  6. Creating Compressed Archive"
+echo "  7. Creating Compressed Archive"
 echo "============================================"
 echo ""
 
@@ -210,7 +287,8 @@ echo "  Contents:"
 echo "  ---------"
 echo "  • Full PostgreSQL dump (all databases)"
 echo "  • Individual database dumps"
-echo "  • Vault unseal keys"
+echo "  • Vault unseal keys and tokens"
+echo "  • Vault KV secrets (S/MIME keys, WG keys, etc.)"
 echo "  • Customer configuration (with WireGuard key)"
 echo "  • S/MIME CSR and certificates"
 echo ""
