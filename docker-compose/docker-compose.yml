@@ -351,7 +351,7 @@ services:
       
       # Policy
       POLICY_ADDR: "http://policy:8080"
-      POLICY_OUTBOUND: "outbound/delivery_strategy"
+      POLICY_OUTBOUND: "outbound/delivery"
       
       # Outbound (disabled for local)
       OUTBOUND_WORKERS: "5"
