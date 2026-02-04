@@ -144,6 +144,47 @@ The start script:
 
 This stops containers but preserves all data.
 
+## Data Persistence
+
+All data is stored in Docker volumes and **persists across restarts**.
+
+| Service | Volume | Data |
+|---------|--------|------|
+| PostgreSQL | `postgres_data` | All databases (smimekeys, policy, idagent, mxengine) |
+| Vault | `vault_data` | Encryption keys, secrets, S/MIME keys |
+| MinIO | `minio_data` | Object storage (messages, attachments) |
+| Postfix | `postfix_spool` | Mail queue |
+
+### Safe Operations (data preserved)
+
+```bash
+# Stop and start - data safe
+./scripts/stop.sh
+./scripts/start.sh
+
+# Or using docker compose directly
+docker compose down      # Stops containers, KEEPS volumes
+docker compose up -d     # Restarts containers
+./scripts/start.sh       # Unseals Vault
+```
+
+### Vault Sealing Behavior
+
+**Vault becomes sealed** when its container restarts. This is a security feature.
+
+After any restart, run `./scripts/start.sh` to unseal Vault. The script uses the keys stored in `secrets/vault-keys.json`.
+
+### Destructive Operations (data deleted)
+
+These commands **DELETE ALL DATA** - use with caution:
+
+```bash
+# Delete everything (volumes, secrets, config)
+./scripts/stop.sh --purge
+
+# Or manually remove volumes
+docker compose down -v   # The -v flag removes volumes!
+
 ## Scripts Reference
 
 | Script | Purpose |
