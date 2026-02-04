@@ -30,9 +30,9 @@ Local Docker Compose setup for running Stargate services.
 ### Prerequisites
 
 **Server Requirements:**
-- 2 CPU cores (minimum)
-- 4 GB RAM (minimum)
-- 20 GB storage (minimum)
+- 4 CPU cores (recommended minimum)
+- 8 GB RAM (recommended minimum)
+- 30 GB storage (recommended minimum)
 - Docker will be installed automatically if missing
 - Ensure there is an internet connection on the machine where you are installing Stargate services
 - Ensure traffic is properly configured to reach Stargate instance
