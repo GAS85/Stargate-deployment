@@ -1,10 +1,11 @@
 #!/bin/bash
 # ==============================================================================
-# Stargate Customer Configuration - EXAMPLE
+# Stargate Customer Configuration - TEMPLATE
 # ==============================================================================
-# This is an example configuration for the vrgnservices.eu test deployment.
-# Copy this file to customer-config.sh and modify as needed:
+# Copy this file to customer-config.sh and fill in your values:
 #   cp customer-config.example customer-config.sh
+#
+# IMPORTANT: Replace ALL placeholder values below with your actual configuration!
 # ==============================================================================
 
 # ==============================================================================
@@ -12,41 +13,41 @@
 # ==============================================================================
 
 # Customer/Organization name (used for identification and logging)
-CUSTOMER_NAME="Vereign Alpha"
+CUSTOMER_NAME="Example Company Corp"
 
 # Deployment name (used for log labels and identification)
-DEPLOYMENT_NAME="stargate-alpha"
+DEPLOYMENT_NAME="stargate-example"
 
 # ==============================================================================
 # REQUIRED: Mail Configuration
 # ==============================================================================
 
 # Primary mail domain for the Postfix relay
-MAIL_DOMAIN="vrgnservices.eu"
+MAIL_DOMAIN="example.com"
 
 # Mail server hostname (optional, defaults to mail.<MAIL_DOMAIN>)
-MAIL_HOSTNAME="mail.vrgnservices.eu"
+MAIL_HOSTNAME="mail.example.com"
 
 # MXEngine public address (REQUIRED for seal strategy callbacks)
 # This must be the publicly accessible URL where the sealer can reach mxengine
-# Example: "http://203.0.113.10:8084" or "https://mxengine.example.com"
-MXENGINE_PUBLIC_ADDRESS="http://49.12.193.236:8084"
+# Replace with your server's public IP or hostname
+MXENGINE_PUBLIC_ADDRESS="http://YOUR_SERVER_IP:8084"
 
 # ==============================================================================
 # REQUIRED: S/MIME Certificate Configuration
 # ==============================================================================
 
 # DNS names for the certificate (comma-separated)
-CERT_DNS_NAMES="vrgnservices.eu,mail.vrgnservices.eu"
+CERT_DNS_NAMES="example.com,mail.example.com"
 
 # Organization name for the certificate subject
-CERT_ORGANIZATION="Vereign AG - alpha"
+CERT_ORGANIZATION="Example Corp"
 
 # Common Name for the certificate subject
-CERT_COMMON_NAME="Vereign AG - alpha"
+CERT_COMMON_NAME="Example Corp Mail"
 
 # Countries for the certificate subject (comma-separated, 2-letter codes)
-CERT_COUNTRIES="CH,BG"
+CERT_COUNTRIES="US"
 
 # ==============================================================================
 # OPTIONAL: Vault Configuration
@@ -55,33 +56,35 @@ CERT_COUNTRIES="CH,BG"
 # This ensures the same token is used across fresh deployments
 # The token never expires. Leave empty to let Vault generate a random token.
 
-VAULT_TOKEN="hvs.stargate-root-token-v1"
+VAULT_TOKEN="hvs.example-root-token-v1"
 
 # ==============================================================================
 # OPTIONAL: Database Configuration
 # ==============================================================================
 # Leave empty to auto-generate secure passwords
 
-POSTGRES_USER="postgres"
-POSTGRES_PASSWORD="postgres"
+POSTGRES_USER=""
+POSTGRES_PASSWORD=""
 
 # ==============================================================================
 # OPTIONAL: Object Storage Configuration
 # ==============================================================================
 # Leave empty to auto-generate secure passwords
 
-MINIO_ROOT_USER="minioadmin"
-MINIO_ROOT_PASSWORD="minioadmin123"
+MINIO_ROOT_USER=""
+MINIO_ROOT_PASSWORD=""
 S3_BUCKET_NAME="stargate-bucket"
 
 # ==============================================================================
 # OPTIONAL: Application Versions
 # ==============================================================================
+# Use "dev" for the latest development builds,
+# or specify exact versions like "v0.0.3"
 
-SMIMEKEYS_VERSION="v0.0.3"
-POLICY_VERSION="v0.0.4"
-IDAGENT_VERSION="v0.0.5-branch"
-MXENGINE_VERSION="v0.0.30"
+SMIMEKEYS_VERSION="dev"
+POLICY_VERSION="dev"
+IDAGENT_VERSION="dev"
+MXENGINE_VERSION="dev"
 
 # ==============================================================================
 # OPTIONAL: Advanced Mail Configuration
@@ -98,25 +101,28 @@ DNS_TIMEOUT="2"
 # ==============================================================================
 # policy-sync syncs OPA/Rego policies from a Git repository to the database.
 # The service runs automatically and syncs at the configured interval.
+# Contact Vereign for the policy repository URL and credentials.
 
-POLICY_SYNC_REPO_URL="https://code.vereign.com/svdh/policies-public.git"
+POLICY_SYNC_REPO_URL="https://example.com/your-policy-repo.git"
 POLICY_SYNC_REPO_USER=""
 POLICY_SYNC_REPO_PASS=""
 POLICY_SYNC_REPO_BRANCH=""
 POLICY_SYNC_REPO_FOLDER=""
 POLICY_SYNC_INTERVAL="1h"
-POLICY_SYNC_VERSION="dev"
+POLICY_SYNC_VERSION="latest"
 
 # ==============================================================================
 # OPTIONAL: Monitoring Configuration
 # ==============================================================================
+# Contact Vereign for the Loki URL if you want centralized logging.
 
-LOKI_URL="https://loki.k8s.vereign-cdn.com"
+LOKI_URL="https://loki.your-company.com"
 
 # ==============================================================================
 # REQUIRED: WireGuard Configuration
 # ==============================================================================
 # Local WireGuard settings for this IDAgent instance.
+# Contact Vereign to get your assigned WireGuard IP address.
 
 # WireGuard private key (optional - auto-generated if empty, then saved back here)
 # After first install, this will be populated automatically so the key persists
@@ -125,9 +131,8 @@ WG_PRIVATE_KEY=""
 
 # Local WireGuard IP address for this instance (MUST BE UNIQUE per deployment)
 # Each Stargate deployment *MUST HAVE A UNIQUE IP* in the WireGuard network.
-# Best sync with Vereign to avoid IP conflicts.
-# Example: 10.0.0.1, 10.0.0.2, 10.0.0.3, etc.
-WG_LOCAL_IP="10.0.0.4"
+# Contact Vereign to get your assigned IP to avoid conflicts.
+WG_LOCAL_IP="10.0.0.XXX"
 
 # WireGuard interface port (default: 51820)
 WG_INTERFACE_PORT="51820"
@@ -137,18 +142,19 @@ WG_INTERFACE_PORT="51820"
 # ==============================================================================
 # Configuration for WireGuard tunnel connection to remote IDAgent instance.
 # This enables secure agent-to-agent communication for sealed message delivery.
+# Contact Vereign to get the peer configuration values.
 
 # Unique connection identifier (auto-generated UUID v7 if left empty)
 WG_PEER_CONNECTION_ID=""
 
 # Human-readable name for this connection
-WG_PEER_NAME="dev"
+WG_PEER_NAME="example-company-connection"
 
-# WireGuard public key of the remote peer (REQUIRED)
-WG_PEER_PUBLIC_KEY="WhTN0ekf/jT+wAv9kIIHmwMLPWr9Gv1MXxnvAkJKbHU="
+# WireGuard public key of the remote peer (REQUIRED - get from Vereign)
+WG_PEER_PUBLIC_KEY=""
 
-# Remote peer endpoint (host:port) (REQUIRED)
-WG_PEER_ENDPOINT="46.225.6.233:31820"
+# Remote peer endpoint (host:port) (REQUIRED - get from Vereign)
+WG_PEER_ENDPOINT=""
 
 # WireGuard IP address of the remote peer
 WG_PEER_IP="10.0.0.2"
@@ -160,10 +166,10 @@ WG_PEER_PORT="9090"
 WG_PEER_ALLOWED_IPS="10.0.0.2/32"
 
 # External identifier for the remote organization/domain
-WG_PEER_EXTERNAL_ID="vereign-cdn.com"
+WG_PEER_EXTERNAL_ID="example.com"
 
 # Description of this connection
-WG_PEER_DESCRIPTION="Connection to idagent2 instance for testing"
+WG_PEER_DESCRIPTION="Connection to Vereign IDAgent"
 
 # ==============================================================================
 # END OF CONFIGURATION
