@@ -174,5 +174,57 @@ DNS_TIMEOUT=""
 LOKI_URL=""
 
 # ==============================================================================
+# REQUIRED: WireGuard Configuration
+# ==============================================================================
+# Local WireGuard settings for this IDAgent instance.
+
+# WireGuard private key (optional - auto-generated if empty, then saved back here)
+# After first install, this will be populated automatically so the key persists
+# across VM recreations. KEEP THIS FILE BACKED UP!
+WG_PRIVATE_KEY=""
+
+# Local WireGuard IP address for this instance (MUST BE UNIQUE per deployment)
+# Each Stargate deployment *MUST HAVE A UNIQUE IP* in the WireGuard network.
+# Best sync with Vereign to avoid IP conflicts.
+# Example: 10.0.0.1, 10.0.0.2, 10.0.0.3, etc.
+WG_LOCAL_IP=""
+
+# WireGuard interface port (default: 51820)
+WG_INTERFACE_PORT=""
+
+# ==============================================================================
+# REQUIRED: WireGuard Peer Configuration
+# ==============================================================================
+# Configuration for WireGuard tunnel connection to remote IDAgent instance.
+# This enables secure agent-to-agent communication for sealed message delivery.
+
+# Unique connection identifier (auto-generated UUID v7 if left empty)
+WG_PEER_CONNECTION_ID=""
+
+# Human-readable name for this connection
+WG_PEER_NAME=""
+
+# WireGuard public key of the REMOTE peer (REQUIRED)
+WG_PEER_PUBLIC_KEY="WhTN0ekf/jT+wAv9kIIHmwMLPWr9Gv1MXxnvAkJKbHU="
+
+# Remote peer endpoint (host:port) (REQUIRED)
+WG_PEER_ENDPOINT=""
+
+# WireGuard IP address of the remote peer
+WG_PEER_IP=""
+
+# Port to use for communication with the remote peer
+WG_PEER_PORT=""
+
+# Allowed IPs for routing (defaults to WG_PEER_IP/32)
+WG_PEER_ALLOWED_IPS=""
+
+# External identifier for the remote organization/domain
+WG_PEER_EXTERNAL_ID=""
+
+# Description of this connection
+WG_PEER_DESCRIPTION=""
+
+# ==============================================================================
 # END OF CONFIGURATION
 # ==============================================================================

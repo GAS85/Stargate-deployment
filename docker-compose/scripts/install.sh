@@ -199,6 +199,7 @@ load_customer_config() {
   # WireGuard local configuration
   WG_LOCAL_IP="${WG_LOCAL_IP:-10.0.0.1}"
   WG_INTERFACE_PORT="${WG_INTERFACE_PORT:-51820}"
+  WG_PRIVATE_KEY="${WG_PRIVATE_KEY:-}"  # Optional - if empty, idagent will generate
   
   # WireGuard peer configuration - validate required fields
   if [ -z "$WG_PEER_PUBLIC_KEY" ]; then
@@ -299,6 +300,9 @@ POLICY_SYNC_INTERVAL=${POLICY_SYNC_INTERVAL:-1h}
 # WireGuard Local Configuration
 WG_LOCAL_IP=$WG_LOCAL_IP
 WG_INTERFACE_PORT=$WG_INTERFACE_PORT
+
+# WireGuard Private Key (optional - if set, written to Vault for idagent)
+WG_PRIVATE_KEY=${WG_PRIVATE_KEY:-}
 
 # WireGuard Peer Configuration
 # Connection to remote IDAgent for sealed message delivery
@@ -428,6 +432,84 @@ setup_backup_cron() {
   mkdir -p "$PROJECT_DIR/backups"
 }
 
+# Function to save Vault token to customer-config.sh for persistence
+save_vault_token_to_config() {
+  local token="$1"
+  
+  echo ""
+  echo "============================================"
+  echo "  Saving Vault Token to Config"
+  echo "============================================"
+  echo ""
+  
+  # Check if VAULT_TOKEN is empty or missing in customer-config.sh
+  if grep -q '^VAULT_TOKEN=""' "$CONFIG_FILE" || grep -q '^VAULT_TOKEN=$' "$CONFIG_FILE" || ! grep -q '^VAULT_TOKEN=' "$CONFIG_FILE"; then
+    # Update or add the token
+    if grep -q '^VAULT_TOKEN=' "$CONFIG_FILE"; then
+      sed -i "s|^VAULT_TOKEN=.*|VAULT_TOKEN=\"$token\"|" "$CONFIG_FILE"
+    else
+      # Add to file if not present
+      echo "" >> "$CONFIG_FILE"
+      echo "VAULT_TOKEN=\"$token\"" >> "$CONFIG_FILE"
+    fi
+    echo "Vault token saved to customer-config.sh"
+    echo ""
+    echo "  Token: ${token:0:15}...${token: -10}"
+    echo ""
+    echo "  IMPORTANT: Back up customer-config.sh before recreating the VM!"
+    echo "  The same token will be used on restore."
+  else
+    echo "Vault token already configured in customer-config.sh"
+  fi
+}
+
+# Function to extract WireGuard key from Vault and save to customer-config.sh
+save_wireguard_key_to_config() {
+  echo ""
+  echo "============================================"
+  echo "  Saving WireGuard Key to Config"
+  echo "============================================"
+  echo ""
+  
+  # Wait for idagent to generate the key (it needs a moment after start)
+  echo "Waiting for IDAgent to initialize WireGuard key..."
+  sleep 5
+  
+  # Extract the WireGuard private key from Vault
+  WG_KEY=$(docker exec -e VAULT_TOKEN="$ROOT_TOKEN" stargate-vault \
+    vault kv get -address=http://127.0.0.1:8200 -field=wg_private_key secret-idagent/wg_private_key 2>/dev/null || echo "")
+  
+  if [ -z "$WG_KEY" ]; then
+    echo "WARNING: Could not extract WireGuard key from Vault."
+    echo "IDAgent may not have started yet. You can extract it later with:"
+    echo "  docker exec stargate-vault vault kv get -address=http://127.0.0.1:8200 secret-idagent/wg_private_key"
+    return 1
+  fi
+  
+  # Get the public key from idagent logs
+  WG_PUBKEY=$(docker logs stargate-idagent 2>&1 | grep "wireguard public key:" | head -1 | sed 's/.*wireguard public key: //' | tr -d '[:space:]')
+  
+  # Check if WG_PRIVATE_KEY is already set in customer-config.sh
+  if grep -q '^WG_PRIVATE_KEY=""' "$CONFIG_FILE" || grep -q "^WG_PRIVATE_KEY=\$" "$CONFIG_FILE" || ! grep -q '^WG_PRIVATE_KEY=' "$CONFIG_FILE"; then
+    # Update or add the key
+    if grep -q '^WG_PRIVATE_KEY=' "$CONFIG_FILE"; then
+      sed -i "s|^WG_PRIVATE_KEY=.*|WG_PRIVATE_KEY=\"$WG_KEY\"|" "$CONFIG_FILE"
+    else
+      # Add after WireGuard Configuration section header
+      sed -i "/^# Local WireGuard IP address/i WG_PRIVATE_KEY=\"$WG_KEY\"\n" "$CONFIG_FILE"
+    fi
+    echo "WireGuard private key saved to customer-config.sh"
+    echo ""
+    echo "  Private Key: ${WG_KEY:0:10}...${WG_KEY: -10}"
+    echo "  Public Key:  $WG_PUBKEY"
+    echo ""
+    echo "  IMPORTANT: Back up customer-config.sh before recreating the VM!"
+    echo "  The same key will be used on next install."
+  else
+    echo "WireGuard key already configured in customer-config.sh"
+  fi
+}
+
 # ============================================
 # Main Installation
 # ============================================
@@ -482,6 +564,9 @@ if [ -f "$KEYS_FILE" ]; then
   echo "IMPORTANT: Back up this file securely!"
   echo ""
   
+  # Save Vault token to customer-config.sh for persistence across VM recreations
+  save_vault_token_to_config "$ROOT_TOKEN"
+  
   # Restart application services to pick up the new VAULT_TOKEN
   echo "Restarting application services with Vault token..."
   docker compose up -d --force-recreate smimekeys-client policy idagent mxengine
@@ -496,6 +581,9 @@ if [ -f "$KEYS_FILE" ]; then
   # Setup backup cron job
   setup_backup_cron
   
+  # Save WireGuard key to customer-config.sh for persistence
+  save_wireguard_key_to_config
+
 else
   echo "ERROR: Vault keys file not found."
   echo "Check vault-init logs: docker compose logs vault-init"
@@ -555,4 +643,7 @@ echo "  Customer config:   $CONFIG_FILE"
 echo "  Environment file:  $ENV_FILE"
 echo "  Vault keys:        $KEYS_FILE"
 echo "  CSR file:          $SECRETS_DIR/signing-key.csr"
+echo ""
+echo "  IMPORTANT: Back up customer-config.sh before recreating the VM!"
+echo "  It now contains your WireGuard private key for persistence."
 echo ""

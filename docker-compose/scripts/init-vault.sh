@@ -52,12 +52,13 @@ if [ "$INITIALIZED" = "true" ]; then
 else
   echo "Initializing Vault for the first time..."
   
-  # Use predefined root token if VAULT_ROOT_TOKEN is set (for reproducible deployments)
-  # Otherwise Vault will generate a random token
+  # Initialize Vault with 5 key shares and 3 key threshold
+  # Note: Custom root tokens are no longer supported in Vault 1.19+
+  # The root token will be auto-generated
   INIT_ARGS="-address=http://vault:8200 -key-shares=5 -key-threshold=3 -format=json"
   if [ -n "$VAULT_ROOT_TOKEN" ]; then
-    echo "Using predefined root token from VAULT_ROOT_TOKEN environment variable"
-    INIT_ARGS="$INIT_ARGS -root-token-id=$VAULT_ROOT_TOKEN"
+    echo "Note: VAULT_ROOT_TOKEN is set but custom root tokens are no longer supported in Vault 1.19+"
+    echo "A new root token will be generated. Update your .env file after initialization."
   fi
   
   # Initialize Vault with 5 key shares and 3 key threshold
@@ -97,6 +98,15 @@ else
   vault secrets enable -address=http://vault:8200 -path=secret-mxengine kv-v2 || echo "secret-mxengine already exists"
   
   echo "Vault mounts created!"
+  
+  # Write WireGuard private key to Vault if provided
+  if [ -n "$WG_PRIVATE_KEY" ]; then
+    echo "Writing pre-configured WireGuard private key to Vault..."
+    vault kv put -address=http://vault:8200 secret-idagent/wg_private_key wg_private_key="$WG_PRIVATE_KEY"
+    echo "WireGuard private key written to Vault!"
+  else
+    echo "No WG_PRIVATE_KEY provided - idagent will generate a new key on first start."
+  fi
   
   # Save root token to .env file hint
   echo ""
