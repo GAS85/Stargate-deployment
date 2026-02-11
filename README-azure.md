@@ -45,7 +45,7 @@ Deploy Stargate on Azure
 - You can see the public IP address under "Primary NIC public IP"
 
 ## Log in and initialize the stargate instance:
-- Use the user that you chose during VM creation and the public IP address of the new VM:
+- Log in to the VM with the user that you chose during VM creation and the public IP address of the new VM:
 ```
  ssh user@11.22.33.44 
 ```
