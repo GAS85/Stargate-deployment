@@ -145,6 +145,13 @@ POLICY_SYNC_VERSION=""
 # ==============================================================================
 # These are typically auto-configured from DNS. Only set if you need overrides.
 
+# External SMTP host for outbound delivery (default: postfix-relay)
+# Set this if the customer uses an external Postfix server
+OUTBOUND_SMTP_HOST=""
+
+# External SMTP port for outbound delivery (default: 10026)
+OUTBOUND_SMTP_PORT=""
+
 # Enable IPv6 for Postfix (default: false)
 # Note: Microsoft Exchange connector GUI doesn't support IPv6
 POSTFIX_ENABLE_IPV6="false"
