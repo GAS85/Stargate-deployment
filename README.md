@@ -1,6 +1,4 @@
-# Stargate Local Development Environment
-
-Local Docker Compose setup for running Stargate services.
+# Stargate Deployment Instruction
 
 ## Services Included
 
@@ -26,6 +24,13 @@ Local Docker Compose setup for running Stargate services.
 - **Promtail** - Log collector for Loki (ships app logs)
 
 ## Quick Start
+
+### Installation options 
+
+* Docker installation https://code.vereign.com/svdh/stargate-deployment#prerequisites
+* VM image installation
+  * Azure VM image installation [ Azure-VM-image-install.md](https://code.vereign.com/svdh/stargate-deployment/-/blob/main/Azure-VM-image-install.md)
+* HELM charts 
 
 ### Prerequisites
 
