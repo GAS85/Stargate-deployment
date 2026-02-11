@@ -91,6 +91,12 @@ MXENGINE_VERSION="v0.0.32"
 # OPTIONAL: Advanced Mail Configuration
 # ==============================================================================
 
+# External SMTP host for outbound delivery (default: postfix-relay)
+# Set if the customer uses an external Postfix server
+OUTBOUND_SMTP_HOST=""
+# External SMTP port for outbound delivery (default: 10026)
+OUTBOUND_SMTP_PORT=""
+
 POSTFIX_ENABLE_IPV6="false"
 RELAYHOST=""
 POSTFIX_MYNETWORKS=""
