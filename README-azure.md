@@ -38,11 +38,13 @@ Deploy Stargate on Azure
 - Click Review + create
 - Click Create
 
-## Find the public IP address of the new VM:
+## Find the public IP address of the new VM and add inbound firewall rules:
 - Navigate to https://portal.azure.com/#home
 - Click Virtual Machines.
 - Click on the new VM.
 - You can see the public IP address under "Primary NIC public IP"
+- Scroll down to Networking and click on it
+- Click +Create port rule, Inbound port rule, Destination port ranges 25, Protocol TCP, name it SMTP, repeat the same step with Destination port ranges 1587 and name it mxengine
 
 ## Log in and initialize the stargate instance:
 - Log in to the VM with the user that you chose during VM creation and the public IP address of the new VM:
