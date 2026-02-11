@@ -55,7 +55,7 @@ Deploy Stargate on Azure
 [root@stargate-beta ~]# cd stargate-deployment/docker-compose/
 ```
 - Use vi/nano to edit `customer-config.sh` 
-- Configuration details can be found here: [Stargate Customer Settings](]https://code.vereign.com/svdh/stargate-deployment#step-1-configure-customer-settings)
+- Configuration details can be found here: https://code.vereign.com/svdh/stargate-deployment#step-1-configure-customer-settings
 - Run the install script:
 ```
 [root@stargate-beta docker-compose]# ./scripts/install.sh
