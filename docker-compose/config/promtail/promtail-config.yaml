@@ -39,7 +39,7 @@ scrape_configs:
         regex: '/stargate-(.*)'
         target_label: service
       # Add static labels
-      - replacement: stargate-alpha
+      - replacement: ${HOSTNAME}
         target_label: environment
       - replacement: ${HOSTNAME}
         target_label: host
