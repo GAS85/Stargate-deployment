@@ -51,8 +51,8 @@
 | Port | Protocol | Purpose |
 |------|----------|---------|
 | 25 | TCP | SMTP - receiving mail from external servers |
-| 8084 | TCP | HTTP - seal callback from remote sealer service |
-| 51820 | UDP | WireGuard - encrypted tunnel for agent-to-agent communication |
+| 51820 | UDP | WireGuard - encrypted tunnel for agent-to-agent communication or TCP |
+| 51820 | TCP | WireGuard - encrypted tunnel for agent-to-agent communication or UDP |
 
 **Outbound Network Access (server must reach):**
 | Destination | Port | Purpose |
