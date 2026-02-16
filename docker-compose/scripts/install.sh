@@ -201,6 +201,7 @@ load_customer_config() {
   # WireGuard local configuration
   WG_LOCAL_IP="${WG_LOCAL_IP:-10.0.0.1}"
   WG_INTERFACE_PORT="${WG_INTERFACE_PORT:-51820}"
+  WG_TRANSPORT_MODE="${WG_TRANSPORT_MODE:-tcp}"
   WG_PRIVATE_KEY="${WG_PRIVATE_KEY:-}"  # Optional - if empty, idagent will generate
   
   # WireGuard peer configuration - validate required fields
@@ -304,6 +305,7 @@ POLICY_SYNC_INTERVAL=${POLICY_SYNC_INTERVAL:-1h}
 # WireGuard Local Configuration
 WG_LOCAL_IP=$WG_LOCAL_IP
 WG_INTERFACE_PORT=$WG_INTERFACE_PORT
+WG_TRANSPORT_MODE=$WG_TRANSPORT_MODE
 
 # WireGuard Private Key (optional - if set, written to Vault for idagent)
 WG_PRIVATE_KEY=${WG_PRIVATE_KEY:-}

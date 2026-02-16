@@ -144,6 +144,10 @@ WG_LOCAL_IP="10.0.0.XXX"
 # WireGuard interface port (default: 51820)
 WG_INTERFACE_PORT="51820"
 
+# WireGuard transport mode: "udp" or "tcp" (default: udp)
+# Set to "tcp" if UDP is blocked by firewalls
+WG_TRANSPORT_MODE=""
+
 # ==============================================================================
 # REQUIRED: WireGuard Peer Configuration
 # ==============================================================================
