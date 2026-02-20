@@ -117,7 +117,7 @@ MXENGINE_VERSION=""
 # Leave empty to disable policy-sync (policies must be managed manually).
 
 # Git repository URL containing policies (required to enable policy-sync)
-# Example: "https://github.com/your-org/policies.git"
+# Example: "git@github.com:Health-Info-Net-AG/Stargate-policies.git"
 POLICY_SYNC_REPO_URL=""
 
 # Git username for private repositories (optional)
