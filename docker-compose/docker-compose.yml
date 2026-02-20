@@ -146,6 +146,7 @@ services:
       WG_PEER_ALLOWED_IPS: ${WG_PEER_ALLOWED_IPS:-}
       WG_PEER_EXTERNAL_ID: ${WG_PEER_EXTERNAL_ID:-}
       WG_PEER_DESCRIPTION: ${WG_PEER_DESCRIPTION:-}
+      WG_TRANSPORT_MODE: ${WG_TRANSPORT_MODE:-tcp}
     volumes:
       - ./scripts:/scripts:ro
     entrypoint: /bin/sh /scripts/init-idagent.sh
@@ -290,12 +291,14 @@ services:
       # WireGuard
       WG_LOCAL_IP: "${WG_LOCAL_IP:-10.0.0.1}"
       WG_INTERFACE_PORT: "${WG_INTERFACE_PORT:-51820}"
+      WG_TRANSPORT_MODE: "${WG_TRANSPORT_MODE:-tcp}"
       
       LOG_LEVEL: "info"
     ports:
       - "8083:8080"
       - "2114:2112"
-      - "${WG_INTERFACE_PORT:-51820}:${WG_INTERFACE_PORT:-51820}/udp"  # WireGuard tunnel
+      - "${WG_INTERFACE_PORT:-51820}:${WG_INTERFACE_PORT:-51820}/udp"  # WireGuard tunnel (UDP)
+      - "${WG_INTERFACE_PORT:-51820}:${WG_INTERFACE_PORT:-51820}/tcp"  # WireGuard tunnel (TCP)
     networks:
       - stargate-network
 
@@ -311,7 +314,7 @@ services:
         condition: service_completed_successfully
     environment:
       # HTTP Server
-      LOG_LEVEL: "debug"
+      LOG_LEVEL: "info"
       INBOUND_HANDLERS: "json,smtp"
       INBOUND_HTTP_HOST: ""
       INBOUND_HTTP_PORT: "8080"
@@ -354,8 +357,8 @@ services:
       POLICY_OUTBOUND: "outbound/delivery"
       
       # Outbound (disabled for local)
-      OUTBOUND_WORKERS: "5"
-      OUTBOUND_QUEUE_POLL_INTERVAL: "3s"
+      OUTBOUND_WORKERS: "15"
+      OUTBOUND_QUEUE_POLL_INTERVAL: "1s"
       OUTBOUND_MAX_MESSAGE_RETRIES: "30"
       NACK_WAIT_RETRY: "5m"
       SEALER: "false"
