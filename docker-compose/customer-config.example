@@ -91,6 +91,9 @@ MXENGINE_VERSION="v0.0.32"
 # OPTIONAL: Advanced Mail Configuration
 # ==============================================================================
 
+# Sealer MX domain for outbound seal delivery
+OUTBOUND_SEALER_MX_DOMAIN=""
+
 # External SMTP host for outbound delivery (default: postfix-relay)
 # Set if the customer uses an external Postfix server
 OUTBOUND_SMTP_HOST=""

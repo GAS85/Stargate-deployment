@@ -83,6 +83,7 @@ nano customer-config.sh
 - `DEPLOYMENT_NAME` - Unique deployment identifier (used in logs)
 - `MAIL_DOMAIN` - Mail relay domain (e.g., example.com)
 - `MXENGINE_PUBLIC_ADDRESS` - Publicly accessible URL for seal callbacks (e.g., `http://203.0.113.10:8084`)
+- `OUTBOUND_SEALER_MX_DOMAIN` - Sealer MX domain for outbound seal delivery (e.g., `vereign-cdn.com`)
 - `CERT_DNS_NAMES` - DNS names for S/MIME certificate
 - `CERT_ORGANIZATION` - Organization name for certificate
 - `CERT_COMMON_NAME` - Common name for certificate

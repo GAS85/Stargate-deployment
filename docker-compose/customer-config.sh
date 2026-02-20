@@ -145,6 +145,10 @@ POLICY_SYNC_VERSION=""
 # ==============================================================================
 # These are typically auto-configured from DNS. Only set if you need overrides.
 
+# Sealer MX domain for outbound seal delivery (REQUIRED)
+# This is the domain used by the sealer service for MX-based delivery
+OUTBOUND_SEALER_MX_DOMAIN=""
+
 # External SMTP host for outbound delivery (default: postfix-relay)
 # Set this if the customer uses an external Postfix server
 OUTBOUND_SMTP_HOST=""
