@@ -117,7 +117,7 @@ MXENGINE_VERSION=""
 # Leave empty to disable policy-sync (policies must be managed manually).
 
 # Git repository URL containing policies (required to enable policy-sync)
-# Example: "https://github.com/your-org/policies.git"
+# Example: "git@github.com:Health-Info-Net-AG/Stargate-policies.git"
 POLICY_SYNC_REPO_URL=""
 
 # Git username for private repositories (optional)
@@ -144,6 +144,10 @@ POLICY_SYNC_VERSION=""
 # OPTIONAL: Advanced Mail Configuration
 # ==============================================================================
 # These are typically auto-configured from DNS. Only set if you need overrides.
+
+# Sealer MX domain for outbound seal delivery (REQUIRED)
+# This is the domain used by the sealer service for MX-based delivery
+OUTBOUND_SEALER_MX_DOMAIN=""
 
 # External SMTP host for outbound delivery (default: postfix-relay)
 # Set this if the customer uses an external Postfix server

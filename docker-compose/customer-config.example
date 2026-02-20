@@ -91,6 +91,9 @@ MXENGINE_VERSION="v0.0.32"
 # OPTIONAL: Advanced Mail Configuration
 # ==============================================================================
 
+# Sealer MX domain for outbound seal delivery
+OUTBOUND_SEALER_MX_DOMAIN=""
+
 # External SMTP host for outbound delivery (default: postfix-relay)
 # Set if the customer uses an external Postfix server
 OUTBOUND_SMTP_HOST=""
@@ -110,7 +113,7 @@ DNS_TIMEOUT="2"
 # The service runs automatically and syncs at the configured interval.
 # Contact Vereign for the policy repository URL and credentials.
 
-POLICY_SYNC_REPO_URL="https://example.com/your-policy-repo.git"
+POLICY_SYNC_REPO_URL="git@github.com:Health-Info-Net-AG/Stargate-policies.git"
 POLICY_SYNC_REPO_USER=""
 POLICY_SYNC_REPO_PASS=""
 POLICY_SYNC_REPO_BRANCH=""

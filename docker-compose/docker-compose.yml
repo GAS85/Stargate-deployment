@@ -362,7 +362,7 @@ services:
       OUTBOUND_MAX_MESSAGE_RETRIES: "30"
       NACK_WAIT_RETRY: "5m"
       SEALER: "false"
-      OUTBOUND_SEALER_MX_DOMAIN: "https://mxengine-dev.k8s.vereign-cdn.com"
+      OUTBOUND_SEALER_MX_DOMAIN: "${OUTBOUND_SEALER_MX_DOMAIN}"
       OUTBOUND_SEAL_ADDR: ""
       OUTBOUND_SMTP_HOST: "${OUTBOUND_SMTP_HOST:-postfix-relay}"
       OUTBOUND_SMTP_PORT: "${OUTBOUND_SMTP_PORT:-10026}"
