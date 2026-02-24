@@ -30,7 +30,8 @@
 * Docker installation https://code.vereign.com/svdh/stargate-deployment#prerequisites
 * VM image installation
   * Azure VM image installation [ Azure-VM-image-install.md](https://code.vereign.com/svdh/stargate-deployment/-/blob/main/Azure-VM-image-install.md)
-* HELM charts 
+  * VMware image installation [VMware-image-install.md](https://code.vereign.com/svdh/stargate-deployment/-/blob/main/VMware-image-install.md)
+* HELM charts [helm-deploy.md](https://code.vereign.com/svdh/stargate-deployment/-/blob/main/helm-deploy.md)
 
 ### Prerequisites
 
