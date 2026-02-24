@@ -1,0 +1,1 @@
+This file explains how to install HIN MGW instance on VMware hypervisor. 
