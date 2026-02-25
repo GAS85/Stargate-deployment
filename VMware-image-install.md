@@ -20,7 +20,7 @@ Deploy Stargate on VMWare
 - Click Finish
 
 ## Log in and initialize the stargate instance:
-- Log in to the VM console with the hinadmin user, configure and install the stargate components:
+- Log in to the VM console with the hinadmin user in order to configure and install the stargate components:
 ```
 [hinadmin@stargate ~]$ sudo su -
 [root@stargate ~]# cd stargate-deployment/docker-compose/
