@@ -1,5 +1,20 @@
 # Stargate Deployment Instruction
 
+### Alpha and Beta phase recommendations 
+
+#### Alpha phase 
+
+The alpha phase of HIN MWG is an early testing stage where most of the functionalities are built but still incomplete and may require improvements in processes and functionality.
+
+Recommendations and Expectations for the Alpha Phase
+* As HIN MGW is still under rapid development, you should expect periodic requests to update your instance.
+* We recommend preparing and using a test domain, not a production domain, during the alpha phase.
+* If you have a test environment available, please perform the initial installation there and connect it to a test email system.
+* Please do not use real production traffic before the official production release date. Routing production traffic during the alpha phase is done at your own risk.
+
+#### Beta phase 
+
+
 ## Services Included
 
 ### Applications
