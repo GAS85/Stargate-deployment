@@ -1,5 +1,5 @@
-# Stargate VMWare ESXi deployment using an image
-Deploy Stargate on VMWare
+# Stargate VMware ESXi deployment using an image
+Deploy Stargate on VMware
 
 ## Get the image file:
 - Download  the latest OVA(or OVF and VMDK if you prefer) image file from https://images.vereign.io/
