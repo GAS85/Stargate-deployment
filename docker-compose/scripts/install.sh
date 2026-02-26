@@ -161,11 +161,15 @@ load_customer_config() {
   
   [ -z "$CUSTOMER_NAME" ] && missing_required+=("CUSTOMER_NAME")
   [ -z "$DEPLOYMENT_NAME" ] && missing_required+=("DEPLOYMENT_NAME")
-  [ -z "$MAIL_DOMAIN" ] && missing_required+=("MAIL_DOMAIN")
-  [ -z "$CERT_DNS_NAMES" ] && missing_required+=("CERT_DNS_NAMES")
-  [ -z "$CERT_ORGANIZATION" ] && missing_required+=("CERT_ORGANIZATION")
-  [ -z "$CERT_COMMON_NAME" ] && missing_required+=("CERT_COMMON_NAME")
-  [ -z "$CERT_COUNTRIES" ] && missing_required+=("CERT_COUNTRIES")
+  
+  # Multi-domain support: MAIL_DOMAINS takes precedence, fall back to MAIL_DOMAIN
+  if [ -n "$MAIL_DOMAINS" ]; then
+    MAIL_DOMAIN_PRIMARY=$(echo "$MAIL_DOMAINS" | cut -d',' -f1 | tr -d ' ')
+  elif [ -n "$MAIL_DOMAIN" ]; then
+    MAIL_DOMAINS="$MAIL_DOMAIN"
+    MAIL_DOMAIN_PRIMARY="$MAIL_DOMAIN"
+  fi
+  [ -z "$MAIL_DOMAINS" ] && missing_required+=("MAIL_DOMAINS")
   
   if [ ${#missing_required[@]} -gt 0 ]; then
     echo "ERROR: Missing required configuration values:"
@@ -190,7 +194,7 @@ load_customer_config() {
   IDAGENT_VERSION="${IDAGENT_VERSION:-latest}"
   MXENGINE_VERSION="${MXENGINE_VERSION:-latest}"
   
-  MAIL_HOSTNAME="${MAIL_HOSTNAME:-mail.${MAIL_DOMAIN}}"
+  MAIL_HOSTNAME="${MAIL_HOSTNAME:-mail.${MAIL_DOMAIN_PRIMARY}}"
   OUTBOUND_SEALER_MX_DOMAIN="${OUTBOUND_SEALER_MX_DOMAIN:-}"
   OUTBOUND_SMTP_HOST="${OUTBOUND_SMTP_HOST:-postfix-relay}"
   OUTBOUND_SMTP_PORT="${OUTBOUND_SMTP_PORT:-10026}"
@@ -205,28 +209,11 @@ load_customer_config() {
   WG_TRANSPORT_MODE="${WG_TRANSPORT_MODE:-tcp}"
   WG_PRIVATE_KEY="${WG_PRIVATE_KEY:-}"  # Optional - if empty, idagent will generate
   
-  # WireGuard peer configuration - validate required fields
-  if [ -z "$WG_PEER_PUBLIC_KEY" ]; then
-    missing_required+=("WG_PEER_PUBLIC_KEY")
-  fi
-  if [ -z "$WG_PEER_ENDPOINT" ]; then
-    missing_required+=("WG_PEER_ENDPOINT")
-  fi
-  
-  if [ ${#missing_required[@]} -gt 0 ]; then
-    echo "ERROR: Missing required configuration values:"
-    for field in "${missing_required[@]}"; do
-      echo "  - $field"
-    done
-    echo ""
-    echo "Please fill in all required fields in:"
-    echo "  $CONFIG_FILE"
-    exit 1
-  fi
-  
-  # Generate UUID v7 for connection if not provided
+  # WireGuard peer configuration (optional at install time, validated by onboard.sh)
   WG_PEER_CONNECTION_ID="${WG_PEER_CONNECTION_ID:-$(generate_uuid7)}"
   WG_PEER_NAME="${WG_PEER_NAME:-default}"
+  WG_PEER_PUBLIC_KEY="${WG_PEER_PUBLIC_KEY:-}"
+  WG_PEER_ENDPOINT="${WG_PEER_ENDPOINT:-}"
   WG_PEER_IP="${WG_PEER_IP:-10.0.0.2}"
   WG_PEER_PORT="${WG_PEER_PORT:-9090}"
   WG_PEER_ALLOWED_IPS="${WG_PEER_ALLOWED_IPS:-${WG_PEER_IP}/32}"
@@ -235,8 +222,10 @@ load_customer_config() {
   
   echo "Customer: $CUSTOMER_NAME"
   echo "Deployment: $DEPLOYMENT_NAME"
-  echo "Mail Domain: $MAIL_DOMAIN"
-  echo "WireGuard Peer: $WG_PEER_NAME ($WG_PEER_ENDPOINT)"
+  echo "Mail Domains: $MAIL_DOMAINS"
+  if [ -n "$WG_PEER_ENDPOINT" ]; then
+    echo "WireGuard Peer: $WG_PEER_NAME ($WG_PEER_ENDPOINT)"
+  fi
   echo ""
 }
 
@@ -278,7 +267,7 @@ IDAGENT_VERSION=$IDAGENT_VERSION
 MXENGINE_VERSION=$MXENGINE_VERSION
 
 # Postfix Mail Relay
-MAIL_DOMAIN=$MAIL_DOMAIN
+MAIL_DOMAINS=$MAIL_DOMAINS
 MAIL_HOSTNAME=$MAIL_HOSTNAME
 OUTBOUND_SEALER_MX_DOMAIN=$OUTBOUND_SEALER_MX_DOMAIN
 OUTBOUND_SMTP_HOST=$OUTBOUND_SMTP_HOST
@@ -326,96 +315,6 @@ WG_PEER_DESCRIPTION=$WG_PEER_DESCRIPTION
 EOF
 
   echo "Environment file created: $ENV_FILE"
-  echo ""
-}
-
-# Function to generate S/MIME key and CSR
-generate_smime_key_and_csr() {
-  echo ""
-  echo "============================================"
-  echo "  S/MIME Key and CSR Generation"
-  echo "============================================"
-  echo ""
-  echo "Generating signing key and CSR using configuration:"
-  echo "  DNS Names: $CERT_DNS_NAMES"
-  echo "  Organization: $CERT_ORGANIZATION"
-  echo "  Common Name: $CERT_COMMON_NAME"
-  echo "  Countries: $CERT_COUNTRIES"
-  echo ""
-  
-  # Convert comma-separated DNS names to JSON array
-  DNS_NAMES_JSON=$(echo "$CERT_DNS_NAMES" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | jq -R . | jq -s .)
-  
-  # Convert comma-separated countries to JSON array
-  COUNTRY_JSON=$(echo "$CERT_COUNTRIES" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | jq -R . | jq -s .)
-  
-  echo "Waiting for smimekeys-client to be ready..."
-  
-  # Wait for smimekeys-client to be ready
-  for i in {1..30}; do
-    if curl -s http://localhost:8081/liveness > /dev/null 2>&1; then
-      break
-    fi
-    echo "  Attempt $i/30..."
-    sleep 2
-  done
-  
-  if ! curl -s http://localhost:8081/liveness > /dev/null 2>&1; then
-    echo "ERROR: smimekeys-client not responding after 60 seconds"
-    return 1
-  fi
-  
-  # Step 1: Generate key
-  echo "Generating RSA key..."
-  KEY_RESPONSE=$(curl -s --location 'http://localhost:8081/v1/keys/gen' \
-    --header 'Content-Type: application/json' \
-    --header 'Accept: application/json' \
-    --data '{
-      "keySize": 2048,
-      "keyType": "rsa",
-      "keyUsage": 5
-    }')
-  
-  KEY_ID=$(echo "$KEY_RESPONSE" | jq -r '.keyId // empty')
-  
-  if [ -z "$KEY_ID" ]; then
-    echo "ERROR: Failed to generate key"
-    echo "Response: $KEY_RESPONSE"
-    return 1
-  fi
-  
-  echo "Key generated successfully!"
-  echo "Key ID: $KEY_ID"
-  echo ""
-  
-  # Step 2: Generate CSR
-  echo "Generating CSR..."
-  CSR_RESPONSE=$(curl -s --location 'http://localhost:8081/v1/certs/csr' \
-    --header 'Content-Type: application/json' \
-    --header 'Accept: application/json' \
-    --data "{
-      \"dnsNames\": $DNS_NAMES_JSON,
-      \"keyId\": \"$KEY_ID\",
-      \"subjectCN\": \"$CERT_COMMON_NAME\",
-      \"subjectCountry\": $COUNTRY_JSON,
-      \"subjectOrg\": \"$CERT_ORGANIZATION\"
-    }")
-  
-  # Save CSR to file
-  CSR_FILE="$SECRETS_DIR/signing-key.csr"
-  echo "$CSR_RESPONSE" | jq -r '.csr // empty' > "$CSR_FILE" 2>/dev/null || true
-  
-  echo ""
-  echo "============================================"
-  echo "  CSR Generated Successfully"
-  echo "============================================"
-  echo ""
-  echo "$CSR_RESPONSE" | jq . 2>/dev/null || echo "$CSR_RESPONSE"
-  echo ""
-  
-  if [ -s "$CSR_FILE" ]; then
-    echo "CSR saved to: $CSR_FILE"
-  fi
   echo ""
 }
 
@@ -583,8 +482,9 @@ if [ -f "$KEYS_FILE" ]; then
   # Wait for services to be ready
   sleep 5
   
-  # Generate S/MIME key and CSR
-  generate_smime_key_and_csr
+  # Run onboarding (S/MIME key + CSR generation, .env domain updates)
+  echo ""
+  "$SCRIPT_DIR/onboard.sh" --initial-setup
   
   # Setup backup cron job
   setup_backup_cron

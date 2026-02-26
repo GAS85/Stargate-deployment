@@ -23,13 +23,13 @@ DEPLOYMENT_NAME=""
 # REQUIRED: Mail Configuration
 # ==============================================================================
 
-# Primary mail domain for the Postfix relay
-# This domain's MX records determine where to relay mail
-# SPF records determine which networks are allowed to send
-# Example: "example.com", "customer.eu"
-MAIL_DOMAIN=""
+# Mail domains for the Postfix relay (comma-separated for multiple domains)
+# MX records for each domain determine where to relay mail
+# SPF records for each domain determine which networks are allowed to send
+# Example: "example.com" or "example.com,otherdomain.com"
+MAIL_DOMAINS=""
 
-# Mail server hostname (optional, defaults to mail.<MAIL_DOMAIN>)
+# Mail server hostname (optional, defaults to mail.<first domain>)
 # This is announced in SMTP HELO/EHLO
 # Example: "mail.example.com"
 MAIL_HOSTNAME=""
@@ -203,8 +203,8 @@ WG_LOCAL_IP=""
 # WireGuard interface port (default: 51820)
 WG_INTERFACE_PORT=""
 
-# WireGuard transport mode: "udp" or "tcp" (default: udp)
-# Set to "tcp" if UDP is blocked by firewalls
+# WireGuard transport mode: "tcp" (default) or "udp"
+# Set to "udp" only if TCP tunneling causes issues
 WG_TRANSPORT_MODE=""
 
 # ==============================================================================

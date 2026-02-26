@@ -387,7 +387,7 @@ services:
       OUTBOUND_SMTP_PORT: "${OUTBOUND_SMTP_PORT:-10026}"
       OUTBOUND_SMIME_HOST: ""
       OUTBOUND_SMIME_PORT: ""
-      OUTBOUND_SMTP_LOCAL_DOMAINS: "localhost,${MAIL_DOMAIN}"
+      OUTBOUND_SMTP_LOCAL_DOMAINS: "localhost,${MAIL_DOMAINS:-${MAIL_DOMAIN}}"
       OUTBOUND_IDAGENT_ADDR: "http://idagent:8080"
       # OUTBOUND_SMTP_USER: "seal@vereign-cdn.com"
       # OUTBOUND_SMTP_PASS: "SecureMessage"
@@ -470,9 +470,9 @@ services:
     container_name: stargate-postfix-relay
     restart: unless-stopped
     environment:
-      # Required: Mail domain to relay for (auto-configures from DNS)
-      MAIL_DOMAIN: "${MAIL_DOMAIN}"
-      # Optional: Hostname for Postfix (default: mail.<MAIL_DOMAIN>)
+      # Required: Mail domains to relay for, comma-separated (auto-configures from DNS)
+      MAIL_DOMAINS: "${MAIL_DOMAINS:-${MAIL_DOMAIN}}"
+      # Optional: Hostname for Postfix (default: mail.<first domain>)
       MAIL_HOSTNAME: "${MAIL_HOSTNAME:-}"
       # MXEngine integration (Docker service name and port)
       MXENGINE_HOST: "${MXENGINE_HOST:-mxengine}"
