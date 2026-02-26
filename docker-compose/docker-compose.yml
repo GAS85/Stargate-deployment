@@ -192,7 +192,15 @@ services:
       CERT_CA_ADDR: "https://smimekeys-ca-dev.k8s.vereign-cdn.com"
       CERT_CA_EXPIRY: "8760h"
       CERT_CA_PUBLIC_HTTP_ADDR: ""
+      CERT_CA_IDAGENT_DOMAIN: ""
       CERT_CRL_REFRESH_PERIOD: "30m"
+      
+      # IDAgent integration (for peer certificate sync)
+      IDAGENT_ADDR: ""
+      
+      # Sync intervals
+      PEER_SYNC_INTERVAL: "30m"
+      ROOT_SYNC_INTERVAL: "30m"
       
       # LDAP (disabled - uncomment and set LDAP_ADDR to enable)
       # LDAP_ADDR: "ldap://ldap_server:389"
@@ -292,6 +300,16 @@ services:
       WG_LOCAL_IP: "${WG_LOCAL_IP:-10.0.0.1}"
       WG_INTERFACE_PORT: "${WG_INTERFACE_PORT:-51820}"
       WG_TRANSPORT_MODE: "${WG_TRANSPORT_MODE:-tcp}"
+      WG_DNS_SERVERS: "8.8.8.8,8.8.4.4,1.1.1.1"
+      
+      # WireGuard TCP tuning
+      WG_TCP_IDLE_TIMEOUT: "300s"
+      WG_TCP_IO_TIMEOUT: "30s"
+      WG_TCP_POLLING_TIMEOUT: "5s"
+      WG_TCP_KEEPALIVE_PERIOD: "30s"
+      WG_TCP_DIAL_TIMEOUT: "30s"
+      WG_TCP_RECV_CHANNEL_SIZE: "1024"
+      WG_TCP_CHANNEL_SEND_TIMEOUT: "5s"
       
       LOG_LEVEL: "info"
     ports:
@@ -335,6 +353,7 @@ services:
       
       # Database
       DB_URI: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/mxengine"
+      DB_LOG_QUERIES: "false"
       
       # S3
       S3_HOSTNAME: "minio:9000"
@@ -366,11 +385,17 @@ services:
       OUTBOUND_SEAL_ADDR: ""
       OUTBOUND_SMTP_HOST: "${OUTBOUND_SMTP_HOST:-postfix-relay}"
       OUTBOUND_SMTP_PORT: "${OUTBOUND_SMTP_PORT:-10026}"
+      OUTBOUND_SMIME_HOST: ""
+      OUTBOUND_SMIME_PORT: ""
       OUTBOUND_SMTP_LOCAL_DOMAINS: "localhost,${MAIL_DOMAIN}"
       OUTBOUND_IDAGENT_ADDR: "http://idagent:8080"
       # OUTBOUND_SMTP_USER: "seal@vereign-cdn.com"
       # OUTBOUND_SMTP_PASS: "SecureMessage"
       # OUTBOUND_SMTP_AUTH: "PLAIN"
+      
+      # Pending message handling
+      PENDING_WATCHER_INTERVAL: "20s"
+      PENDING_MESSAGE_EXPIRATION: "1m"
       
       # Archive
       ARCHIVE_INTERVAL: "30m"
