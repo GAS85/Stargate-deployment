@@ -68,7 +68,7 @@ Recommendations and Expectations for the Alpha Phase
 |------|----------|---------|
 | 25 | TCP | SMTP - receiving mail from external servers |
 | 8084 | TCP | HTTP - seal callback from remote sealer service |
-| 51820 | TCP+UDP | WireGuard - encrypted tunnel for agent-to-agent communication |
+| 19818 | TCP+UDP | WireGuard - encrypted tunnel for agent-to-agent communication |
 
 **Outbound Network Access (server must reach):**
 | Destination | Port | Purpose |
