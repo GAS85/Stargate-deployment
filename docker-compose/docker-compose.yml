@@ -298,7 +298,7 @@ services:
       
       # WireGuard
       WG_LOCAL_IP: "${WG_LOCAL_IP:-10.0.0.1}"
-      WG_INTERFACE_PORT: "${WG_INTERFACE_PORT:-51820}"
+      WG_INTERFACE_PORT: "${WG_INTERFACE_PORT:-19818}"
       WG_TRANSPORT_MODE: "${WG_TRANSPORT_MODE:-tcp}"
       WG_DNS_SERVERS: "8.8.8.8,8.8.4.4,1.1.1.1"
       
@@ -315,8 +315,8 @@ services:
     ports:
       - "8083:8080"
       - "2114:2112"
-      - "${WG_INTERFACE_PORT:-51820}:${WG_INTERFACE_PORT:-51820}/udp"  # WireGuard tunnel (UDP)
-      - "${WG_INTERFACE_PORT:-51820}:${WG_INTERFACE_PORT:-51820}/tcp"  # WireGuard tunnel (TCP)
+      - "${WG_INTERFACE_PORT:-19818}:${WG_INTERFACE_PORT:-19818}/udp"  # WireGuard tunnel (UDP)
+      - "${WG_INTERFACE_PORT:-19818}:${WG_INTERFACE_PORT:-19818}/tcp"  # WireGuard tunnel (TCP)
     networks:
       - stargate-network
 
@@ -396,6 +396,10 @@ services:
       # Pending message handling
       PENDING_WATCHER_INTERVAL: "20s"
       PENDING_MESSAGE_EXPIRATION: "1m"
+      
+      # Sync intervals
+      ROOT_SYNC_INTERVAL: "30m"
+      PEER_SYNC_INTERVAL: "30m"
       
       # Archive
       ARCHIVE_INTERVAL: "30m"

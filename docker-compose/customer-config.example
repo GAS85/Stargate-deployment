@@ -146,8 +146,8 @@ WG_PRIVATE_KEY=""
 # Contact Vereign to get your assigned IP to avoid conflicts.
 WG_LOCAL_IP="10.0.0.XXX"
 
-# WireGuard interface port (default: 51820)
-WG_INTERFACE_PORT="51820"
+# WireGuard interface port (default: 19818)
+WG_INTERFACE_PORT="19818"
 
 # WireGuard transport mode: "tcp" (default) or "udp"
 # Set to "udp" only if TCP tunneling causes issues

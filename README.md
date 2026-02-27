@@ -20,7 +20,7 @@ Recommendations and Expectations for the Alpha Phase
 ### Applications
 - **smimekeys-client** - S/MIME keys client service (port 8081)
 - **policy** - Policy service (port 8082)
-- **idagent** - ID Agent service (port 8083, WireGuard: 51820/tcp+udp)
+- **idagent** - ID Agent service (port 8083, WireGuard: 19818/tcp+udp)
 - **mxengine** - MX Engine service (port 8084, SMTP: 1587)
 - **policy-sync** - Syncs OPA/Rego policies from Git repository to database (runs continuously)
 
@@ -68,7 +68,7 @@ Recommendations and Expectations for the Alpha Phase
 |------|----------|---------|
 | 25 | TCP | SMTP - receiving mail from external servers |
 | 8084 | TCP | HTTP - seal callback from remote sealer service |
-| 51820 | TCP+UDP | WireGuard - encrypted tunnel for agent-to-agent communication |
+| 19818 | TCP+UDP | WireGuard - encrypted tunnel for agent-to-agent communication |
 
 **Outbound Network Access (server must reach):**
 | Destination | Port | Purpose |
@@ -108,7 +108,7 @@ nano customer-config.sh
 **WireGuard local settings (for agent-to-agent communication):**
 - `WG_PRIVATE_KEY` - WireGuard private key (auto-generated on first install, then saved to config)
 - `WG_LOCAL_IP` - Local WireGuard IP (**MUST BE UNIQUE** - sync with Vereign to avoid conflicts)
-- `WG_INTERFACE_PORT` - WireGuard port (default: 51820)
+- `WG_INTERFACE_PORT` - WireGuard port (default: 19818)
 - `WG_TRANSPORT_MODE` - Transport protocol: `tcp` (default) or `udp`
 
 **WireGuard peer settings (can be configured later, applied by `onboard.sh`):**
@@ -685,7 +685,7 @@ IDAgent uses WireGuard to establish secure encrypted tunnels between Stargate in
 ┌─────────────────────────────────────────┐       ┌─────────────────────────────────────────┐
 │ Stargate Instance A                     │       │ Stargate Instance B                     │
 │                                         │       │                                         │
-│  IDAgent (10.0.0.1:51820)               │◄─────►│  IDAgent (10.0.0.2:51820)               │
+│  IDAgent (10.0.0.1:19818)               │◄─────►│  IDAgent (10.0.0.2:19818)               │
 │     │                                   │  WG   │     │                                   │
 │     ▼                                   │ Tunnel│     ▼                                   │
 │  Sealed message delivery via WG tunnel  │       │  Receive sealed message                 │
@@ -701,13 +701,13 @@ WireGuard settings in `customer-config.sh`:
 # Local WireGuard settings (this instance)
 WG_PRIVATE_KEY=""               # Auto-generated, then saved back to config
 WG_LOCAL_IP="10.0.0.1"          # MUST BE UNIQUE per deployment
-WG_INTERFACE_PORT="51820"        # Default WireGuard port
+WG_INTERFACE_PORT="19818"        # Default WireGuard port
 WG_TRANSPORT_MODE="tcp"          # "tcp" (default) or "udp"
 
 # Peer configuration (remote instance to connect to)
 WG_PEER_NAME="remote-agent"                          # Human-readable name
 WG_PEER_PUBLIC_KEY="WhTN0ekf/jT+wAv9kIIHmwMLPWr9Gv1MXxnvAkJKbHU="  # Remote's WG public key
-WG_PEER_ENDPOINT="203.0.113.10:51820"                # Remote's public endpoint
+WG_PEER_ENDPOINT="203.0.113.10:19818"                # Remote's public endpoint
 WG_PEER_IP="10.0.0.2"                                # Remote's WireGuard IP
 WG_PEER_PORT="9090"                                  # Communication port
 WG_PEER_EXTERNAL_ID="example.com"                    # Used for routing decisions
@@ -754,7 +754,7 @@ docker logs stargate-idagent | grep -i wireguard
 
 **Peer not reachable:**
 - Verify remote endpoint is accessible: `nc -zv <endpoint_host> <endpoint_port>`
-- Check firewall allows TCP+UDP port 51820
+- Check firewall allows TCP+UDP port 19818
 - Verify public keys match on both ends
 - If TCP has issues, try setting `WG_TRANSPORT_MODE="udp"` in customer-config.sh
 

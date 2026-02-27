@@ -307,7 +307,7 @@ LOKI_URL="${LOKI_URL:-https://loki.k8s.vereign-cdn.com}"
 
 # WireGuard local configuration
 WG_LOCAL_IP="${WG_LOCAL_IP:-10.0.0.1}"
-WG_INTERFACE_PORT="${WG_INTERFACE_PORT:-51820}"
+WG_INTERFACE_PORT="${WG_INTERFACE_PORT:-19818}"
 WG_PRIVATE_KEY="${WG_PRIVATE_KEY:-}"
 
 # WireGuard peer configuration

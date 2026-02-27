@@ -200,7 +200,7 @@ WG_PRIVATE_KEY=""
 # Example: 10.0.0.1, 10.0.0.2, 10.0.0.3, etc.
 WG_LOCAL_IP=""
 
-# WireGuard interface port (default: 51820)
+# WireGuard interface port (default: 19818)
 WG_INTERFACE_PORT=""
 
 # WireGuard transport mode: "tcp" (default) or "udp"

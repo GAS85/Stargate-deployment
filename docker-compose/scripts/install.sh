@@ -205,7 +205,7 @@ load_customer_config() {
   
   # WireGuard local configuration
   WG_LOCAL_IP="${WG_LOCAL_IP:-10.0.0.1}"
-  WG_INTERFACE_PORT="${WG_INTERFACE_PORT:-51820}"
+  WG_INTERFACE_PORT="${WG_INTERFACE_PORT:-19818}"
   WG_TRANSPORT_MODE="${WG_TRANSPORT_MODE:-tcp}"
   WG_PRIVATE_KEY="${WG_PRIVATE_KEY:-}"  # Optional - if empty, idagent will generate
   
