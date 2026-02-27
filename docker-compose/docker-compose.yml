@@ -397,10 +397,6 @@ services:
       PENDING_WATCHER_INTERVAL: "20s"
       PENDING_MESSAGE_EXPIRATION: "1m"
       
-      # Sync intervals
-      ROOT_SYNC_INTERVAL: "30m"
-      PEER_SYNC_INTERVAL: "30m"
-      
       # Archive
       ARCHIVE_INTERVAL: "30m"
       ARCHIVE_RETENTION_PERIOD: "87672h"
