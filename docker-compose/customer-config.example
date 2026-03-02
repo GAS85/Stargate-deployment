@@ -22,10 +22,12 @@ DEPLOYMENT_NAME="stargate-example"
 # REQUIRED: Mail Configuration
 # ==============================================================================
 
-# Primary mail domain for the Postfix relay
-MAIL_DOMAIN="example.com"
+# Mail domains for the Postfix relay (comma-separated for multiple domains)
+# MX records for each domain determine where to relay mail
+# SPF records for each domain determine which networks are allowed to send
+MAIL_DOMAINS="example.com"
 
-# Mail server hostname (optional, defaults to mail.<MAIL_DOMAIN>)
+# Mail server hostname (optional, defaults to mail.<first domain>)
 MAIL_HOSTNAME="mail.example.com"
 
 # MXEngine public address (REQUIRED for seal strategy callbacks)
@@ -48,6 +50,10 @@ CERT_COMMON_NAME="Example Corp Mail"
 
 # Countries for the certificate subject (comma-separated, 2-letter codes)
 CERT_COUNTRIES="US"
+
+# CA IDAgent domain for certificate issuance via WireGuard tunnel
+# Contact Vereign for the correct value
+CERT_CA_IDAGENT_DOMAIN=""
 
 # ==============================================================================
 # AUTO-GENERATED: Vault Configuration
@@ -82,9 +88,9 @@ S3_BUCKET_NAME="stargate-bucket"
 # Use "dev" for the latest development builds,
 # or specify exact versions like "v0.0.3"
 
-SMIMEKEYS_VERSION="v0.0.3"
+SMIMEKEYS_VERSION="v0.0.4"
 POLICY_VERSION="v0.0.4"
-IDAGENT_VERSION="v0.0.5-branch"
+IDAGENT_VERSION="v0.0.6-branch"
 MXENGINE_VERSION="v0.0.32"
 
 # ==============================================================================
@@ -113,7 +119,7 @@ DNS_TIMEOUT="2"
 # The service runs automatically and syncs at the configured interval.
 # Contact Vereign for the policy repository URL and credentials.
 
-POLICY_SYNC_REPO_URL="git@github.com:Health-Info-Net-AG/Stargate-policies.git"
+POLICY_SYNC_REPO_URL="https://code.vereign.com/svdh/policies-public.git"
 POLICY_SYNC_REPO_USER=""
 POLICY_SYNC_REPO_PASS=""
 POLICY_SYNC_REPO_BRANCH=""
@@ -139,16 +145,16 @@ LOKI_URL="https://loki.your-company.com"
 # across VM recreations. KEEP THIS FILE BACKED UP!
 WG_PRIVATE_KEY=""
 
-# Local WireGuard IP address for this instance (MUST BE UNIQUE per deployment)
-# Each Stargate deployment *MUST HAVE A UNIQUE IP* in the WireGuard network.
-# Contact Vereign to get your assigned IP to avoid conflicts.
-WG_LOCAL_IP="10.0.0.XXX"
+# Local WireGuard IP address for this instance.
+# Use this server's real static public IP address as the WireGuard internal IP.
+# This guarantees uniqueness across all deployments (no coordination needed).
+WG_LOCAL_IP="YOUR_SERVER_STATIC_IP"
 
-# WireGuard interface port (default: 51820)
-WG_INTERFACE_PORT="51820"
+# WireGuard interface port (default: 19818)
+WG_INTERFACE_PORT="19818"
 
-# WireGuard transport mode: "udp" or "tcp" (default: udp)
-# Set to "tcp" if UDP is blocked by firewalls
+# WireGuard transport mode: "tcp" (default) or "udp"
+# Set to "udp" only if TCP tunneling causes issues
 WG_TRANSPORT_MODE=""
 
 # ==============================================================================

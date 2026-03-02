@@ -23,13 +23,13 @@ DEPLOYMENT_NAME=""
 # REQUIRED: Mail Configuration
 # ==============================================================================
 
-# Primary mail domain for the Postfix relay
-# This domain's MX records determine where to relay mail
-# SPF records determine which networks are allowed to send
-# Example: "example.com", "customer.eu"
-MAIL_DOMAIN=""
+# Mail domains for the Postfix relay (comma-separated for multiple domains)
+# MX records for each domain determine where to relay mail
+# SPF records for each domain determine which networks are allowed to send
+# Example: "example.com" or "example.com,otherdomain.com"
+MAIL_DOMAINS=""
 
-# Mail server hostname (optional, defaults to mail.<MAIL_DOMAIN>)
+# Mail server hostname (optional, defaults to mail.<first domain>)
 # This is announced in SMTP HELO/EHLO
 # Example: "mail.example.com"
 MAIL_HOSTNAME=""
@@ -62,6 +62,11 @@ CERT_COMMON_NAME=""
 # Countries for the certificate subject (comma-separated, 2-letter codes)
 # Example: "US,DE" or "CH"
 CERT_COUNTRIES=""
+
+# CA IDAgent domain for certificate issuance via WireGuard tunnel
+# This is the domain used to reach the CA through the idagent tunnel
+# Contact Vereign for the correct value
+CERT_CA_IDAGENT_DOMAIN=""
 
 # ==============================================================================
 # OPTIONAL: Database Configuration
@@ -194,17 +199,16 @@ LOKI_URL=""
 # across VM recreations. KEEP THIS FILE BACKED UP!
 WG_PRIVATE_KEY=""
 
-# Local WireGuard IP address for this instance (MUST BE UNIQUE per deployment)
-# Each Stargate deployment *MUST HAVE A UNIQUE IP* in the WireGuard network.
-# Best sync with Vereign to avoid IP conflicts.
-# Example: 10.0.0.1, 10.0.0.2, 10.0.0.3, etc.
+# Local WireGuard IP address for this instance.
+# Use this server's real static public IP address as the WireGuard internal IP.
+# This guarantees uniqueness across all deployments (no coordination needed).
 WG_LOCAL_IP=""
 
-# WireGuard interface port (default: 51820)
+# WireGuard interface port (default: 19818)
 WG_INTERFACE_PORT=""
 
-# WireGuard transport mode: "udp" or "tcp" (default: udp)
-# Set to "tcp" if UDP is blocked by firewalls
+# WireGuard transport mode: "tcp" (default) or "udp"
+# Set to "udp" only if TCP tunneling causes issues
 WG_TRANSPORT_MODE=""
 
 # ==============================================================================

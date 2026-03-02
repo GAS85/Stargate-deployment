@@ -5,8 +5,10 @@
 set -e
 
 # Required configuration
-MAIL_DOMAIN="${MAIL_DOMAIN:-}"
-MAIL_HOSTNAME="${MAIL_HOSTNAME:-mail.${MAIL_DOMAIN}}"
+# Support multiple domains (comma-separated)
+MAIL_DOMAINS="${MAIL_DOMAINS:-${MAIL_DOMAIN:-}}"
+MAIL_DOMAIN_PRIMARY=$(echo "$MAIL_DOMAINS" | cut -d',' -f1 | tr -d ' ')
+MAIL_HOSTNAME="${MAIL_HOSTNAME:-mail.${MAIL_DOMAIN_PRIMARY}}"
 DNS_TIMEOUT="${DNS_TIMEOUT:-2}"
 DNS_SERVER="${DNS_SERVER:-}"
 ENABLE_IPV6="${ENABLE_IPV6:-false}"
@@ -19,13 +21,14 @@ MXENGINE_PORT="${MXENGINE_PORT:-1587}"
 MANUAL_RELAYHOST="${RELAYHOST:-}"
 MANUAL_MYNETWORKS="${MYNETWORKS:-}"
 
-if [ -z "$MAIL_DOMAIN" ]; then
-    echo "ERROR: MAIL_DOMAIN environment variable is required"
+if [ -z "$MAIL_DOMAINS" ]; then
+    echo "ERROR: MAIL_DOMAINS (or MAIL_DOMAIN) environment variable is required"
     exit 1
 fi
 
 echo "=== Postfix Relay Auto-Configuration ==="
-echo "Domain: $MAIL_DOMAIN"
+echo "Domains: $MAIL_DOMAINS"
+echo "Primary: $MAIL_DOMAIN_PRIMARY"
 echo "Hostname: $MAIL_HOSTNAME"
 
 ##############################################################################
@@ -219,38 +222,65 @@ get_mx_relay() {
 # Main Configuration
 ##############################################################################
 
-# Get relay host from MX or use manual override
-if [ -n "$MANUAL_RELAYHOST" ]; then
-    echo "Using manual RELAYHOST: $MANUAL_RELAYHOST"
-    RELAY_DEST="$MANUAL_RELAYHOST"
-else
-    RELAY_DEST=$(get_mx_relay "$MAIL_DOMAIN" "$MAIL_HOSTNAME")
-    if [ -z "$RELAY_DEST" ]; then
-        echo "ERROR: Could not determine relay host from MX records"
-        exit 1
+# Parse domains into array
+IFS=',' read -ra DOMAIN_ARRAY <<< "$MAIL_DOMAINS"
+
+# Build transport map content and SPF networks for all domains
+TRANSPORT_MAP_CONTENT=""
+ALL_SPF_NETWORKS=""
+
+for domain in "${DOMAIN_ARRAY[@]}"; do
+    domain=$(echo "$domain" | xargs)  # trim spaces
+    [ -z "$domain" ] && continue
+    echo ""
+    echo "--- Processing domain: $domain ---"
+    
+    # Get relay host from MX or use manual override
+    if [ -n "$MANUAL_RELAYHOST" ]; then
+        echo "  Using manual RELAYHOST: $MANUAL_RELAYHOST"
+        DOMAIN_RELAY="$MANUAL_RELAYHOST"
+    else
+        DOMAIN_RELAY=$(get_mx_relay "$domain" "$MAIL_HOSTNAME" 2>/dev/null || echo "")
+        if [ -z "$DOMAIN_RELAY" ]; then
+            echo "  WARNING: No MX records found for $domain, skipping transport entry"
+        else
+            echo "  Relay destination from MX: $DOMAIN_RELAY"
+        fi
     fi
-    echo "Relay destination from MX: $RELAY_DEST"
+    
+    if [ -n "$DOMAIN_RELAY" ]; then
+        TRANSPORT_MAP_CONTENT="${TRANSPORT_MAP_CONTENT}${domain} relay:${DOMAIN_RELAY}\n"
+    fi
+    
+    # Get SPF networks (union all domains)
+    if [ -z "$MANUAL_MYNETWORKS" ]; then
+        DOMAIN_SPF=$(get_spf_networks "$domain" 2>/dev/null || echo "")
+        if [ -n "$DOMAIN_SPF" ]; then
+            ALL_SPF_NETWORKS="$ALL_SPF_NETWORKS $DOMAIN_SPF"
+        fi
+    fi
+done
+
+echo ""
+
+# Check that we have at least one transport entry
+if [ -z "$TRANSPORT_MAP_CONTENT" ] && [ -z "$MANUAL_RELAYHOST" ]; then
+    echo "ERROR: Could not determine relay host from MX records for any domain"
+    exit 1
 fi
 
-# Get allowed networks from SPF or use manual override
+# Set allowed networks
 if [ -n "$MANUAL_MYNETWORKS" ]; then
     echo "Using manual MYNETWORKS: $MANUAL_MYNETWORKS"
     export MYNETWORKS="$MANUAL_MYNETWORKS"
 else
-    SPF_NETWORKS=$(get_spf_networks "$MAIL_DOMAIN")
-    if [ -z "$SPF_NETWORKS" ]; then
-        echo "WARNING: No SPF records found, using Docker networks only"
-        SPF_NETWORKS=""
-    fi
-    # Always include localhost and common Docker network ranges
-    # Docker compose creates networks in 172.16.0.0/12 range
     DOCKER_RANGES="10.0.0.0/8 172.16.0.0/12 192.168.0.0/16"
-    export MYNETWORKS="127.0.0.0/8 $DOCKER_RANGES $SPF_NETWORKS"
+    export MYNETWORKS="127.0.0.0/8 $DOCKER_RANGES $ALL_SPF_NETWORKS"
     echo "Networks (Docker + SPF): $MYNETWORKS"
 fi
 
-# Set allowed sender domains
-export ALLOWED_SENDER_DOMAINS="$MAIL_DOMAIN"
+# Set allowed sender domains (space-separated for boky/postfix)
+export ALLOWED_SENDER_DOMAINS=$(echo "$MAIL_DOMAINS" | tr ',' ' ')
 
 # Set hostname
 export HOSTNAME="$MAIL_HOSTNAME"
@@ -267,9 +297,8 @@ fi
 
 echo ""
 echo "=== Configuration Summary ==="
-echo "  MAIL_DOMAIN: $MAIL_DOMAIN"
+echo "  MAIL_DOMAINS: $MAIL_DOMAINS"
 echo "  HOSTNAME: $HOSTNAME"
-echo "  RELAY_DEST: $RELAY_DEST"
 echo "  MXENGINE: $MXENGINE_HOST:$MXENGINE_PORT"
 echo "  MYNETWORKS: $MYNETWORKS"
 echo "  ALLOWED_SENDER_DOMAINS: $ALLOWED_SENDER_DOMAINS"
@@ -334,9 +363,10 @@ configure_postfix() {
         echo "receive_override_options = no_address_mappings" >> /etc/postfix/main.cf
     fi
     
-    # Create transport map for outbound relay
+    # Create transport map for outbound relay (one entry per domain)
     echo "Creating transport map..."
-    echo "$MAIL_DOMAIN relay:$RELAY_DEST" > /etc/postfix/transport
+    > /etc/postfix/transport
+    echo -e "$TRANSPORT_MAP_CONTENT" >> /etc/postfix/transport
     postmap lmdb:/etc/postfix/transport
     
     # Add transport_maps if not present
@@ -344,9 +374,10 @@ configure_postfix() {
         echo "transport_maps = lmdb:/etc/postfix/transport" >> /etc/postfix/main.cf
     fi
     
-    # Set relay_domains
+    # Set relay_domains (all domains, space-separated)
+    local relay_domains_str=$(echo "$MAIL_DOMAINS" | tr ',' ' ')
     sed -i '/^relay_domains/d' /etc/postfix/main.cf
-    echo "relay_domains = $MAIL_DOMAIN" >> /etc/postfix/main.cf
+    echo "relay_domains = $relay_domains_str" >> /etc/postfix/main.cf
     
     # Disable relayhost (we use transport maps)
     sed -i 's/^relayhost/#relayhost/' /etc/postfix/main.cf
