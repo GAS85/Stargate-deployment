@@ -6,6 +6,8 @@ secrets/
 
 # Customer-specific config files (contain secrets like Vault tokens and WG keys)
 customer-config.alpha
+customer-config.beta
+customer-config.gamma
 
 # Keep the examples
 !.env.example
