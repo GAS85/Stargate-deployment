@@ -202,7 +202,7 @@ load_customer_config() {
   POSTFIX_ENABLE_IPV6="${POSTFIX_ENABLE_IPV6:-false}"
   DNS_TIMEOUT="${DNS_TIMEOUT:-2}"
   
-  LOKI_URL="${LOKI_URL:-https://loki.k8s.vereign-cdn.com}"
+  LOKI_URL="${LOKI_URL:-https://loki.infra.vereign-cdn.com}"
   
   # WireGuard local configuration
   WG_LOCAL_IP="${WG_LOCAL_IP:-10.0.0.1}"

@@ -505,7 +505,7 @@ services:
       - promtail_positions:/tmp
     command: -config.file=/etc/promtail/config.yml -config.expand-env=true
     environment:
-      LOKI_URL: "${LOKI_URL:-https://loki.k8s.vereign-cdn.com}"
+      LOKI_URL: "${LOKI_URL:-https://loki.infra.vereign-cdn.com}"
       HOSTNAME: "${PROMTAIL_HOSTNAME:-stargate}"
     networks:
       - stargate-network

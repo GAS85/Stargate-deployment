@@ -4,5 +4,8 @@ secrets/
 # Environment file with sensitive data
 .env
 
-# Keep the example
+# Customer-specific config files (contain secrets like Vault tokens and WG keys)
+customer-config.alpha
+
+# Keep the examples
 !.env.example

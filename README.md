@@ -76,7 +76,7 @@ Recommendations and Expectations for the Alpha Phase
 | registry.vereign.io | 443 | Docker image registry |
 | mxengine-dev.k8s.vereign-cdn.com | 443 | Remote sealer service |
 | smimekeys-ca-dev.k8s.vereign-cdn.com | 443 | S/MIME CA service |
-| loki.k8s.vereign-cdn.com | 443 | Log shipping (Promtail → Loki) |
+| loki.infra.vereign-cdn.com | 443 | Log shipping (Promtail → Loki) |
 | vereign-issuer.vrgnservices.eu | 443 | Issuer service |
 | vereign-verifier.vrgnservices.eu | 4433 | Verifier service |
 | Destination mail servers | 25 | Outbound mail delivery (via MX lookup) |
@@ -107,7 +107,7 @@ nano customer-config.sh
 
 **WireGuard local settings (for agent-to-agent communication):**
 - `WG_PRIVATE_KEY` - WireGuard private key (auto-generated on first install, then saved to config)
-- `WG_LOCAL_IP` - Local WireGuard IP (**MUST BE UNIQUE** - sync with Vereign to avoid conflicts)
+- `WG_LOCAL_IP` - Local WireGuard IP (use this server's real static public IP to guarantee uniqueness)
 - `WG_INTERFACE_PORT` - WireGuard port (default: 19818)
 - `WG_TRANSPORT_MODE` - Transport protocol: `tcp` (default) or `udp`
 
@@ -488,7 +488,7 @@ Promtail collects logs from application containers and ships them to Loki.
 
 ```env
 # Loki push URL
-LOKI_URL=https://loki.k8s.vereign-cdn.com
+LOKI_URL=https://loki.infra.vereign-cdn.com
 
 # Hostname label for logs
 PROMTAIL_HOSTNAME=stargate
@@ -700,7 +700,7 @@ WireGuard settings in `customer-config.sh`:
 ```bash
 # Local WireGuard settings (this instance)
 WG_PRIVATE_KEY=""               # Auto-generated, then saved back to config
-WG_LOCAL_IP="10.0.0.1"          # MUST BE UNIQUE per deployment
+WG_LOCAL_IP="203.0.113.50"       # Use server's real static public IP
 WG_INTERFACE_PORT="19818"        # Default WireGuard port
 WG_TRANSPORT_MODE="tcp"          # "tcp" (default) or "udp"
 
@@ -750,7 +750,7 @@ docker logs stargate-idagent | grep -i wireguard
 
 **No WireGuard interface:**
 - Check IDAgent logs: `docker logs stargate-idagent`
-- Verify `WG_LOCAL_IP` is set in `.env`
+- Verify `WG_LOCAL_IP` is set in `.env` (should be this server's static public IP)
 
 **Peer not reachable:**
 - Verify remote endpoint is accessible: `nc -zv <endpoint_host> <endpoint_port>`
