@@ -51,6 +51,10 @@ CERT_COMMON_NAME="Example Corp Mail"
 # Countries for the certificate subject (comma-separated, 2-letter codes)
 CERT_COUNTRIES="US"
 
+# CA IDAgent domain for certificate issuance via WireGuard tunnel
+# Contact Vereign for the correct value
+CERT_CA_IDAGENT_DOMAIN=""
+
 # ==============================================================================
 # AUTO-GENERATED: Vault Configuration
 # ==============================================================================
@@ -141,10 +145,10 @@ LOKI_URL="https://loki.your-company.com"
 # across VM recreations. KEEP THIS FILE BACKED UP!
 WG_PRIVATE_KEY=""
 
-# Local WireGuard IP address for this instance (MUST BE UNIQUE per deployment)
-# Each Stargate deployment *MUST HAVE A UNIQUE IP* in the WireGuard network.
-# Contact Vereign to get your assigned IP to avoid conflicts.
-WG_LOCAL_IP="10.0.0.XXX"
+# Local WireGuard IP address for this instance.
+# Use this server's real static public IP address as the WireGuard internal IP.
+# This guarantees uniqueness across all deployments (no coordination needed).
+WG_LOCAL_IP="YOUR_SERVER_STATIC_IP"
 
 # WireGuard interface port (default: 19818)
 WG_INTERFACE_PORT="19818"

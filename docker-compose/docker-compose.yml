@@ -192,11 +192,11 @@ services:
       CERT_CA_ADDR: "https://smimekeys-ca-dev.k8s.vereign-cdn.com"
       CERT_CA_EXPIRY: "8760h"
       CERT_CA_PUBLIC_HTTP_ADDR: ""
-      CERT_CA_IDAGENT_DOMAIN: ""
+      CERT_CA_IDAGENT_DOMAIN: "${CERT_CA_IDAGENT_DOMAIN:-}"
       CERT_CRL_REFRESH_PERIOD: "30m"
       
       # IDAgent integration (for peer certificate sync)
-      IDAGENT_ADDR: ""
+      IDAGENT_ADDR: "http://idagent:8080"
       
       # Sync intervals
       PEER_SYNC_INTERVAL: "30m"
