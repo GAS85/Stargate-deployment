@@ -207,7 +207,7 @@ services:
       # LDAP_USERNAME: "cn=admin,dc=seppmailserver,dc=ch"
       # LDAP_BASE_DN: "ou=publicHINKeys,dc=seppmailserver,dc=ch"
       
-      LOG_LEVEL: "info"
+      LOG_LEVEL: "debug"
     ports:
       - "8081:8080"
       - "2113:2112"
