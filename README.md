@@ -11,6 +11,7 @@ Recommendations and Expectations for the Alpha Phase
 * We recommend preparing and using a test domain, not a production domain, during the alpha phase.
 * If you have a test environment available, please perform the initial installation there and connect it to a test email system.
 * Please do not use real production traffic before the official production release date. Routing production traffic during the alpha phase is done at your own risk.
+  * During the Alpha and Beta testing phases, you are allowed to register any test domain you own. During the onboarding process, a CSR request will be sent to the HIN Test CA server, and the certificate will be issued automatically. 
 
 #### Beta phase 
 
