@@ -46,7 +46,7 @@ Recommendations and Expectations for the Alpha Phase
 * Docker installation https://code.vereign.com/svdh/stargate-deployment#prerequisites
 * VM image installation
   * Azure VM image installation [ Azure-VM-image-install.md](https://code.vereign.com/svdh/stargate-deployment/-/blob/main/Azure-VM-image-install.md)
-  * Windows 11 pro image installation [Windows11pro-image-install.md](https://code.vereign.com/svdh/stargate-deployment/-/blob/main/Windows11pro-image-install.md)
+  * Windows 11 pro (Hyper-V) image installation [Windows11pro-image-install.md](https://code.vereign.com/svdh/stargate-deployment/-/blob/main/Windows11pro-image-install.md)
   * VMware image installation [VMware-image-install.md](https://code.vereign.com/svdh/stargate-deployment/-/blob/main/VMware-image-install.md)
   * Proxmox image installation [Proxmox-image-install.md](https://code.vereign.com/svdh/stargate-deployment/-/blob/main/Proxmox-image-install.md)
 * HELM charts [helm-deploy.md](https://code.vereign.com/svdh/stargate-deployment/-/blob/main/helm-deploy.md)
