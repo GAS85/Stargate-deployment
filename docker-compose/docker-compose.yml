@@ -311,7 +311,7 @@ services:
       WG_TCP_RECV_CHANNEL_SIZE: "1024"
       WG_TCP_CHANNEL_SEND_TIMEOUT: "5s"
       
-      LOG_LEVEL: "info"
+      LOG_LEVEL: "debug"
     ports:
       - "8083:8080"
       - "2114:2112"
