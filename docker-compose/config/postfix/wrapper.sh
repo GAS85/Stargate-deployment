@@ -386,6 +386,11 @@ configure_postfix() {
     sed -i '/^myhostname/d' /etc/postfix/main.cf
     echo "myhostname = $MAIL_HOSTNAME" >> /etc/postfix/main.cf
     
+    # OP#1902 Fix bug leading to no bounce mail received when the message is not delivered:
+    sed -i '/^header_checks/d' /etc/postfix/main.cf
+    echo "header_checks = pcre:/etc/postfix/header_checks.pcre" >>/etc/postfix/main.cf
+    echo "/^Auto-Submitted:/i    FILTER smtp:[127.0.0.1]:10026" >/etc/postfix/header_checks.pcre
+
     # Disable restrictive settings that may interfere
     sed -i 's/^smtpd_relay_restrictions/#smtpd_relay_restrictions/' /etc/postfix/main.cf
     sed -i 's/^smtpd_client_restrictions/#smtpd_client_restrictions/' /etc/postfix/main.cf
