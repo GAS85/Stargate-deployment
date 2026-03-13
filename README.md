@@ -4,7 +4,7 @@
 
 #### Alpha phase 
 
-The alpha phase of HIN MWG is an early testing stage where most of the functionalities are built but still incomplete and may require improvements in processes and functionality.
+The alpha phase of HIN MGW is an early testing stage where most of the functionalities are built but still incomplete and may require improvements in processes and functionality.
 
 Recommendations and Expectations for the Alpha Phase
 * As HIN MGW is still under rapid development, you should expect periodic requests to update your instance.
@@ -15,8 +15,7 @@ Recommendations and Expectations for the Alpha Phase
 
 #### Beta phase 
 
-
-## Services Included
+The beta phase will be announced separately. During beta, the system will still be connected to the HIN Test CA. Real traffic testing can begin once announced.
 
 ### Applications
 - **smimekeys-client** - S/MIME keys client service (port 8081)
@@ -37,6 +36,7 @@ Recommendations and Expectations for the Alpha Phase
 
 ### Monitoring
 - **node-exporter** - Host metrics for Prometheus (port 9100)
+- **version-collector** - Collects app versions from `/liveness` endpoints for node-exporter
 - **Promtail** - Log collector for Loki (ships app logs)
 
 ## Quick Start
@@ -90,46 +90,79 @@ Recommendations and Expectations for the Alpha Phase
 
 ### Step 1: Configure Customer Settings
 
-Before installation, fill in the customer configuration file:
+Before installation, create and fill in the customer configuration file:
 
 ```bash
-# Edit the customer config file
+# Copy the template
+cp customer-config.example customer-config.sh
+
+# Edit the config file
 nano customer-config.sh
 ```
 
-**Required settings:**
-- `CUSTOMER_NAME` - Customer name for identification
-- `DEPLOYMENT_NAME` - Unique deployment identifier (used in logs)
-- `MAIL_DOMAINS` - Mail relay domains, comma-separated for multiple (e.g., `example.com` or `example.com,example.org`)
-- `MXENGINE_PUBLIC_ADDRESS` - Publicly accessible URL for seal callbacks (e.g., `http://203.0.113.10:8084`)
-- `OUTBOUND_SEALER_MX_DOMAIN` - Sealer MX domain for outbound seal delivery (e.g., `vereign-cdn.com`)
-- `CERT_DNS_NAMES` - DNS names for S/MIME certificate
-- `CERT_ORGANIZATION` - Organization name for certificate
-- `CERT_COMMON_NAME` - Common name for certificate
-- `CERT_COUNTRIES` - Country codes for certificate
+**Required settings — you must fill these in:**
 
-**WireGuard local settings (for agent-to-agent communication):**
-- `WG_PRIVATE_KEY` - WireGuard private key (auto-generated on first install, then saved to config)
-- `WG_LOCAL_IP` - Local WireGuard IP (use this server's real static public IP to guarantee uniqueness)
-- `WG_INTERFACE_PORT` - WireGuard port (default: 19818)
-- `WG_TRANSPORT_MODE` - Transport protocol: `tcp` (default) or `udp`
+| Setting | Description | Example |
+|---------|-------------|---------|
+| `SERVER_STATIC_IP` | This server's real static public IP. Used to derive WireGuard tunnel address and MXEngine callback URL. | `203.0.113.10` |
+| `CUSTOMER_NAME` | Customer/organization name (used for identification, logging, and as default certificate organization). | `Acme Corp` |
+| `DEPLOYMENT_NAME` | Unique deployment identifier (used in log labels and Promtail hostname). | `stargate-acme` |
+| `MAIL_DOMAINS` | Mail relay domains, comma-separated for multiple. MX and SPF records are looked up from DNS. | `example.com` or `example.com,example.org` |
 
-**WireGuard peer settings (can be configured later, applied by `onboard.sh`):**
-- `WG_PEER_PUBLIC_KEY` - Remote peer's WireGuard public key
-- `WG_PEER_ENDPOINT` - Remote peer endpoint (host:port)
-- `WG_PEER_IP` - WireGuard IP of remote peer
-- `WG_PEER_PORT` - Communication port on remote peer
-- `WG_PEER_EXTERNAL_ID` - External identifier (e.g., domain) for routing
+**Auto-derived settings — leave empty unless you need to override:**
 
-**Optional settings (have defaults):**
-- `POSTGRES_PASSWORD` - Auto-generated if empty
-- `MINIO_ROOT_PASSWORD` - Auto-generated if empty
-- `POLICY_SYNC_REPO_URL` - Git repo for policy sync (enables policy-sync service)
+| Setting | Derived from | Default |
+|---------|-------------|---------|
+| `MXENGINE_PUBLIC_ADDRESS` | `SERVER_STATIC_IP` | `http://<SERVER_STATIC_IP>:8084` |
+| `CERT_DNS_NAMES` | `MAIL_DOMAINS` + `MAIL_HOSTNAME` | `example.com,mail.example.com` |
+| `CERT_ORGANIZATION` | `CUSTOMER_NAME` | `Acme Corp` |
+| `CERT_COMMON_NAME` | `CUSTOMER_NAME` | `Acme Corp Mail Signing` |
+| `MAIL_HOSTNAME` | First domain in `MAIL_DOMAINS` | `mail.example.com` |
+
+**S/MIME certificate settings:**
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| `CERT_COUNTRIES` | Country codes for certificate subject (2-letter ISO) | `US` |
+| `CERT_CA_IDAGENT_DOMAIN` | CA domain for certificate issuance via WireGuard tunnel | `hintest.ch` |
+
+**WireGuard peer settings (pre-filled for HIN Test):**
+
+The template comes with HIN Test peer defaults. These work out of the box for the alpha/beta phase. Override only if connecting to a different peer.
+
+| Setting | Default (HIN Test) | Description |
+|---------|---------------------|-------------|
+| `WG_PEER_NAME` | `hin-test` | Human-readable peer name |
+| `WG_PEER_PUBLIC_KEY` | `ol2zlG40M7+Rn81V9RUFmkIQV2ILLmEJHZww7HfoLxA=` | Remote peer's WireGuard public key |
+| `WG_PEER_ENDPOINT` | `5.102.144.182:19818` | Remote peer's public endpoint (host:port) |
+| `WG_PEER_IP` | `5.102.144.182` | Remote peer's WireGuard tunnel IP |
+| `WG_PEER_PORT` | `9090` | HTTP communication port on the remote peer |
+| `WG_PEER_EXTERNAL_ID` | `hintest.ch` | External identifier for routing (typically the peer's domain) |
+
+> **Note:** `WG_PEER_IP` is the peer's *tunnel address* (used for routing inside WireGuard), while `WG_PEER_PORT` is the HTTP port the peer's IDAgent listens on for API calls over the tunnel.
+
+**WireGuard local settings (typically left at defaults):**
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `WG_PRIVATE_KEY` | *(auto-generated)* | Generated by IDAgent on first run, then saved to `customer-config.sh` |
+| `WG_LOCAL_IP` | `SERVER_STATIC_IP` | Auto-derived. Only override if you need a different tunnel address. |
+| `WG_INTERFACE_PORT` | `19818` | WireGuard tunnel port (both TCP and UDP are exposed) |
+| `WG_TRANSPORT_MODE` | `tcp` | Transport protocol: `tcp` (default, works through most firewalls) or `udp` |
+
+**Optional settings (have sensible defaults):**
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `POSTGRES_PASSWORD` | *(auto-generated)* | Auto-generated 24-char random password if empty |
+| `MINIO_ROOT_PASSWORD` | *(auto-generated)* | Auto-generated 24-char random password if empty |
+| `OUTBOUND_SEALER_MX_DOMAIN` | `hintest.ch` | Sealer MX domain for outbound seal delivery |
+| `POLICY_SYNC_REPO_URL` | GitHub HIN Stargate policies | Git repo URL for OPA/Rego policy sync |
+| `LOKI_URL` | `https://loki.infra.vereign-cdn.com` | Loki endpoint for centralized log shipping |
 
 **Auto-generated (do not set manually):**
-- `VAULT_TOKEN` - Generated by Vault during first initialization (saved to customer-config.sh)
-- `WG_PRIVATE_KEY` - Generated by IDAgent on first run (saved to customer-config.sh)
-- Application versions, advanced mail settings, etc.
+- `VAULT_TOKEN` — Generated by Vault during first initialization, saved to `customer-config.sh`
+- `WG_PRIVATE_KEY` — Generated by IDAgent on first run, saved to `customer-config.sh`
 
 ### Step 2: Deploy to a Server
 
@@ -137,32 +170,43 @@ nano customer-config.sh
 # Copy files to the server
 scp -r docker-compose/* your-server:/path/to/stargate/
 
-# SSH to server and install
-ssh your-server "cd /path/to/stargate && chmod +x scripts/*.sh && ./scripts/install.sh"
+# SSH to server
+ssh your-server
+cd /path/to/stargate
+
+# Create customer config from template
+cp customer-config.example customer-config.sh
+nano customer-config.sh   # Fill in required settings (see Step 1)
+
+# Run installation
+chmod +x scripts/*.sh
+./scripts/install.sh
 ```
 
 ### Step 3: What Install Does
 
-The install script will:
-1. Check for Docker/Docker Compose/jq and offer to install them if missing (Ubuntu)
-2. Load and validate `customer-config.sh`
-3. Generate `.env` file with all configuration (auto-generate passwords if not set)
-4. Start infrastructure (PostgreSQL, Vault, MinIO)
-5. Initialize Vault (create keys, unseal, create mounts)
-6. Save Vault keys to `secrets/vault-keys.json`
-7. Update `.env` with the Vault root token
-8. Restart application services to pick up the token
-9. Run initial onboarding (`onboard.sh --initial-setup`):
-   - Generate S/MIME signing key and CSR
-   - Save CSR to `secrets/signing-key.csr`
-10. Set up daily backup cron job (runs at 2:00 AM)
+The install script (`install.sh`) performs the following steps:
+
+1. **Check dependencies** — Detects Docker, Docker Compose, and `jq`. If missing, installs them automatically (supports Ubuntu/Debian, RHEL/AlmaLinux/Rocky).
+2. **Load and validate** `customer-config.sh` — Checks required fields (`SERVER_STATIC_IP`, `CUSTOMER_NAME`, `DEPLOYMENT_NAME`, `MAIL_DOMAINS`). Auto-derives optional fields (certificate names, MXEngine URL, etc.).
+3. **Generate `.env`** from customer config — Auto-generates passwords if not set.
+4. **Start all services** via Docker Compose (infrastructure + applications).
+5. **Initialize Vault** — The `vault-init` container initializes, unseals, and creates KV-v2 secret mounts. Optionally writes the WireGuard private key to Vault.
+6. **Save Vault keys** to `secrets/vault-keys.json` and update `.env` with the root token. The token is also saved to `customer-config.sh` for persistence across VM recreations.
+7. **Restart application services** to pick up the Vault token.
+8. **Run initial onboarding** (`onboard.sh --initial-setup`):
+   - Generate S/MIME signing key and CSR (saved to `secrets/signing-key.csr`)
+   - Set up WireGuard peer connection in the database
+   - If the WireGuard tunnel to the CA is not yet established, CSR submission may fail — this is expected on first install. Services still run; retry with `./scripts/onboard.sh --regenerate-cert` once the tunnel is up.
+9. **Save WireGuard private key** to `customer-config.sh` — extracted from Vault after IDAgent generates it.
+10. **Set up daily backup** cron job (runs at 2:00 AM).
 
 ### Step 4: Onboard Domains (Post-Install)
 
 After initial installation, use `onboard.sh` to manage domains, certificates, and WireGuard peers:
 
 ```bash
-# Edit customer-config.sh to add/change domains
+# Edit customer-config.sh to add/change domains or peer settings
 nano customer-config.sh
 
 # Apply changes
@@ -170,11 +214,19 @@ nano customer-config.sh
 ```
 
 **What `onboard.sh` does:**
-1. Loads settings from `customer-config.sh`
-2. Updates `.env` with current domain and WireGuard settings
-3. Generates S/MIME key + CSR (skips if already exists, use `--regenerate-cert` to force)
-4. Sets up WireGuard peer connection (runs `idagent-init`)
-5. Restarts affected services (postfix-relay, mxengine)
+1. Loads and validates settings from `customer-config.sh`
+2. Auto-derives certificate fields (`CERT_DNS_NAMES`, `CERT_ORGANIZATION`, `CERT_COMMON_NAME`) the same way `install.sh` does
+3. Updates `.env` with current domain, certificate, and WireGuard settings
+4. Generates S/MIME key + CSR (skips if already exists, use `--regenerate-cert` to force)
+   - The CSR is submitted to the CA via the WireGuard tunnel (90-second timeout)
+   - If submission fails (tunnel not ready), a warning is printed and the script continues — services remain running
+5. Sets up or updates the WireGuard peer connection in the database (runs `idagent-init`)
+6. Restarts affected services (postfix-relay, mxengine, idagent)
+
+**Exit codes:**
+- `0` — Everything succeeded
+- `1` — Fatal error (missing config, etc.)
+- `2` — Partial success (services running, but certificate issuance failed — retry later)
 
 **Adding a new domain:**
 1. Edit `customer-config.sh` — add domain to `MAIL_DOMAINS` (comma-separated):
@@ -182,7 +234,7 @@ nano customer-config.sh
    MAIL_DOMAINS="example.com,example.org"
    ```
 2. Run `./scripts/onboard.sh`
-3. The script updates routing and restarts services
+3. The script updates Postfix routing, regenerates certificate SANs (if auto-derived), and restarts services
 
 **Regenerating certificates:**
 ```bash
@@ -248,28 +300,31 @@ These commands **DELETE ALL DATA** - use with caution:
 
 # Or manually remove volumes
 docker compose down -v   # The -v flag removes volumes!
+```
 
 ## Scripts Reference
 
 | Script | Purpose |
 |--------|--------|
-| `install.sh` | First-time infrastructure setup (Docker, Vault, then calls onboard.sh) |
+| `install.sh` | First-time installation (Docker, Vault, then calls `onboard.sh`) |
 | `onboard.sh` | Domain onboarding (S/MIME key, WireGuard peer, mail domains, service restart) |
 | `start.sh` | Start services and unseal Vault |
 | `stop.sh` | Stop containers (data preserved) |
 | `backup.sh` | Full backup (database, Vault keys, config, certificates) |
 | `restore.sh` | Restore from backup archive (works on fresh machine) |
 | `purge.sh` | Delete ALL data (requires confirmation) |
-| `health-check.sh` | Comprehensive health check of all services |
-| `init-vault.sh` | Vault initialization (used by vault-init container) |
-| `init-idagent.sh` | WireGuard peer connection setup (used by idagent-init container) |
+| `health-check.sh` | Comprehensive health check of all services (exit 0 = healthy, 1 = failures) |
+| `init-vault.sh` | Vault initialization (used by `vault-init` container, not called directly) |
+| `init-idagent.sh` | WireGuard peer connection setup (used by `idagent-init` container, not called directly) |
+| `gather-app-versions.sh` | Collects app versions from `/liveness` endpoints for node-exporter (runs in `version-collector` container) |
 
 ## Configuration Files
 
 | File | Purpose |
 |------|---------|
-| `customer-config.sh` | Customer-specific settings (fill in before install) |
-| `.env` | Generated environment file (created by install.sh, updated by onboard.sh) |
+| `customer-config.example` | Template for customer settings (copy to `customer-config.sh`) |
+| `customer-config.sh` | Customer-specific settings (created from template, fill in before install) |
+| `.env` | Generated environment file (created by `install.sh`, updated by `onboard.sh`) |
 | `secrets/vault-keys.json` | Vault unseal keys and root token (back up securely!) |
 | `secrets/signing-key.csr` | Generated CSR for S/MIME certificate |
 
@@ -387,24 +442,41 @@ docker compose up -d --force-recreate mxengine
 
 ## Configuration
 
-The `.env` file is automatically generated by `install.sh` from `customer-config.sh`. Domain and WireGuard settings are updated by `onboard.sh`. Edit `customer-config.sh` to customize:
+The `.env` file is automatically generated by `install.sh` from `customer-config.sh`. Domain, certificate, and WireGuard settings are updated by `onboard.sh`. To customize, edit `customer-config.sh` and re-run the appropriate script.
+
+Key sections in the generated `.env`:
 
 ```env
-# PostgreSQL
+# PostgreSQL (auto-generated if empty in customer-config.sh)
 POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
+POSTGRES_PASSWORD=<auto-generated>
 
-# MinIO
+# Vault (auto-populated after initialization)
+VAULT_TOKEN=<auto-generated>
+
+# MinIO (auto-generated if empty in customer-config.sh)
 MINIO_ROOT_USER=minioadmin
-MINIO_ROOT_PASSWORD=minioadmin123
-S3_BUCKET_NAME=stargate-bucket
+MINIO_ROOT_PASSWORD=<auto-generated>
 
-# Application versions
-SMIMEKEYS_VERSION=latest
-POLICY_VERSION=latest
-IDAGENT_VERSION=latest
-MXENGINE_VERSION=latest
+# Application Versions
+SMIMEKEYS_VERSION=v0.0.5
+POLICY_VERSION=v0.0.5
+IDAGENT_VERSION=v0.0.6-branch
+MXENGINE_VERSION=v0.0.35
+
+# Mail Configuration
+MAIL_DOMAINS=example.com
+MAIL_HOSTNAME=mail.example.com
+MXENGINE_PUBLIC_ADDRESS=http://203.0.113.50:8084
+OUTBOUND_SEALER_MX_DOMAIN=hintest.ch
+
+# WireGuard
+WG_LOCAL_IP=203.0.113.50
+WG_INTERFACE_PORT=19818
+WG_TRANSPORT_MODE=tcp
 ```
+
+> **Do not edit `.env` directly.** Changes will be overwritten by `onboard.sh`. Always edit `customer-config.sh` instead.
 
 ## Service URLs
 
@@ -494,8 +566,8 @@ Promtail collects logs from application containers and ships them to Loki.
 # Loki push URL
 LOKI_URL=https://loki.infra.vereign-cdn.com
 
-# Hostname label for logs
-PROMTAIL_HOSTNAME=stargate
+# Hostname label for logs (auto-set to DEPLOYMENT_NAME)
+PROMTAIL_HOSTNAME=stargate-acme
 ```
 
 **Labels added to logs:**
@@ -532,9 +604,9 @@ The Postfix relay container automatically configures itself from DNS records and
 ### Mail Flow Architecture
 
 ```
-External Mail Server (port 25)
+External Mail Server
          │
-         ▼
+         ▼ (port 25)
 ┌─────────────────────────────────────────────────────┐
 │ Postfix Relay (stargate-postfix-relay)              │
 │                                                     │
@@ -545,7 +617,7 @@ External Mail Server (port 25)
 │    │                                                │
 └────┼────────────────────────────────────────────────┘
      │
-     ▼
+     ▼ (port 1587)
 ┌─────────────────────────────────────────────────────┐
 │ MXEngine (stargate-mxengine)                        │
 │                                                     │
@@ -555,12 +627,11 @@ External Mail Server (port 25)
 │  Sign/encrypt/process mail                          │
 │    │                                                │
 │    ▼                                                │
-│  OUTBOUND_SMTP_HOST=${OUTBOUND_SMTP_HOST}          │
-│  OUTBOUND_SMTP_PORT=${OUTBOUND_SMTP_PORT}           │
+│  Deliver back to Postfix for relay                  │
 │    │                                                │
 └────┼────────────────────────────────────────────────┘
      │
-     ▼
+     ▼ (port 10026)
 ┌─────────────────────────────────────────────────────┐
 │ Postfix Relay (stargate-postfix-relay)              │
 │                                                     │
@@ -571,13 +642,15 @@ External Mail Server (port 25)
 │    │                                                │
 └────┼────────────────────────────────────────────────┘
      │
-     ▼
+     ▼ (port 25)
 Destination Mail Server (via MX lookup)
 ```
 
+**Seal callback flow (inbound):** When a remote sealer needs to deliver a sealed message, it calls `MXENGINE_PUBLIC_ADDRESS` (default: `http://<SERVER_STATIC_IP>:8084`). This is why port 8084 must be open for inbound traffic. The `http://` protocol is correct — TLS is not required because the seal payload is already encrypted.
+
 ### Configuration
 
-Set `MAIL_DOMAINS` in your `customer-config.sh` (or `.env` file):
+Set `MAIL_DOMAINS` in your `customer-config.sh`:
 
 ```bash
 # Required: Your mail domain(s), comma-separated for multiple
@@ -588,11 +661,11 @@ MAIL_DOMAINS=example.com,example.org
 ```
 
 The container will (for each domain):
-1. Look up MX records to find relay destination
-2. Parse SPF records recursively to find allowed sender networks
+1. Look up **MX records** to find the relay destination (where to deliver processed mail)
+2. Parse **SPF records** recursively to find allowed sender networks (which IPs may send mail via port 25)
 3. Auto-detect Docker networks for the port 10026 listener
-4. Configure content_filter to route mail through mxengine
-5. Set up transport maps to relay processed mail to destination MX
+4. Configure `content_filter` to route incoming mail through mxengine
+5. Set up transport maps to relay processed mail to the destination MX
 
 ### Ports
 
@@ -685,16 +758,18 @@ IDAgent uses WireGuard to establish secure encrypted tunnels between Stargate in
 
 ### How It Works
 
+Each Stargate instance uses its server's real static public IP as the WireGuard tunnel address. This guarantees uniqueness across all deployments without manual coordination.
+
 ```
-┌─────────────────────────────────────────┐       ┌─────────────────────────────────────────┐
-│ Stargate Instance A                     │       │ Stargate Instance B                     │
-│                                         │       │                                         │
-│  IDAgent (10.0.0.1:19818)               │◄─────►│  IDAgent (10.0.0.2:19818)               │
-│     │                                   │  WG   │     │                                   │
-│     ▼                                   │ Tunnel│     ▼                                   │
-│  Sealed message delivery via WG tunnel  │       │  Receive sealed message                 │
-│                                         │       │                                         │
-└─────────────────────────────────────────┘       └─────────────────────────────────────────┘
+┌──────────────────────────────────────────┐       ┌──────────────────────────────────────────┐
+│ Your Stargate (203.0.113.50)             │       │ HIN Test (5.102.144.182)                 │
+│                                          │       │                                          │
+│  IDAgent (203.0.113.50:19818)            │◄─────►│  IDAgent (5.102.144.182:19818)            │
+│     │                                    │  WG   │     │                                    │
+│     ▼                                    │ Tunnel│     ▼                                    │
+│  Sealed message delivery via WG tunnel   │ (TCP) │  Receive sealed message                  │
+│                                          │       │                                          │
+└──────────────────────────────────────────┘       └──────────────────────────────────────────┘
 ```
 
 ### Configuration
@@ -702,32 +777,44 @@ IDAgent uses WireGuard to establish secure encrypted tunnels between Stargate in
 WireGuard settings in `customer-config.sh`:
 
 ```bash
-# Local WireGuard settings (this instance)
-WG_PRIVATE_KEY=""               # Auto-generated, then saved back to config
-WG_LOCAL_IP="203.0.113.50"       # Use server's real static public IP
-WG_INTERFACE_PORT="19818"        # Default WireGuard port
-WG_TRANSPORT_MODE="tcp"          # "tcp" (default) or "udp"
+# ==============================================================================
+# Server IP — used as WireGuard tunnel address and MXEngine callback URL
+# ==============================================================================
+SERVER_STATIC_IP="203.0.113.50"       # Your server's real static public IP
 
-# Peer configuration (remote instance to connect to)
-WG_PEER_NAME="remote-agent"                          # Human-readable name
-WG_PEER_PUBLIC_KEY="WhTN0ekf/jT+wAv9kIIHmwMLPWr9Gv1MXxnvAkJKbHU="  # Remote's WG public key
-WG_PEER_ENDPOINT="203.0.113.10:19818"                # Remote's public endpoint
-WG_PEER_IP="10.0.0.2"                                # Remote's WireGuard IP
-WG_PEER_PORT="9090"                                  # Communication port
-WG_PEER_EXTERNAL_ID="example.com"                    # Used for routing decisions
+# ==============================================================================
+# WireGuard local settings (typically left at defaults)
+# ==============================================================================
+WG_PRIVATE_KEY=""                     # Auto-generated by IDAgent, then saved back to config
+WG_INTERFACE_PORT="19818"             # Default WireGuard port
+WG_TRANSPORT_MODE="tcp"               # "tcp" (default) or "udp"
+
+# ==============================================================================
+# WireGuard peer (pre-filled for HIN Test — override for a different peer)
+# ==============================================================================
+WG_PEER_NAME="hin-test"
+WG_PEER_PUBLIC_KEY="ol2zlG40M7+Rn81V9RUFmkIQV2ILLmEJHZww7HfoLxA="
+WG_PEER_ENDPOINT="5.102.144.182:19818"
+WG_PEER_IP="5.102.144.182"            # Peer's WireGuard tunnel address
+WG_PEER_PORT="9090"                   # Peer's HTTP API port (over the tunnel)
+WG_PEER_ALLOWED_IPS="5.102.144.182/32"
+WG_PEER_EXTERNAL_ID="hintest.ch"      # Used for routing decisions
+WG_PEER_DESCRIPTION="Connection to HIN Test IDAgent"
 ```
 
-**Important:** Each Stargate deployment *MUST HAVE A UNIQUE IP* in the WireGuard network. Best sync with Vereign to avoid IP conflicts.
+> **`WG_LOCAL_IP`** is auto-derived from `SERVER_STATIC_IP`. You do not need to set it separately.
+
+> **`WG_PEER_IP`** vs **`WG_PEER_PORT`**: `WG_PEER_IP` is the remote peer's tunnel address (used for WireGuard routing). `WG_PEER_PORT` is the HTTP port the remote IDAgent listens on for API calls over the tunnel (default `9090`). These are independent values.
 
 ### Peer Connection Setup
 
-The WireGuard peer connection is set up by `onboard.sh` (which runs the `idagent-init` container). During initial install, peer setup is deferred — configure the peer settings in `customer-config.sh` and run `./scripts/onboard.sh` to establish the connection.
+The WireGuard peer connection is managed by `onboard.sh` (which runs the `idagent-init` container). The `customer-config.example` template comes with HIN Test peer defaults pre-filled, so the connection is set up automatically during `install.sh`.
 
 The `idagent-init` container:
 
 1. Waits for IDAgent to generate its WireGuard keypair
-2. Creates a connection entry in the `connections` table
-3. Links the peer with endpoint, IP, and routing information
+2. Creates a connection entry in the `connections` table with status `completed`
+3. Links the peer with endpoint, IP, and routing information (external IDs)
 
 ### Verification
 
@@ -739,12 +826,12 @@ docker exec stargate-idagent wg show
 docker exec stargate-postgres psql -U postgres -d idagent \
   -c "SELECT connection_id, name, endpoint, wireguard_ip, transport, status FROM connections;"
 
-# Check connection external IDs
+# Check connection external IDs (used for routing)
 docker exec stargate-postgres psql -U postgres -d idagent \
   -c "SELECT connection_id, external_id FROM connection_external_ids;"
 
-# Test WireGuard connectivity (ping remote peer IP)
-docker exec stargate-idagent ping -c 3 10.0.0.2
+# Test WireGuard connectivity (ping the remote peer's tunnel IP)
+docker exec stargate-idagent ping -c 3 5.102.144.182
 
 # Check IDAgent logs for tunnel activity
 docker logs stargate-idagent | grep -i wireguard
@@ -754,7 +841,7 @@ docker logs stargate-idagent | grep -i wireguard
 
 **No WireGuard interface:**
 - Check IDAgent logs: `docker logs stargate-idagent`
-- Verify `WG_LOCAL_IP` is set in `.env` (should be this server's static public IP)
+- Verify `WG_LOCAL_IP` is set in `.env` (auto-derived from `SERVER_STATIC_IP` — should be this server's static public IP)
 
 **Peer not reachable:**
 - Verify remote endpoint is accessible: `nc -zv <endpoint_host> <endpoint_port>`
@@ -788,8 +875,8 @@ The `policy-sync` service automatically syncs OPA/Rego policies from a Git repos
 Settings in `customer-config.sh`:
 
 ```bash
-# Git repository containing policies
-POLICY_SYNC_REPO_URL="https://code.vereign.com/svdh/policies-public.git"
+# Git repository containing policies (pre-configured with HIN Stargate policies)
+POLICY_SYNC_REPO_URL="https://github.com/Health-Info-Net-AG/Stargate-policies.git"
 
 # Optional: Authentication for private repos
 POLICY_SYNC_REPO_USER=""
@@ -938,7 +1025,8 @@ docker compose logs <service-name>
 stargate/
 ├── docker-compose.yml      # Main compose file
 ├── .env                    # Environment variables (generated by install.sh)
-├── customer-config.sh      # Customer-specific settings
+├── customer-config.sh      # Customer-specific settings (copied from customer-config.example)
+├── customer-config.example # Template for customer configuration
 ├── README.md               # This file
 ├── config/
 │   ├── vault/
@@ -952,17 +1040,17 @@ stargate/
 │   └── postgres/
 │       └── 01-create-databases.sql
 ├── scripts/
-│   ├── install.sh          # First-time installation
-│   ├── onboard.sh          # Domain onboarding (run after install or to add domains)
-│   ├── start.sh            # Start services + unseal Vault
-│   ├── stop.sh             # Stop containers (preserves data)
-│   ├── backup.sh           # Full backup (DB, Vault, config, certs)
-│   ├── restore.sh          # Restore from backup archive
-│   ├── purge.sh            # Delete all data (destructive!)
-│   ├── health-check.sh     # Comprehensive health check of all services
-│   ├── init-vault.sh       # Vault initialization (used by container)
-│   ├── init-idagent.sh     # WireGuard peer connection setup (used by container)
-│   └── gather-app-versions.sh  # Collects app versions for node-exporter
+│   ├── install.sh              # First-time installation
+│   ├── onboard.sh              # Domain onboarding (run after install or to add domains)
+│   ├── start.sh                # Start services + unseal Vault
+│   ├── stop.sh                 # Stop containers (preserves data)
+│   ├── backup.sh               # Full backup (DB, Vault, config, certs)
+│   ├── restore.sh              # Restore from backup archive
+│   ├── purge.sh                # Delete all data (destructive!)
+│   ├── health-check.sh         # Comprehensive health check of all services
+│   ├── init-vault.sh           # Vault initialization (used by vault-init container)
+│   ├── init-idagent.sh         # WireGuard peer connection setup (used by idagent-init container)
+│   └── gather-app-versions.sh  # Collects app versions for node-exporter metrics
 ├── secrets/                # Created on first run (gitignored)
 │   ├── vault-keys.json     # Vault unseal keys (BACK THIS UP!)
 │   └── signing-key.csr     # S/MIME certificate signing request
