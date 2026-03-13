@@ -486,7 +486,8 @@ if [ -f "$KEYS_FILE" ]; then
   
   # Run onboarding (S/MIME key + CSR generation, .env domain updates)
   echo ""
-  "$SCRIPT_DIR/onboard.sh" --initial-setup
+  ONBOARD_EXIT=0
+  "$SCRIPT_DIR/onboard.sh" --initial-setup || ONBOARD_EXIT=$?
   
   # Setup backup cron job
   setup_backup_cron
@@ -510,9 +511,20 @@ sleep 3
 docker compose ps
 
 echo ""
-echo "============================================"
-echo "  Installation Complete!"
-echo "============================================"
+if [ "${ONBOARD_EXIT:-0}" -eq 0 ]; then
+  echo "============================================"
+  echo "  Installation Complete!"
+  echo "============================================"
+else
+  echo "============================================"
+  echo "  Installation Complete (with warnings)"
+  echo "============================================"
+  echo ""
+  echo "  ⚠ Certificate issuance failed."
+  echo "    The WireGuard tunnel to the CA is not yet established."
+  echo "    Services are running — the certificate can be retried with:"
+  echo "      ./scripts/onboard.sh --regenerate-cert"
+fi
 echo ""
 echo "  Customer: $CUSTOMER_NAME"
 echo "  Deployment: $DEPLOYMENT_NAME"

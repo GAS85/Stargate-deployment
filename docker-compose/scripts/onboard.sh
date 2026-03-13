@@ -280,9 +280,9 @@ generate_smime_key_and_csr() {
 
   echo "  Key ID: $KEY_ID"
 
-  # Step 2: Generate CSR
-  echo "Generating CSR..."
-  CSR_RESPONSE=$(curl -s --location 'http://localhost:8081/v1/certs/csr' \
+  # Step 2: Generate CSR and request certificate
+  echo "Generating CSR and requesting certificate (this may take up to 60s)..."
+  CSR_RESPONSE=$(curl -s --max-time 90 --location 'http://localhost:8081/v1/certs/csr' \
     --header 'Content-Type: application/json' \
     --header 'Accept: application/json' \
     --data "{
@@ -293,22 +293,40 @@ generate_smime_key_and_csr() {
       \"subjectOrg\": \"$CERT_ORGANIZATION\"
     }")
 
-  # Save CSR to file
+  # Save CSR to file if present
   mkdir -p "$SECRETS_DIR"
-  echo "$CSR_RESPONSE" | jq -r '.csr // empty' > "$CSR_FILE" 2>/dev/null || true
+  CSR_VALUE=$(echo "$CSR_RESPONSE" | jq -r '.csr // empty' 2>/dev/null || true)
 
-  echo ""
-  echo "============================================"
-  echo "  CSR Generated Successfully"
-  echo "============================================"
-  echo ""
-  echo "$CSR_RESPONSE" | jq . 2>/dev/null || echo "$CSR_RESPONSE"
-  echo ""
-
-  if [ -s "$CSR_FILE" ]; then
+  if [ -n "$CSR_VALUE" ]; then
+    echo "$CSR_VALUE" > "$CSR_FILE"
+    echo ""
+    echo "============================================"
+    echo "  CSR Generated Successfully"
+    echo "============================================"
+    echo ""
+    echo "$CSR_RESPONSE" | jq . 2>/dev/null || echo "$CSR_RESPONSE"
+    echo ""
     echo "  CSR saved to: $CSR_FILE"
+    echo ""
+    return 0
+  else
+    echo ""
+    echo "============================================"
+    echo "  WARNING: Certificate request failed"
+    echo "============================================"
+    echo ""
+    echo "  The S/MIME key was generated (Key ID: $KEY_ID), but the certificate"
+    echo "  request failed. This usually means the WireGuard tunnel to the CA"
+    echo "  is not yet established."
+    echo ""
+    echo "  Response from smimekeys-client:"
+    echo "$CSR_RESPONSE" | jq . 2>/dev/null || echo "  $CSR_RESPONSE"
+    echo ""
+    echo "  To retry certificate issuance later, run:"
+    echo "    ./scripts/onboard.sh --regenerate-cert"
+    echo ""
+    return 1
   fi
-  echo ""
 }
 
 # ==============================================================================
@@ -351,9 +369,12 @@ if [ "$INITIAL_SETUP" = false ]; then
   check_services
 fi
 
+# Track failures
+ONBOARD_WARNINGS=0
+
 load_onboard_config
 update_env_settings
-generate_smime_key_and_csr
+generate_smime_key_and_csr || ONBOARD_WARNINGS=$((ONBOARD_WARNINGS + 1))
 
 if [ "$INITIAL_SETUP" = false ]; then
   setup_wireguard_peer
@@ -361,13 +382,22 @@ if [ "$INITIAL_SETUP" = false ]; then
 fi
 
 echo "============================================"
-echo "  Onboarding Complete"
+if [ $ONBOARD_WARNINGS -gt 0 ]; then
+  echo "  Onboarding Complete (with warnings)"
+else
+  echo "  Onboarding Complete"
+fi
 echo "============================================"
 echo ""
 echo "  Mail domains:  $MAIL_DOMAINS"
 echo "  Mail hostname: $MAIL_HOSTNAME"
 if [ -n "$WG_PEER_ENDPOINT" ]; then
   echo "  WG peer:       $WG_PEER_NAME ($WG_PEER_ENDPOINT)"
+fi
+if [ $ONBOARD_WARNINGS -gt 0 ]; then
+  echo ""
+  echo "  ⚠ Certificate issuance failed (WireGuard tunnel may not be established yet)."
+  echo "    Retry with: ./scripts/onboard.sh --regenerate-cert"
 fi
 echo ""
 echo "  To add or change domains:"
@@ -377,3 +407,7 @@ echo ""
 echo "  To regenerate S/MIME certificate:"
 echo "    ./scripts/onboard.sh --regenerate-cert"
 echo ""
+
+# Exit with warning code so callers can detect partial success
+# Exit 0 = full success, Exit 2 = partial success (cert failed)
+exit $( [ $ONBOARD_WARNINGS -gt 0 ] && echo 2 || echo 0 )
