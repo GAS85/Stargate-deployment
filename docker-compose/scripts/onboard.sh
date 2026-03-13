@@ -121,11 +121,9 @@ load_onboard_config() {
 
   [ -z "$MAIL_DOMAINS" ] && missing+=("MAIL_DOMAINS (or MAIL_DOMAIN)")
 
-  # Cert fields required for S/MIME key generation
-  [ -z "$CERT_DNS_NAMES" ] && missing+=("CERT_DNS_NAMES")
-  [ -z "$CERT_ORGANIZATION" ] && missing+=("CERT_ORGANIZATION")
-  [ -z "$CERT_COMMON_NAME" ] && missing+=("CERT_COMMON_NAME")
+  # Cert fields (CERT_DNS_NAMES, CERT_ORGANIZATION, CERT_COMMON_NAME are auto-derived after validation)
   [ -z "$CERT_COUNTRIES" ] && missing+=("CERT_COUNTRIES")
+  [ -z "$CUSTOMER_NAME" ] && missing+=("CUSTOMER_NAME")
 
   if [ ${#missing[@]} -gt 0 ]; then
     echo "ERROR: Missing required configuration values:"
@@ -136,8 +134,15 @@ load_onboard_config() {
     exit 1
   fi
 
-  # Set defaults
+  # Auto-derive certificate fields if not explicitly set
   MAIL_HOSTNAME="${MAIL_HOSTNAME:-mail.${MAIL_DOMAIN_PRIMARY}}"
+  if [ -z "$CERT_DNS_NAMES" ]; then
+    CERT_DNS_NAMES="$MAIL_DOMAINS,$MAIL_HOSTNAME"
+  fi
+  CERT_ORGANIZATION="${CERT_ORGANIZATION:-$CUSTOMER_NAME}"
+  CERT_COMMON_NAME="${CERT_COMMON_NAME:-$CUSTOMER_NAME Mail Signing}"
+
+  # Set defaults
   OUTBOUND_SEALER_MX_DOMAIN="${OUTBOUND_SEALER_MX_DOMAIN:-}"
   CERT_CA_IDAGENT_DOMAIN="${CERT_CA_IDAGENT_DOMAIN:-}"
   OUTBOUND_SMTP_HOST="${OUTBOUND_SMTP_HOST:-postfix-relay}"

@@ -9,6 +9,17 @@
 # ==============================================================================
 
 # ==============================================================================
+# REQUIRED: Server Network Configuration
+# ==============================================================================
+
+# Static public IP address of this VM/server.
+# This is the single network identity for the deployment — used to derive:
+#   - WireGuard local IP (unique tunnel address)
+#   - MXEngine public address (seal callbacks)
+# Must be a real routable static IP (not a private/NAT address).
+SERVER_STATIC_IP="YOUR_SERVER_STATIC_IP"
+
+# ==============================================================================
 # REQUIRED: Customer Identification
 # ==============================================================================
 
@@ -30,30 +41,33 @@ MAIL_DOMAINS="example.com"
 # Mail server hostname (optional, defaults to mail.<first domain>)
 MAIL_HOSTNAME="mail.example.com"
 
-# MXEngine public address (REQUIRED for seal strategy callbacks)
-# This must be the publicly accessible URL where the sealer can reach mxengine
-# Replace with your server's public IP or hostname
-MXENGINE_PUBLIC_ADDRESS="http://YOUR_SERVER_IP:8084"
+# MXEngine public address (for seal strategy callbacks)
+# Auto-derived from SERVER_STATIC_IP if left empty: http://<SERVER_STATIC_IP>:8084
+# Override only if behind a reverse proxy or using a custom hostname.
+MXENGINE_PUBLIC_ADDRESS=""
 
 # ==============================================================================
 # REQUIRED: S/MIME Certificate Configuration
 # ==============================================================================
 
 # DNS names for the certificate (comma-separated)
-CERT_DNS_NAMES="example.com,mail.example.com"
+# Auto-derived from MAIL_DOMAINS + MAIL_HOSTNAME if left empty.
+# Override only if you need different SANs on the certificate.
+CERT_DNS_NAMES=""
 
 # Organization name for the certificate subject
-CERT_ORGANIZATION="Example Corp"
+# Defaults to CUSTOMER_NAME if left empty.
+CERT_ORGANIZATION=""
 
 # Common Name for the certificate subject
-CERT_COMMON_NAME="Example Corp Mail"
+# Defaults to "<CUSTOMER_NAME> Mail Signing" if left empty.
+CERT_COMMON_NAME=""
 
 # Countries for the certificate subject (comma-separated, 2-letter codes)
 CERT_COUNTRIES="US"
 
 # CA IDAgent domain for certificate issuance via WireGuard tunnel
-# Contact Vereign for the correct value
-CERT_CA_IDAGENT_DOMAIN=""
+CERT_CA_IDAGENT_DOMAIN="hintest.ch"
 
 # ==============================================================================
 # AUTO-GENERATED: Vault Configuration
@@ -88,17 +102,18 @@ S3_BUCKET_NAME="stargate-bucket"
 # Use "dev" for the latest development builds,
 # or specify exact versions like "v0.0.3"
 
-SMIMEKEYS_VERSION="v0.0.4"
-POLICY_VERSION="v0.0.4"
+SMIMEKEYS_VERSION="v0.0.5"
+POLICY_VERSION="v0.0.5"
 IDAGENT_VERSION="v0.0.6-branch"
-MXENGINE_VERSION="v0.0.32"
+MXENGINE_VERSION="v0.0.35"
+POLICY_SYNC_VERSION="dev"
 
 # ==============================================================================
 # OPTIONAL: Advanced Mail Configuration
 # ==============================================================================
 
 # Sealer MX domain for outbound seal delivery
-OUTBOUND_SEALER_MX_DOMAIN=""
+OUTBOUND_SEALER_MX_DOMAIN="hintest.ch"
 
 # External SMTP host for outbound delivery (default: postfix-relay)
 # Set if the customer uses an external Postfix server
@@ -119,7 +134,7 @@ DNS_TIMEOUT="2"
 # The service runs automatically and syncs at the configured interval.
 # Contact Vereign for the policy repository URL and credentials.
 
-POLICY_SYNC_REPO_URL="https://code.vereign.com/svdh/policies-public.git"
+POLICY_SYNC_REPO_URL="https://github.com/Health-Info-Net-AG/Stargate-policies.git"
 POLICY_SYNC_REPO_USER=""
 POLICY_SYNC_REPO_PASS=""
 POLICY_SYNC_REPO_BRANCH=""
@@ -132,7 +147,7 @@ POLICY_SYNC_VERSION="dev"
 # ==============================================================================
 # Contact Vereign for the Loki URL if you want centralized logging.
 
-LOKI_URL="https://loki.your-company.com"
+LOKI_URL="https://loki.infra.vereign-cdn.com"
 
 # ==============================================================================
 # REQUIRED: WireGuard Configuration
@@ -143,12 +158,13 @@ LOKI_URL="https://loki.your-company.com"
 # WireGuard private key (optional - auto-generated if empty, then saved back here)
 # After first install, this will be populated automatically so the key persists
 # across VM recreations. KEEP THIS FILE BACKED UP!
+# The public key will be printed during install — share it with the HIN team
+# so they can register your instance as a peer.
 WG_PRIVATE_KEY=""
 
-# Local WireGuard IP address for this instance.
-# Use this server's real static public IP address as the WireGuard internal IP.
-# This guarantees uniqueness across all deployments (no coordination needed).
-WG_LOCAL_IP="YOUR_SERVER_STATIC_IP"
+# WireGuard local IP — auto-derived from SERVER_STATIC_IP if left empty.
+# Override only if you need a different tunnel address.
+WG_LOCAL_IP=""
 
 # WireGuard interface port (default: 19818)
 WG_INTERFACE_PORT="19818"
@@ -160,36 +176,36 @@ WG_TRANSPORT_MODE=""
 # ==============================================================================
 # REQUIRED: WireGuard Peer Configuration
 # ==============================================================================
-# Configuration for WireGuard tunnel connection to remote IDAgent instance.
+# Configuration for WireGuard tunnel connection to the HIN Test IDAgent.
 # This enables secure agent-to-agent communication for sealed message delivery.
-# Contact Vereign to get the peer configuration values.
+# All customers connect to the HIN Test environment during this phase.
 
 # Unique connection identifier (auto-generated UUID v7 if left empty)
 WG_PEER_CONNECTION_ID=""
 
 # Human-readable name for this connection
-WG_PEER_NAME="example-company-connection"
+WG_PEER_NAME="hin-test"
 
-# WireGuard public key of the REMOTE peer (REQUIRED - get from Vereign)
-WG_PEER_PUBLIC_KEY="WhTN0ekf/jT+wAv9kIIHmwMLPWr9Gv1MXxnvAkJKbHU="
+# WireGuard public key of the HIN Test IDAgent
+WG_PEER_PUBLIC_KEY="ol2zlG40M7+Rn81V9RUFmkIQV2ILLmEJHZww7HfoLxA="
 
-# Remote peer endpoint (host:port) (REQUIRED - get from Vereign)
-WG_PEER_ENDPOINT=""
+# HIN Test IDAgent endpoint
+WG_PEER_ENDPOINT="5.102.144.182:19818"
 
-# WireGuard IP address of the remote peer
-WG_PEER_IP="10.0.0.2"
+# WireGuard IP address of the HIN Test IDAgent
+WG_PEER_IP="5.102.144.182"
 
-# Port to use for communication with the remote peer
+# Port for tunnel communication with HIN Test IDAgent
 WG_PEER_PORT="9090"
 
 # Allowed IPs for routing (defaults to WG_PEER_IP/32)
-WG_PEER_ALLOWED_IPS="10.0.0.2/32"
+WG_PEER_ALLOWED_IPS="5.102.144.182/32"
 
-# External identifier for the remote organization/domain
-WG_PEER_EXTERNAL_ID="example.com"
+# External identifier for HIN Test
+WG_PEER_EXTERNAL_ID="hintest.ch"
 
 # Description of this connection
-WG_PEER_DESCRIPTION="Connection to Vereign IDAgent"
+WG_PEER_DESCRIPTION="Connection to HIN Test IDAgent"
 
 # ==============================================================================
 # END OF CONFIGURATION

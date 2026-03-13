@@ -260,6 +260,7 @@ docker compose down -v   # The -v flag removes volumes!
 | `backup.sh` | Full backup (database, Vault keys, config, certificates) |
 | `restore.sh` | Restore from backup archive (works on fresh machine) |
 | `purge.sh` | Delete ALL data (requires confirmation) |
+| `health-check.sh` | Comprehensive health check of all services |
 | `init-vault.sh` | Vault initialization (used by vault-init container) |
 | `init-idagent.sh` | WireGuard peer connection setup (used by idagent-init container) |
 
@@ -958,6 +959,7 @@ stargate/
 │   ├── backup.sh           # Full backup (DB, Vault, config, certs)
 │   ├── restore.sh          # Restore from backup archive
 │   ├── purge.sh            # Delete all data (destructive!)
+│   ├── health-check.sh     # Comprehensive health check of all services
 │   ├── init-vault.sh       # Vault initialization (used by container)
 │   ├── init-idagent.sh     # WireGuard peer connection setup (used by container)
 │   └── gather-app-versions.sh  # Collects app versions for node-exporter
@@ -970,18 +972,34 @@ stargate/
 
 ## Quick Health & Log Checks
 
-```bash
-# Check all liveness endpoints
-echo "=== smimekeys-client ===" && curl -s http://localhost:8081/liveness && echo ""
-echo "=== policy ===" && curl -s http://localhost:8082/liveness && echo ""
-echo "=== idagent ===" && curl -s http://localhost:8083/liveness && echo ""
-echo "=== mxengine ===" && curl -s http://localhost:8084/liveness && echo ""
+Run the comprehensive health check:
 
+```bash
+./scripts/health-check.sh
+
+# With verbose output (shows WireGuard details, liveness responses):
+./scripts/health-check.sh -v
+```
+
+This checks:
+- All container statuses (running, healthy)
+- Liveness endpoints (smimekeys-client, policy, idagent, mxengine)
+- Vault seal status
+- PostgreSQL connectivity and all 4 databases
+- MinIO health
+- WireGuard tunnel status and peer handshakes
+- Postfix (running, port 25, port 10026, mail queue)
+- Prometheus metrics endpoints
+- Disk and memory usage
+
+For manual log inspection:
+
+```bash
 # Check logs (last 10 lines)
-echo "=== smimekeys-client logs ===" && docker logs stargate-smimekeys-client --tail 10
-echo "=== policy logs ===" && docker logs stargate-policy --tail 10
-echo "=== idagent logs ===" && docker logs stargate-idagent --tail 10
-echo "=== mxengine logs ===" && docker logs stargate-mxengine --tail 10
+docker logs stargate-smimekeys-client --tail 10
+docker logs stargate-policy --tail 10
+docker logs stargate-idagent --tail 10
+docker logs stargate-mxengine --tail 10
 
 # Follow logs in real-time
 docker logs -f stargate-mxengine
