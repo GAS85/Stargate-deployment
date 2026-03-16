@@ -1,12 +1,23 @@
 #!/bin/bash
 # ==============================================================================
-# Stargate Customer Configuration
+# Stargate Customer Configuration - TEMPLATE
 # ==============================================================================
-# This file contains all customer-specific settings for the Stargate deployment.
-# Fill in the required fields and optionally customize the others.
-# 
-# After filling this file, run: ./scripts/install.sh
+# Copy this file to customer-config.sh and fill in your values:
+#   cp customer-config.example customer-config.sh
+#
+# IMPORTANT: Replace ALL placeholder values below with your actual configuration!
 # ==============================================================================
+
+# ==============================================================================
+# REQUIRED: Server Network Configuration
+# ==============================================================================
+
+# Static public IP address of this VM/server.
+# This is the single network identity for the deployment — used to derive:
+#   - WireGuard local IP (unique tunnel address)
+#   - MXEngine public address (seal callbacks)
+# Must be a real routable static IP (not a private/NAT address).
+SERVER_STATIC_IP="YOUR_SERVER_STATIC_IP"
 
 # ==============================================================================
 # REQUIRED: Customer Identification
@@ -16,7 +27,6 @@
 CUSTOMER_NAME=""
 
 # Deployment name (used for log labels and identification)
-# Example: "stargate-production", "customer-alpha"
 DEPLOYMENT_NAME=""
 
 # ==============================================================================
@@ -26,223 +36,173 @@ DEPLOYMENT_NAME=""
 # Mail domains for the Postfix relay (comma-separated for multiple domains)
 # MX records for each domain determine where to relay mail
 # SPF records for each domain determine which networks are allowed to send
-# Example: "example.com" or "example.com,otherdomain.com"
 MAIL_DOMAINS=""
 
 # Mail server hostname (optional, defaults to mail.<first domain>)
-# This is announced in SMTP HELO/EHLO
-# Example: "mail.example.com"
 MAIL_HOSTNAME=""
 
-# MXEngine public address (REQUIRED for seal strategy callbacks)
-# This must be the publicly accessible URL where the sealer can reach mxengine
-# Example: "http://203.0.113.10:8084" or "https://mxengine.example.com"
+# MXEngine public address (for seal strategy callbacks)
+# Auto-derived from SERVER_STATIC_IP if left empty: http://<SERVER_STATIC_IP>:8084
+# Override only if behind a reverse proxy or using a custom hostname.
 MXENGINE_PUBLIC_ADDRESS=""
 
 # ==============================================================================
 # REQUIRED: S/MIME Certificate Configuration
 # ==============================================================================
-# These values are used when generating the S/MIME signing key and CSR
-# during installation.
 
 # DNS names for the certificate (comma-separated)
-# These should be the domains this instance will sign emails for
-# Example: "example.com,mail.example.com"
+# Auto-derived from MAIL_DOMAINS + MAIL_HOSTNAME if left empty.
+# Override only if you need different SANs on the certificate.
 CERT_DNS_NAMES=""
 
 # Organization name for the certificate subject
-# Example: "Acme Corporation"
+# Defaults to CUSTOMER_NAME if left empty.
 CERT_ORGANIZATION=""
 
 # Common Name for the certificate subject
-# Usually same as organization or a descriptive name
-# Example: "Acme Corporation Mail Signing"
+# Defaults to "<CUSTOMER_NAME> Mail Signing" if left empty.
 CERT_COMMON_NAME=""
 
 # Countries for the certificate subject (comma-separated, 2-letter codes)
-# Example: "US,DE" or "CH"
-CERT_COUNTRIES=""
+CERT_COUNTRIES="US"
 
 # CA IDAgent domain for certificate issuance via WireGuard tunnel
-# This is the domain used to reach the CA through the idagent tunnel
-# Contact Vereign for the correct value
-CERT_CA_IDAGENT_DOMAIN=""
+CERT_CA_IDAGENT_DOMAIN="hintest.ch"
+
+# ==============================================================================
+# AUTO-GENERATED: Vault Configuration
+# ==============================================================================
+# The Vault root token is auto-generated during first installation.
+# After install.sh runs, this value will be populated automatically.
+# DO NOT set this manually - Vault 1.19+ does not support custom root tokens.
+# The token is saved here so it persists across VM recreations.
+
+VAULT_TOKEN=""
 
 # ==============================================================================
 # OPTIONAL: Database Configuration
 # ==============================================================================
-# Leave empty to use defaults. Passwords will be auto-generated if empty.
+# Leave empty to auto-generate secure passwords
 
-# PostgreSQL username (default: postgres)
 POSTGRES_USER=""
-
-# PostgreSQL password (default: auto-generated secure password)
-# If left empty, a random password will be generated during install
 POSTGRES_PASSWORD=""
 
 # ==============================================================================
 # OPTIONAL: Object Storage Configuration
 # ==============================================================================
-# Leave empty to use defaults. Passwords will be auto-generated if empty.
+# Leave empty to auto-generate secure passwords
 
-# MinIO root username (default: minioadmin)
 MINIO_ROOT_USER=""
-
-# MinIO root password (default: auto-generated secure password)
-# If left empty, a random password will be generated during install
 MINIO_ROOT_PASSWORD=""
-
-# S3 bucket name for storing messages and attachments (default: stargate-bucket)
-S3_BUCKET_NAME=""
+S3_BUCKET_NAME="stargate-bucket"
 
 # ==============================================================================
 # OPTIONAL: Application Versions
 # ==============================================================================
-# Specify version tags for the application images.
-# Use "latest" for most recent stable, "dev" for development builds,
-# or specific version tags like "v1.2.3"
+# Use "dev" for the latest development builds,
+# or specify exact versions like "v0.0.3"
 
-# S/MIME Keys service version (default: latest)
-SMIMEKEYS_VERSION=""
+SMIMEKEYS_VERSION="v0.0.5"
+POLICY_VERSION="v0.0.5"
+IDAGENT_VERSION="v0.0.6-branch"
+MXENGINE_VERSION="v0.0.35"
+POLICY_SYNC_VERSION="dev"
 
-# Policy service version (default: latest)
-POLICY_VERSION=""
+# ==============================================================================
+# OPTIONAL: Advanced Mail Configuration
+# ==============================================================================
 
-# ID Agent service version (default: latest)
-IDAGENT_VERSION=""
+# Sealer MX domain for outbound seal delivery
+OUTBOUND_SEALER_MX_DOMAIN="hintest.ch"
 
-# MX Engine service version (default: latest)
-MXENGINE_VERSION=""
+# External SMTP host for outbound delivery (default: postfix-relay)
+# Set if the customer uses an external Postfix server
+OUTBOUND_SMTP_HOST=""
+# External SMTP port for outbound delivery (default: 10026)
+OUTBOUND_SMTP_PORT=""
+
+POSTFIX_ENABLE_IPV6="false"
+RELAYHOST=""
+POSTFIX_MYNETWORKS=""
+DNS_SERVER=""
+DNS_TIMEOUT="2"
 
 # ==============================================================================
 # OPTIONAL: Policy Sync Configuration
 # ==============================================================================
 # policy-sync syncs OPA/Rego policies from a Git repository to the database.
-# If POLICY_SYNC_REPO_URL is set, the service will be enabled.
-# Leave empty to disable policy-sync (policies must be managed manually).
+# The service runs automatically and syncs at the configured interval.
+# Contact Vereign for the policy repository URL and credentials.
 
-# Git repository URL containing policies (required to enable policy-sync)
-# Example: "git@github.com:Health-Info-Net-AG/Stargate-policies.git"
-POLICY_SYNC_REPO_URL=""
-
-# Git username for private repositories (optional)
+POLICY_SYNC_REPO_URL="https://github.com/Health-Info-Net-AG/Stargate-policies.git"
 POLICY_SYNC_REPO_USER=""
-
-# Git password/token for private repositories (optional)
 POLICY_SYNC_REPO_PASS=""
-
-# Git branch to checkout (optional, defaults to repo's default branch)
 POLICY_SYNC_REPO_BRANCH=""
-
-# Subfolder within repo to scan for policies (optional)
-# Policies must follow structure: {folder}/{group}/{name}/policy.rego
 POLICY_SYNC_REPO_FOLDER=""
-
-# Sync interval (optional, default: 1h, minimum: 1m)
-# Examples: "5m", "1h", "30m"
-POLICY_SYNC_INTERVAL=""
-
-# Policy sync service version (default: dev)
-POLICY_SYNC_VERSION=""
-
-# ==============================================================================
-# OPTIONAL: Advanced Mail Configuration
-# ==============================================================================
-# These are typically auto-configured from DNS. Only set if you need overrides.
-
-# Sealer MX domain for outbound seal delivery (REQUIRED)
-# This is the domain used by the sealer service for MX-based delivery
-OUTBOUND_SEALER_MX_DOMAIN=""
-
-# External SMTP host for outbound delivery (default: postfix-relay)
-# Set this if the customer uses an external Postfix server
-OUTBOUND_SMTP_HOST=""
-
-# External SMTP port for outbound delivery (default: 10026)
-OUTBOUND_SMTP_PORT=""
-
-# Enable IPv6 for Postfix (default: false)
-# Note: Microsoft Exchange connector GUI doesn't support IPv6
-POSTFIX_ENABLE_IPV6="false"
-
-# Manual relay host override (skips MX lookup)
-# Format: [hostname] or [hostname]:port
-# Example: "[smtp.example.com]:587"
-RELAYHOST=""
-
-# Manual allowed networks override (skips SPF lookup)
-# Space-separated CIDR ranges
-# Example: "10.0.0.0/8 192.168.0.0/16"
-POSTFIX_MYNETWORKS=""
-
-# DNS server to use for lookups (default: system resolver)
-DNS_SERVER=""
-
-# DNS lookup timeout in seconds (default: 2)
-DNS_TIMEOUT=""
+POLICY_SYNC_INTERVAL="1h"
 
 # ==============================================================================
 # OPTIONAL: Monitoring Configuration
 # ==============================================================================
+# Contact Vereign for the Loki URL if you want centralized logging.
 
-# Loki URL for centralized logging (default: Vereign's Loki instance)
-# Only change if using your own Loki instance
-LOKI_URL=""
+LOKI_URL="https://loki.infra.vereign-cdn.com"
 
 # ==============================================================================
-# REQUIRED: WireGuard Configuration
+# WireGuard Configuration
 # ==============================================================================
-# Local WireGuard settings for this IDAgent instance.
 
 # WireGuard private key (optional - auto-generated if empty, then saved back here)
 # After first install, this will be populated automatically so the key persists
 # across VM recreations. KEEP THIS FILE BACKED UP!
+# The public key will be printed during install — share it with the HIN team
+# so they can register your instance as a peer.
 WG_PRIVATE_KEY=""
 
-# Local WireGuard IP address for this instance.
-# Use this server's real static public IP address as the WireGuard internal IP.
-# This guarantees uniqueness across all deployments (no coordination needed).
+# WireGuard local IP — auto-derived from SERVER_STATIC_IP if left empty.
+# Override only if you need a different tunnel address.
 WG_LOCAL_IP=""
 
 # WireGuard interface port (default: 19818)
-WG_INTERFACE_PORT=""
+WG_INTERFACE_PORT="19818"
 
 # WireGuard transport mode: "tcp" (default) or "udp"
 # Set to "udp" only if TCP tunneling causes issues
 WG_TRANSPORT_MODE=""
 
 # ==============================================================================
-# REQUIRED: WireGuard Peer Configuration
+# WireGuard Peer Configuration (pre-filled for HIN Test)
 # ==============================================================================
-# Configuration for WireGuard tunnel connection to remote IDAgent instance.
+# Configuration for WireGuard tunnel connection to the HIN Test IDAgent.
 # This enables secure agent-to-agent communication for sealed message delivery.
+# All customers connect to the HIN Test environment during this phase.
 
 # Unique connection identifier (auto-generated UUID v7 if left empty)
 WG_PEER_CONNECTION_ID=""
 
 # Human-readable name for this connection
-WG_PEER_NAME=""
+WG_PEER_NAME="hin-test"
 
-# WireGuard public key of the REMOTE peer (REQUIRED)
-WG_PEER_PUBLIC_KEY="WhTN0ekf/jT+wAv9kIIHmwMLPWr9Gv1MXxnvAkJKbHU="
+# WireGuard public key of the HIN Test IDAgent
+WG_PEER_PUBLIC_KEY="ol2zlG40M7+Rn81V9RUFmkIQV2ILLmEJHZww7HfoLxA="
 
-# Remote peer endpoint (host:port) (REQUIRED)
-WG_PEER_ENDPOINT=""
+# HIN Test IDAgent endpoint
+WG_PEER_ENDPOINT="5.102.144.182:19818"
 
-# WireGuard IP address of the remote peer
-WG_PEER_IP=""
+# WireGuard IP address of the HIN Test IDAgent
+WG_PEER_IP="5.102.144.182"
 
-# Port to use for communication with the remote peer
-WG_PEER_PORT=""
+# Port for tunnel communication with HIN Test IDAgent
+WG_PEER_PORT="9090"
 
 # Allowed IPs for routing (defaults to WG_PEER_IP/32)
-WG_PEER_ALLOWED_IPS=""
+WG_PEER_ALLOWED_IPS="5.102.144.182/32"
 
-# External identifier for the remote organization/domain
-WG_PEER_EXTERNAL_ID=""
+# External identifier for HIN Test
+WG_PEER_EXTERNAL_ID="hintest.ch"
 
 # Description of this connection
-WG_PEER_DESCRIPTION=""
+WG_PEER_DESCRIPTION="Connection to HIN Test IDAgent"
 
 # ==============================================================================
 # END OF CONFIGURATION
