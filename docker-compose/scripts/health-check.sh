@@ -114,7 +114,7 @@ fi
 
 vault_status=$(docker exec stargate-vault vault status -format=json 2>/dev/null)
 if [ $? -eq 0 ] || [ -n "$vault_status" ]; then
-  sealed=$(echo "$vault_status" | grep -o '"sealed":[a-z]*' | cut -d: -f2)
+  sealed=$(echo "$vault_status" | grep '"sealed"' | grep -o 'true\|false')
   if [ "$sealed" = "false" ]; then
     pass "Vault unsealed"
   else
@@ -204,8 +204,8 @@ else
   fail "Postfix not running"
 fi
 
-# Check port 25 is listening
-port25=$(docker exec stargate-postfix-relay ss -tlnp 2>/dev/null | grep ":25 ")
+# Check port 25 is listening (use netstat since ss may not be available)
+port25=$(docker exec stargate-postfix-relay sh -c 'netstat -tlnp 2>/dev/null || ss -tlnp 2>/dev/null' | grep ":25 ")
 if [ -n "$port25" ]; then
   pass "Port 25 listening"
 else
@@ -213,7 +213,7 @@ else
 fi
 
 # Check reinjection port 10026
-port10026=$(docker exec stargate-postfix-relay ss -tlnp 2>/dev/null | grep ":10026 ")
+port10026=$(docker exec stargate-postfix-relay sh -c 'netstat -tlnp 2>/dev/null || ss -tlnp 2>/dev/null' | grep ":10026 ")
 if [ -n "$port10026" ]; then
   pass "Port 10026 (reinjection) listening"
 else

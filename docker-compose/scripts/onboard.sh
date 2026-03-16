@@ -77,9 +77,9 @@ update_env_var() {
   local key="$1"
   local value="$2"
   if grep -q "^${key}=" "$ENV_FILE"; then
-    sed -i "s|^${key}=.*|${key}=${value}|" "$ENV_FILE"
+    sed -i "s|^${key}=.*|${key}=\"${value}\"|" "$ENV_FILE"
   else
-    echo "${key}=${value}" >> "$ENV_FILE"
+    echo "${key}=\"${value}\"" >> "$ENV_FILE"
   fi
 }
 
