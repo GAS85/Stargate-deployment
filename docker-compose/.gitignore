@@ -5,6 +5,7 @@ secrets/
 .env
 
 # Customer-specific config files (contain secrets like Vault tokens and WG keys)
+customer-config.sh
 customer-config.alpha
 customer-config.beta
 customer-config.gamma

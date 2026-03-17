@@ -96,9 +96,9 @@ check_dependencies() {
 update_env_token() {
   local token="$1"
   if grep -q "^VAULT_TOKEN=" "$ENV_FILE"; then
-      sed -i "s/^VAULT_TOKEN=.*/VAULT_TOKEN=$token/" "$ENV_FILE"
+      sed -i "s/^VAULT_TOKEN=.*/VAULT_TOKEN=\"$token\"/" "$ENV_FILE"
   else
-    echo "VAULT_TOKEN=$token" >> "$ENV_FILE"
+    echo "VAULT_TOKEN=\"$token\"" >> "$ENV_FILE"
   fi
   echo "Updated VAULT_TOKEN in .env file"
 }
@@ -194,9 +194,33 @@ load_customer_config() {
   IDAGENT_VERSION="${IDAGENT_VERSION:-latest}"
   MXENGINE_VERSION="${MXENGINE_VERSION:-latest}"
   
+  # Derive WG_LOCAL_IP and MXENGINE_PUBLIC_ADDRESS from SERVER_STATIC_IP
+  SERVER_STATIC_IP="${SERVER_STATIC_IP:-}"
+  if [ -z "$SERVER_STATIC_IP" ] && [ -n "$WG_LOCAL_IP" ] && [ "$WG_LOCAL_IP" != "10.0.0.1" ]; then
+    # Backward compatibility: if SERVER_STATIC_IP not set but WG_LOCAL_IP is, use that
+    SERVER_STATIC_IP="$WG_LOCAL_IP"
+  fi
+
+  if [ -z "$SERVER_STATIC_IP" ]; then
+    echo "ERROR: SERVER_STATIC_IP is required."
+    echo "  Set it to this server's real static public IP address."
+    echo "  Example: SERVER_STATIC_IP=\"203.0.113.10\""
+    exit 1
+  fi
+
+  WG_LOCAL_IP="${WG_LOCAL_IP:-$SERVER_STATIC_IP}"
+  MXENGINE_PUBLIC_ADDRESS="${MXENGINE_PUBLIC_ADDRESS:-http://${SERVER_STATIC_IP}:8084}"
+
   MAIL_HOSTNAME="${MAIL_HOSTNAME:-mail.${MAIL_DOMAIN_PRIMARY}}"
-  OUTBOUND_SEALER_MX_DOMAIN="${OUTBOUND_SEALER_MX_DOMAIN:-}"
-  CERT_CA_IDAGENT_DOMAIN="${CERT_CA_IDAGENT_DOMAIN:-}"
+  OUTBOUND_SEALER_MX_DOMAIN="${OUTBOUND_SEALER_MX_DOMAIN:-hintest.ch}"
+  CERT_CA_IDAGENT_DOMAIN="${CERT_CA_IDAGENT_DOMAIN:-hintest.ch}"
+
+  # Auto-derive certificate fields if not explicitly set
+  if [ -z "$CERT_DNS_NAMES" ]; then
+    CERT_DNS_NAMES="$MAIL_DOMAINS,$MAIL_HOSTNAME"
+  fi
+  CERT_ORGANIZATION="${CERT_ORGANIZATION:-$CUSTOMER_NAME}"
+  CERT_COMMON_NAME="${CERT_COMMON_NAME:-$CUSTOMER_NAME Mail Signing}"
   OUTBOUND_SMTP_HOST="${OUTBOUND_SMTP_HOST:-postfix-relay}"
   OUTBOUND_SMTP_PORT="${OUTBOUND_SMTP_PORT:-10026}"
   POSTFIX_ENABLE_IPV6="${POSTFIX_ENABLE_IPV6:-false}"
@@ -205,21 +229,20 @@ load_customer_config() {
   LOKI_URL="${LOKI_URL:-https://loki.infra.vereign-cdn.com}"
   
   # WireGuard local configuration
-  WG_LOCAL_IP="${WG_LOCAL_IP:-10.0.0.1}"
   WG_INTERFACE_PORT="${WG_INTERFACE_PORT:-19818}"
   WG_TRANSPORT_MODE="${WG_TRANSPORT_MODE:-tcp}"
   WG_PRIVATE_KEY="${WG_PRIVATE_KEY:-}"  # Optional - if empty, idagent will generate
   
   # WireGuard peer configuration (optional at install time, validated by onboard.sh)
   WG_PEER_CONNECTION_ID="${WG_PEER_CONNECTION_ID:-$(generate_uuid7)}"
-  WG_PEER_NAME="${WG_PEER_NAME:-default}"
-  WG_PEER_PUBLIC_KEY="${WG_PEER_PUBLIC_KEY:-}"
-  WG_PEER_ENDPOINT="${WG_PEER_ENDPOINT:-}"
-  WG_PEER_IP="${WG_PEER_IP:-10.0.0.2}"
+  WG_PEER_NAME="${WG_PEER_NAME:-hin-test}"
+  WG_PEER_PUBLIC_KEY="${WG_PEER_PUBLIC_KEY:-ol2zlG40M7+Rn81V9RUFmkIQV2ILLmEJHZww7HfoLxA=}"
+  WG_PEER_ENDPOINT="${WG_PEER_ENDPOINT:-5.102.144.182:19818}"
+  WG_PEER_IP="${WG_PEER_IP:-5.102.144.182}"
   WG_PEER_PORT="${WG_PEER_PORT:-9090}"
   WG_PEER_ALLOWED_IPS="${WG_PEER_ALLOWED_IPS:-${WG_PEER_IP}/32}"
-  WG_PEER_EXTERNAL_ID="${WG_PEER_EXTERNAL_ID:-}"
-  WG_PEER_DESCRIPTION="${WG_PEER_DESCRIPTION:-WireGuard peer connection}"
+  WG_PEER_EXTERNAL_ID="${WG_PEER_EXTERNAL_ID:-hintest.ch}"
+  WG_PEER_DESCRIPTION="${WG_PEER_DESCRIPTION:-Connection to HIN Test IDAgent}"
   
   echo "Customer: $CUSTOMER_NAME"
   echo "Deployment: $DEPLOYMENT_NAME"
@@ -250,70 +273,71 @@ generate_env_file() {
 # ==============================================================================
 
 # PostgreSQL
-POSTGRES_USER=$POSTGRES_USER
-POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+POSTGRES_USER="$POSTGRES_USER"
+POSTGRES_PASSWORD="$POSTGRES_PASSWORD"
 
 # Vault (auto-populated after initialization)
 VAULT_TOKEN=
 
 # MinIO (S3)
-MINIO_ROOT_USER=$MINIO_ROOT_USER
-MINIO_ROOT_PASSWORD=$MINIO_ROOT_PASSWORD
-S3_BUCKET_NAME=$S3_BUCKET_NAME
+MINIO_ROOT_USER="$MINIO_ROOT_USER"
+MINIO_ROOT_PASSWORD="$MINIO_ROOT_PASSWORD"
+S3_BUCKET_NAME="$S3_BUCKET_NAME"
 
 # Application Versions
-SMIMEKEYS_VERSION=$SMIMEKEYS_VERSION
-POLICY_VERSION=$POLICY_VERSION
-IDAGENT_VERSION=$IDAGENT_VERSION
-MXENGINE_VERSION=$MXENGINE_VERSION
+SMIMEKEYS_VERSION="$SMIMEKEYS_VERSION"
+POLICY_VERSION="$POLICY_VERSION"
+IDAGENT_VERSION="$IDAGENT_VERSION"
+MXENGINE_VERSION="$MXENGINE_VERSION"
 
 # Postfix Mail Relay
-MAIL_DOMAINS=$MAIL_DOMAINS
-MAIL_HOSTNAME=$MAIL_HOSTNAME
-OUTBOUND_SEALER_MX_DOMAIN=$OUTBOUND_SEALER_MX_DOMAIN
-CERT_CA_IDAGENT_DOMAIN=$CERT_CA_IDAGENT_DOMAIN
-OUTBOUND_SMTP_HOST=$OUTBOUND_SMTP_HOST
-OUTBOUND_SMTP_PORT=$OUTBOUND_SMTP_PORT
-POSTFIX_ENABLE_IPV6=$POSTFIX_ENABLE_IPV6
-DNS_TIMEOUT=$DNS_TIMEOUT
-DNS_SERVER=${DNS_SERVER:-}
-RELAYHOST=${RELAYHOST:-}
+MAIL_DOMAINS="$MAIL_DOMAINS"
+MAIL_HOSTNAME="$MAIL_HOSTNAME"
+MXENGINE_PUBLIC_ADDRESS="$MXENGINE_PUBLIC_ADDRESS"
+OUTBOUND_SEALER_MX_DOMAIN="$OUTBOUND_SEALER_MX_DOMAIN"
+CERT_CA_IDAGENT_DOMAIN="$CERT_CA_IDAGENT_DOMAIN"
+OUTBOUND_SMTP_HOST="$OUTBOUND_SMTP_HOST"
+OUTBOUND_SMTP_PORT="$OUTBOUND_SMTP_PORT"
+POSTFIX_ENABLE_IPV6="$POSTFIX_ENABLE_IPV6"
+DNS_TIMEOUT="$DNS_TIMEOUT"
+DNS_SERVER="${DNS_SERVER:-}"
+RELAYHOST="${RELAYHOST:-}"
 # Leave empty for auto-detection (Docker networks + SPF records)
-POSTFIX_MYNETWORKS=${POSTFIX_MYNETWORKS:-}
+POSTFIX_MYNETWORKS="${POSTFIX_MYNETWORKS:-}"
 
 # Logging (Promtail -> Loki)
-LOKI_URL=$LOKI_URL
-PROMTAIL_HOSTNAME=$DEPLOYMENT_NAME
+LOKI_URL="$LOKI_URL"
+PROMTAIL_HOSTNAME="$DEPLOYMENT_NAME"
 
 # Policy Sync (optional - syncs policies from Git repo)
 # To enable: docker compose --profile policy-sync up -d
-POLICY_SYNC_VERSION=${POLICY_SYNC_VERSION:-dev}
-POLICY_SYNC_REPO_URL=${POLICY_SYNC_REPO_URL:-}
-POLICY_SYNC_REPO_USER=${POLICY_SYNC_REPO_USER:-}
-POLICY_SYNC_REPO_PASS=${POLICY_SYNC_REPO_PASS:-}
-POLICY_SYNC_REPO_BRANCH=${POLICY_SYNC_REPO_BRANCH:-}
-POLICY_SYNC_REPO_FOLDER=${POLICY_SYNC_REPO_FOLDER:-}
-POLICY_SYNC_INTERVAL=${POLICY_SYNC_INTERVAL:-1h}
+POLICY_SYNC_VERSION="${POLICY_SYNC_VERSION:-dev}"
+POLICY_SYNC_REPO_URL="${POLICY_SYNC_REPO_URL:-https://github.com/Health-Info-Net-AG/Stargate-policies.git}"
+POLICY_SYNC_REPO_USER="${POLICY_SYNC_REPO_USER:-}"
+POLICY_SYNC_REPO_PASS="${POLICY_SYNC_REPO_PASS:-}"
+POLICY_SYNC_REPO_BRANCH="${POLICY_SYNC_REPO_BRANCH:-}"
+POLICY_SYNC_REPO_FOLDER="${POLICY_SYNC_REPO_FOLDER:-}"
+POLICY_SYNC_INTERVAL="${POLICY_SYNC_INTERVAL:-1h}"
 
 # WireGuard Local Configuration
-WG_LOCAL_IP=$WG_LOCAL_IP
-WG_INTERFACE_PORT=$WG_INTERFACE_PORT
-WG_TRANSPORT_MODE=$WG_TRANSPORT_MODE
+WG_LOCAL_IP="$WG_LOCAL_IP"
+WG_INTERFACE_PORT="$WG_INTERFACE_PORT"
+WG_TRANSPORT_MODE="$WG_TRANSPORT_MODE"
 
 # WireGuard Private Key (optional - if set, written to Vault for idagent)
-WG_PRIVATE_KEY=${WG_PRIVATE_KEY:-}
+WG_PRIVATE_KEY="${WG_PRIVATE_KEY:-}"
 
 # WireGuard Peer Configuration
 # Connection to remote IDAgent for sealed message delivery
-WG_PEER_CONNECTION_ID=$WG_PEER_CONNECTION_ID
-WG_PEER_NAME=$WG_PEER_NAME
-WG_PEER_PUBLIC_KEY=$WG_PEER_PUBLIC_KEY
-WG_PEER_ENDPOINT=$WG_PEER_ENDPOINT
-WG_PEER_IP=$WG_PEER_IP
-WG_PEER_PORT=$WG_PEER_PORT
-WG_PEER_ALLOWED_IPS=$WG_PEER_ALLOWED_IPS
-WG_PEER_EXTERNAL_ID=$WG_PEER_EXTERNAL_ID
-WG_PEER_DESCRIPTION=$WG_PEER_DESCRIPTION
+WG_PEER_CONNECTION_ID="$WG_PEER_CONNECTION_ID"
+WG_PEER_NAME="$WG_PEER_NAME"
+WG_PEER_PUBLIC_KEY="$WG_PEER_PUBLIC_KEY"
+WG_PEER_ENDPOINT="$WG_PEER_ENDPOINT"
+WG_PEER_IP="$WG_PEER_IP"
+WG_PEER_PORT="$WG_PEER_PORT"
+WG_PEER_ALLOWED_IPS="$WG_PEER_ALLOWED_IPS"
+WG_PEER_EXTERNAL_ID="$WG_PEER_EXTERNAL_ID"
+WG_PEER_DESCRIPTION="$WG_PEER_DESCRIPTION"
 EOF
 
   echo "Environment file created: $ENV_FILE"
@@ -486,7 +510,8 @@ if [ -f "$KEYS_FILE" ]; then
   
   # Run onboarding (S/MIME key + CSR generation, .env domain updates)
   echo ""
-  "$SCRIPT_DIR/onboard.sh" --initial-setup
+  ONBOARD_EXIT=0
+  "$SCRIPT_DIR/onboard.sh" --initial-setup || ONBOARD_EXIT=$?
   
   # Setup backup cron job
   setup_backup_cron
@@ -510,9 +535,20 @@ sleep 3
 docker compose ps
 
 echo ""
-echo "============================================"
-echo "  Installation Complete!"
-echo "============================================"
+if [ "${ONBOARD_EXIT:-0}" -eq 0 ]; then
+  echo "============================================"
+  echo "  Installation Complete!"
+  echo "============================================"
+else
+  echo "============================================"
+  echo "  Installation Complete (with warnings)"
+  echo "============================================"
+  echo ""
+  echo "  ⚠ Certificate issuance failed."
+  echo "    The WireGuard tunnel to the CA is not yet established."
+  echo "    Services are running — the certificate can be retried with:"
+  echo "      ./scripts/onboard.sh --regenerate-cert"
+fi
 echo ""
 echo "  Customer: $CUSTOMER_NAME"
 echo "  Deployment: $DEPLOYMENT_NAME"

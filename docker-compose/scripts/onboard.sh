@@ -77,9 +77,9 @@ update_env_var() {
   local key="$1"
   local value="$2"
   if grep -q "^${key}=" "$ENV_FILE"; then
-    sed -i "s|^${key}=.*|${key}=${value}|" "$ENV_FILE"
+    sed -i "s|^${key}=.*|${key}=\"${value}\"|" "$ENV_FILE"
   else
-    echo "${key}=${value}" >> "$ENV_FILE"
+    echo "${key}=\"${value}\"" >> "$ENV_FILE"
   fi
 }
 
@@ -121,11 +121,9 @@ load_onboard_config() {
 
   [ -z "$MAIL_DOMAINS" ] && missing+=("MAIL_DOMAINS (or MAIL_DOMAIN)")
 
-  # Cert fields required for S/MIME key generation
-  [ -z "$CERT_DNS_NAMES" ] && missing+=("CERT_DNS_NAMES")
-  [ -z "$CERT_ORGANIZATION" ] && missing+=("CERT_ORGANIZATION")
-  [ -z "$CERT_COMMON_NAME" ] && missing+=("CERT_COMMON_NAME")
+  # Cert fields (CERT_DNS_NAMES, CERT_ORGANIZATION, CERT_COMMON_NAME are auto-derived after validation)
   [ -z "$CERT_COUNTRIES" ] && missing+=("CERT_COUNTRIES")
+  [ -z "$CUSTOMER_NAME" ] && missing+=("CUSTOMER_NAME")
 
   if [ ${#missing[@]} -gt 0 ]; then
     echo "ERROR: Missing required configuration values:"
@@ -136,12 +134,30 @@ load_onboard_config() {
     exit 1
   fi
 
-  # Set defaults
+  # Auto-derive certificate fields if not explicitly set
   MAIL_HOSTNAME="${MAIL_HOSTNAME:-mail.${MAIL_DOMAIN_PRIMARY}}"
+  if [ -z "$CERT_DNS_NAMES" ]; then
+    CERT_DNS_NAMES="$MAIL_DOMAINS,$MAIL_HOSTNAME"
+  fi
+  CERT_ORGANIZATION="${CERT_ORGANIZATION:-$CUSTOMER_NAME}"
+  CERT_COMMON_NAME="${CERT_COMMON_NAME:-$CUSTOMER_NAME Mail Signing}"
+
+  # Set defaults
   OUTBOUND_SEALER_MX_DOMAIN="${OUTBOUND_SEALER_MX_DOMAIN:-}"
   CERT_CA_IDAGENT_DOMAIN="${CERT_CA_IDAGENT_DOMAIN:-}"
   OUTBOUND_SMTP_HOST="${OUTBOUND_SMTP_HOST:-postfix-relay}"
   OUTBOUND_SMTP_PORT="${OUTBOUND_SMTP_PORT:-10026}"
+
+  # Derive WG_LOCAL_IP and MXENGINE_PUBLIC_ADDRESS from SERVER_STATIC_IP
+  SERVER_STATIC_IP="${SERVER_STATIC_IP:-}"
+  if [ -z "$SERVER_STATIC_IP" ] && [ -n "$WG_LOCAL_IP" ] && [ "$WG_LOCAL_IP" != "10.0.0.1" ]; then
+    SERVER_STATIC_IP="$WG_LOCAL_IP"
+  fi
+
+  if [ -n "$SERVER_STATIC_IP" ]; then
+    WG_LOCAL_IP="${WG_LOCAL_IP:-$SERVER_STATIC_IP}"
+    MXENGINE_PUBLIC_ADDRESS="${MXENGINE_PUBLIC_ADDRESS:-http://${SERVER_STATIC_IP}:8084}"
+  fi
 
   # WireGuard peer defaults
   WG_LOCAL_IP="${WG_LOCAL_IP:-10.0.0.1}"
@@ -188,6 +204,7 @@ update_env_settings() {
   fi
 
   update_env_var "MAIL_HOSTNAME" "$MAIL_HOSTNAME"
+  update_env_var "MXENGINE_PUBLIC_ADDRESS" "${MXENGINE_PUBLIC_ADDRESS}"
   update_env_var "OUTBOUND_SEALER_MX_DOMAIN" "${OUTBOUND_SEALER_MX_DOMAIN}"
   update_env_var "CERT_CA_IDAGENT_DOMAIN" "${CERT_CA_IDAGENT_DOMAIN}"
   update_env_var "OUTBOUND_SMTP_HOST" "$OUTBOUND_SMTP_HOST"
@@ -280,9 +297,9 @@ generate_smime_key_and_csr() {
 
   echo "  Key ID: $KEY_ID"
 
-  # Step 2: Generate CSR
-  echo "Generating CSR..."
-  CSR_RESPONSE=$(curl -s --location 'http://localhost:8081/v1/certs/csr' \
+  # Step 2: Generate CSR and request certificate
+  echo "Generating CSR and requesting certificate (this may take up to 60s)..."
+  CSR_RESPONSE=$(curl -s --max-time 90 --location 'http://localhost:8081/v1/certs/csr' \
     --header 'Content-Type: application/json' \
     --header 'Accept: application/json' \
     --data "{
@@ -293,22 +310,40 @@ generate_smime_key_and_csr() {
       \"subjectOrg\": \"$CERT_ORGANIZATION\"
     }")
 
-  # Save CSR to file
+  # Save CSR to file if present
   mkdir -p "$SECRETS_DIR"
-  echo "$CSR_RESPONSE" | jq -r '.csr // empty' > "$CSR_FILE" 2>/dev/null || true
+  CSR_VALUE=$(echo "$CSR_RESPONSE" | jq -r '.csr // empty' 2>/dev/null || true)
 
-  echo ""
-  echo "============================================"
-  echo "  CSR Generated Successfully"
-  echo "============================================"
-  echo ""
-  echo "$CSR_RESPONSE" | jq . 2>/dev/null || echo "$CSR_RESPONSE"
-  echo ""
-
-  if [ -s "$CSR_FILE" ]; then
+  if [ -n "$CSR_VALUE" ]; then
+    echo "$CSR_VALUE" > "$CSR_FILE"
+    echo ""
+    echo "============================================"
+    echo "  CSR Generated Successfully"
+    echo "============================================"
+    echo ""
+    echo "$CSR_RESPONSE" | jq . 2>/dev/null || echo "$CSR_RESPONSE"
+    echo ""
     echo "  CSR saved to: $CSR_FILE"
+    echo ""
+    return 0
+  else
+    echo ""
+    echo "============================================"
+    echo "  WARNING: Certificate request failed"
+    echo "============================================"
+    echo ""
+    echo "  The S/MIME key was generated (Key ID: $KEY_ID), but the certificate"
+    echo "  request failed. This usually means the WireGuard tunnel to the CA"
+    echo "  is not yet established."
+    echo ""
+    echo "  Response from smimekeys-client:"
+    echo "$CSR_RESPONSE" | jq . 2>/dev/null || echo "  $CSR_RESPONSE"
+    echo ""
+    echo "  To retry certificate issuance later, run:"
+    echo "    ./scripts/onboard.sh --regenerate-cert"
+    echo ""
+    return 1
   fi
-  echo ""
 }
 
 # ==============================================================================
@@ -351,9 +386,12 @@ if [ "$INITIAL_SETUP" = false ]; then
   check_services
 fi
 
+# Track failures
+ONBOARD_WARNINGS=0
+
 load_onboard_config
 update_env_settings
-generate_smime_key_and_csr
+generate_smime_key_and_csr || ONBOARD_WARNINGS=$((ONBOARD_WARNINGS + 1))
 
 if [ "$INITIAL_SETUP" = false ]; then
   setup_wireguard_peer
@@ -361,13 +399,22 @@ if [ "$INITIAL_SETUP" = false ]; then
 fi
 
 echo "============================================"
-echo "  Onboarding Complete"
+if [ $ONBOARD_WARNINGS -gt 0 ]; then
+  echo "  Onboarding Complete (with warnings)"
+else
+  echo "  Onboarding Complete"
+fi
 echo "============================================"
 echo ""
 echo "  Mail domains:  $MAIL_DOMAINS"
 echo "  Mail hostname: $MAIL_HOSTNAME"
 if [ -n "$WG_PEER_ENDPOINT" ]; then
   echo "  WG peer:       $WG_PEER_NAME ($WG_PEER_ENDPOINT)"
+fi
+if [ $ONBOARD_WARNINGS -gt 0 ]; then
+  echo ""
+  echo "  ⚠ Certificate issuance failed (WireGuard tunnel may not be established yet)."
+  echo "    Retry with: ./scripts/onboard.sh --regenerate-cert"
 fi
 echo ""
 echo "  To add or change domains:"
@@ -377,3 +424,7 @@ echo ""
 echo "  To regenerate S/MIME certificate:"
 echo "    ./scripts/onboard.sh --regenerate-cert"
 echo ""
+
+# Exit with warning code so callers can detect partial success
+# Exit 0 = full success, Exit 2 = partial success (cert failed)
+exit $( [ $ONBOARD_WARNINGS -gt 0 ] && echo 2 || echo 0 )
