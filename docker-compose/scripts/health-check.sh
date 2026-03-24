@@ -41,7 +41,7 @@ EXPECTED_RUNNING=(
   stargate-minio
   stargate-smimekeys-client
   stargate-policy
-  stargate-idagent
+  stargate-idagent-lb
   stargate-mxengine
   stargate-postfix-relay
   stargate-promtail
@@ -70,6 +70,25 @@ if [ "$ps_status" = "running" ]; then
   pass "stargate-policy-sync"
 elif [ -n "$ps_status" ]; then
   warn "stargate-policy-sync status: $ps_status (optional service)"
+fi
+
+# Check idagent replicas (scaled via IDAGENT_REPLICAS)
+idagent_ids=$(cd "$PROJECT_DIR" && docker compose ps -q idagent 2>/dev/null)
+if [ -n "$idagent_ids" ]; then
+  idagent_count=0
+  while IFS= read -r cid; do
+    cname=$(docker inspect -f '{{.Name}}' "$cid" 2>/dev/null | sed 's|^/||')
+    status=$(docker inspect -f '{{.State.Status}}' "$cid" 2>/dev/null)
+    if [ "$status" = "running" ]; then
+      pass "$cname (idagent replica)"
+      idagent_count=$((idagent_count + 1))
+    else
+      fail "$cname status: $status"
+    fi
+  done <<< "$idagent_ids"
+  echo "  [INFO] IDAgent replicas running: $idagent_count"
+else
+  fail "No idagent containers found"
 fi
 
 echo ""
@@ -168,25 +187,37 @@ echo ""
 # ------------------------------------------------------------------
 echo "--- WireGuard ---"
 
-wg_output=$(docker exec stargate-idagent wg show 2>/dev/null)
-if [ $? -eq 0 ] && [ -n "$wg_output" ]; then
-  peer_count=$(echo "$wg_output" | grep -c "^peer:")
-  if [ "$peer_count" -gt 0 ]; then
-    pass "WireGuard interface up ($peer_count peer(s))"
-    # Check latest handshake (indicates active tunnel)
-    handshake=$(echo "$wg_output" | grep "latest handshake" | head -1)
-    if [ -n "$handshake" ]; then
-      pass "Tunnel active — $handshake"
+# Check WireGuard on all idagent replicas
+idagent_ids=$(cd "$PROJECT_DIR" && docker compose ps -q idagent 2>/dev/null)
+wg_checked=false
+if [ -n "$idagent_ids" ]; then
+  while IFS= read -r cid; do
+    cname=$(docker inspect -f '{{.Name}}' "$cid" 2>/dev/null | sed 's|^/||')
+    wg_output=$(docker exec "$cid" wg show 2>/dev/null)
+    if [ $? -eq 0 ] && [ -n "$wg_output" ]; then
+      wg_checked=true
+      peer_count=$(echo "$wg_output" | grep -c "^peer:")
+      if [ "$peer_count" -gt 0 ]; then
+        pass "$cname: WireGuard up ($peer_count peer(s))"
+        handshake=$(echo "$wg_output" | grep "latest handshake" | head -1)
+        if [ -n "$handshake" ]; then
+          pass "$cname: Tunnel active — $handshake"
+        else
+          warn "$cname: No recent handshake"
+        fi
+      else
+        warn "$cname: WireGuard up but no peers"
+      fi
+      if $VERBOSE; then
+        echo "         [$cname]"
+        echo "$wg_output" | sed 's/^/         /'
+      fi
     else
-      warn "No recent handshake (tunnel may not have exchanged data yet)"
+      warn "$cname: WireGuard not available"
     fi
-  else
-    warn "WireGuard interface up but no peers configured"
-  fi
-  if $VERBOSE; then
-    echo "$wg_output" | sed 's/^/         /'
-  fi
-else
+  done <<< "$idagent_ids"
+fi
+if ! $wg_checked; then
   warn "WireGuard interface not available (idagent may still be initializing)"
 fi
 

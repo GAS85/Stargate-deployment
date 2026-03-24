@@ -194,6 +194,8 @@ load_customer_config() {
   IDAGENT_VERSION="${IDAGENT_VERSION:-latest}"
   MXENGINE_VERSION="${MXENGINE_VERSION:-latest}"
   
+  IDAGENT_REPLICAS="${IDAGENT_REPLICAS:-1}"
+  
   # Derive WG_LOCAL_IP and MXENGINE_PUBLIC_ADDRESS from SERVER_STATIC_IP
   SERVER_STATIC_IP="${SERVER_STATIC_IP:-}"
   if [ -z "$SERVER_STATIC_IP" ] && [ -n "$WG_LOCAL_IP" ] && [ "$WG_LOCAL_IP" != "10.0.0.1" ]; then
@@ -289,6 +291,10 @@ SMIMEKEYS_VERSION="$SMIMEKEYS_VERSION"
 POLICY_VERSION="$POLICY_VERSION"
 IDAGENT_VERSION="$IDAGENT_VERSION"
 MXENGINE_VERSION="$MXENGINE_VERSION"
+
+# IDAgent Scaling (default: 1, set to 2+ to test HA with HAProxy LB)
+# HAProxy stats: http://localhost:8404/
+IDAGENT_REPLICAS="${IDAGENT_REPLICAS:-1}"
 
 # Postfix Mail Relay
 MAIL_DOMAINS="$MAIL_DOMAINS"
@@ -420,7 +426,7 @@ save_wireguard_key_to_config() {
   fi
   
   # Get the public key from idagent logs
-  WG_PUBKEY=$(docker logs stargate-idagent 2>&1 | grep "wireguard public key:" | head -1 | sed 's/.*wireguard public key: //' | tr -d '[:space:]')
+  WG_PUBKEY=$(docker compose logs idagent 2>&1 | grep "wireguard public key:" | head -1 | sed 's/.*wireguard public key: //' | tr -d '[:space:]')
   
   # Check if WG_PRIVATE_KEY is already set in customer-config.sh
   if grep -q '^WG_PRIVATE_KEY=""' "$CONFIG_FILE" || grep -q "^WG_PRIVATE_KEY=\$" "$CONFIG_FILE" || ! grep -q '^WG_PRIVATE_KEY=' "$CONFIG_FILE"; then

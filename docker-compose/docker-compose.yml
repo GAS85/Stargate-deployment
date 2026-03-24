@@ -196,7 +196,7 @@ services:
       CERT_CRL_REFRESH_PERIOD: "30m"
       
       # IDAgent integration (for peer certificate sync)
-      IDAGENT_ADDR: "http://idagent:8080"
+      IDAGENT_ADDR: "http://idagent-lb:8080"
       
       # Sync intervals
       PEER_SYNC_INTERVAL: "30m"
@@ -252,7 +252,6 @@ services:
 
   idagent:
     image: registry.vereign.io/svdh/idagent:${IDAGENT_VERSION:-dev}
-    container_name: stargate-idagent
     depends_on:
       postgres:
         condition: service_healthy
@@ -260,6 +259,8 @@ services:
         condition: service_completed_successfully
       minio-init:
         condition: service_completed_successfully
+    deploy:
+      replicas: ${IDAGENT_REPLICAS:-1}
     environment:
       # HTTP Server
       HTTP_HOST: ""
@@ -312,11 +313,26 @@ services:
       WG_TCP_CHANNEL_SEND_TIMEOUT: "5s"
       
       LOG_LEVEL: "debug"
+    networks:
+      - stargate-network
+
+  # HAProxy load balancer for IDAgent scaling
+  # Routes WireGuard TCP and HTTP traffic with source-IP sticky sessions.
+  # Enables running multiple idagent replicas (set IDAGENT_REPLICAS in .env).
+  # Stats page: http://localhost:8404/
+  idagent-lb:
+    image: haproxy:lts-alpine
+    container_name: stargate-idagent-lb
+    restart: unless-stopped
+    depends_on:
+      - idagent
+    volumes:
+      - ./config/haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
     ports:
-      - "8083:8080"
-      - "2114:2112"
-      - "${WG_INTERFACE_PORT:-19818}:${WG_INTERFACE_PORT:-19818}/udp"  # WireGuard tunnel (UDP)
-      - "${WG_INTERFACE_PORT:-19818}:${WG_INTERFACE_PORT:-19818}/tcp"  # WireGuard tunnel (TCP)
+      - "8083:8080"                                                    # IDAgent HTTP API
+      - "2114:2112"                                                    # IDAgent Metrics
+      - "${WG_INTERFACE_PORT:-19818}:${WG_INTERFACE_PORT:-19818}/tcp"  # WireGuard TCP tunnel
+      - "8404:8404"                                                    # HAProxy Stats
     networks:
       - stargate-network
 
@@ -388,7 +404,7 @@ services:
       OUTBOUND_SMIME_HOST: ""
       OUTBOUND_SMIME_PORT: ""
       OUTBOUND_SMTP_LOCAL_DOMAINS: "localhost,${MAIL_DOMAINS:-${MAIL_DOMAIN}}"
-      OUTBOUND_IDAGENT_ADDR: "http://idagent:8080"
+      OUTBOUND_IDAGENT_ADDR: "http://idagent-lb:8080"
       # OUTBOUND_SMTP_USER: "seal@vereign-cdn.com"
       # OUTBOUND_SMTP_PASS: "SecureMessage"
       # OUTBOUND_SMTP_AUTH: "PLAIN"
