@@ -823,18 +823,18 @@ curl --location 'localhost:8083/v1/connections' \
 --header 'Content-Type: application/json' \
 --header 'Accept: application/json' \
 --data '{
-  "allowedIps": "<IP of new pear>/32",
+  "allowedIps": "<IP of new peer>/32",
   "description": "<short description>",
-  "endpoint": "<IP of new pear>:19818",
+  "endpoint": "<IP of new peer>:19818",
   "externalId": [
-    "<domain of new pear>"
+    "<domain of new peer>"
   ],
-  "name": "<Name of new pear>",
+  "name": "<Name of new peer>",
   "presharedKey": "",
-  "publicKey": "<public key of new pear>",
+  "publicKey": "<public key of new peer>",
   "status": "completed",
   "transport": "tcp",
-  "wireguardIp": "<IP of new pear>",
+  "wireguardIp": "<IP of new peer>",
   "wireguardPort": 10080
 }'
 ```
