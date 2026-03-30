@@ -812,9 +812,32 @@ The WireGuard peer connection is managed by `onboard.sh` (which runs the `idagen
 
 The `idagent-init` container:
 
-1. Waits for IDAgent to generate its WireGuard keypair
-2. Creates a connection entry in the `connections` table with status `completed`
-3. Links the peer with endpoint, IP, and routing information (external IDs)
+1. Waits for IDAgent to start and generate its WireGuard keypair
+2. Open the logs of the IDAgent `docker compose logs idagent` and copy the `wireguard public key:` value example: `V2Qvr...IB1A2wQCApmHY=`
+3. Get the public IP address for this machine
+4. Get the domain name
+5. The information from step 2, 3 and 4 should be provided to Vereign (kalin.canov@vereign.com)
+6. For any **other** connection you would like to establish, through the Wireguard tunnel, you will need to provide to the other party the information from step 2, 3 and 4, and also receive/store their info. To store new peer after you received the info you should run the following curl command
+```bash
+curl --location 'localhost:8083/v1/connections' \
+--header 'Content-Type: application/json' \
+--header 'Accept: application/json' \
+--data '{
+  "allowedIps": "<IP of new pear>/32",
+  "description": "<short description>",
+  "endpoint": "<IP of new pear>:19818",
+  "externalId": [
+    "<domain of new pear>"
+  ],
+  "name": "<Name of new pear>",
+  "presharedKey": "",
+  "publicKey": "<public key of new pear>",
+  "status": "completed",
+  "transport": "tcp",
+  "wireguardIp": "<IP of new pear>",
+  "wireguardPort": 10080
+}'
+```
 
 ### Verification
 
