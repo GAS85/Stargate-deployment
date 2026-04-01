@@ -11,10 +11,6 @@ execute_script:
     - if: $CI_COMMIT_BRANCH == "testbranch"
   script:
     - echo "Running script..."
-    - ls -l
-    - id
-    - pwd
     - cd /data/vmimagebuilder
-    - ls -l
-    - bash ./testtask.sh
-    - echo "Test completed."
+    - ./almaimage.sh
+    - echo "VM images were built and uploaded to https://images.vereign.io/staging/"
