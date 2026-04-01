@@ -1,0 +1,20 @@
+---
+stages:
+  - build
+
+# Job definition
+execute_script:
+  stage: build
+  tags:
+    - linux
+  rules:
+    - if: $CI_COMMIT_BRANCH == "testbranch"
+  script:
+    - echo "Running script..."
+    - ls -l
+    - id
+    - pwd
+    - cd /data/vmimagebuilder
+    - ls -l
+    - bash ./testtask.sh
+    - echo "Test completed."
