@@ -8,9 +8,9 @@ execute_script:
   tags:
     - linux
   rules:
-    - if: $CI_COMMIT_BRANCH == "testbranch"
+    - if: $CI_COMMIT_BRANCH == "main"
   script:
-    - echo "Running script..."
+    - echo "Running VM images build script..."
     - cd /data/vmimagebuilder
     - ./almaimage.sh
     - echo "VM images were built and uploaded to https://images.vereign.io/staging/"
