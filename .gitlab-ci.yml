@@ -2,7 +2,6 @@
 stages:
   - build
 
-# Job definition
 execute_script:
   stage: build
   tags:
