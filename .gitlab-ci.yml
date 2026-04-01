@@ -1,0 +1,15 @@
+---
+stages:
+  - build
+
+execute_script:
+  stage: build
+  tags:
+    - linux
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+  script:
+    - echo "Running VM images build script..."
+    - cd /data/vmimagebuilder
+    - ./almaimage.sh
+    - echo "VM images were built and uploaded to https://images.vereign.io/staging/"
