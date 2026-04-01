@@ -32,7 +32,7 @@ get_version() {
 # Gather from each service (using internal Docker hostnames and ports)
 get_version "smimekeys-client" "smimekeys-client" "8080"
 get_version "policy" "policy" "8080"
-get_version "idagent" "idagent" "8080"
+get_version "idagent" "idagent-lb" "8080"
 get_version "mxengine" "mxengine" "8080"
 
 # Set permissions so node-exporter can read (it runs as non-root)

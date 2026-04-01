@@ -41,7 +41,7 @@ EXPECTED_RUNNING=(
   stargate-minio
   stargate-smimekeys-client
   stargate-policy
-  stargate-idagent
+  stargate-idagent-lb
   stargate-mxengine
   stargate-postfix-relay
   stargate-promtail
@@ -63,6 +63,27 @@ for cname in "${EXPECTED_RUNNING[@]}"; do
     fail "$cname status: $status"
   fi
 done
+
+# IDAgent replicas (scaled via Docker Compose deploy.replicas)
+idagent_ids=$(cd "$PROJECT_DIR" && docker compose ps -q idagent 2>/dev/null)
+if [ -n "$idagent_ids" ]; then
+  idagent_running=0
+  idagent_total=0
+  for cid in $idagent_ids; do
+    idagent_total=$((idagent_total + 1))
+    cstatus=$(docker inspect -f '{{.State.Status}}' "$cid" 2>/dev/null)
+    if [ "$cstatus" = "running" ]; then
+      idagent_running=$((idagent_running + 1))
+    fi
+  done
+  if [ "$idagent_running" -eq "$idagent_total" ]; then
+    pass "IDAgent replicas running: $idagent_running/$idagent_total"
+  else
+    fail "IDAgent replicas running: $idagent_running/$idagent_total"
+  fi
+else
+  fail "No IDAgent containers found"
+fi
 
 # policy-sync is optional (may not be running if not configured)
 ps_status=$(docker inspect -f '{{.State.Status}}' stargate-policy-sync 2>/dev/null)
@@ -168,7 +189,9 @@ echo ""
 # ------------------------------------------------------------------
 echo "--- WireGuard ---"
 
-wg_output=$(docker exec stargate-idagent wg show 2>/dev/null)
+# Get first idagent container for WireGuard check
+idagent_first=$(cd "$PROJECT_DIR" && docker compose ps -q idagent 2>/dev/null | head -1)
+wg_output=$(docker exec "$idagent_first" wg show 2>/dev/null)
 if [ $? -eq 0 ] && [ -n "$wg_output" ]; then
   peer_count=$(echo "$wg_output" | grep -c "^peer:")
   if [ "$peer_count" -gt 0 ]; then

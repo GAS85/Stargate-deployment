@@ -232,6 +232,9 @@ load_customer_config() {
   WG_INTERFACE_PORT="${WG_INTERFACE_PORT:-19818}"
   WG_TRANSPORT_MODE="${WG_TRANSPORT_MODE:-tcp}"
   WG_PRIVATE_KEY="${WG_PRIVATE_KEY:-}"  # Optional - if empty, idagent will generate
+
+  # IDAgent scaling
+  IDAGENT_REPLICAS="${IDAGENT_REPLICAS:-1}"
   
   # WireGuard peer configuration (optional at install time, validated by onboard.sh)
   WG_PEER_CONNECTION_ID="${WG_PEER_CONNECTION_ID:-$(generate_uuid7)}"
@@ -323,6 +326,9 @@ POLICY_SYNC_INTERVAL="${POLICY_SYNC_INTERVAL:-1h}"
 WG_LOCAL_IP="$WG_LOCAL_IP"
 WG_INTERFACE_PORT="$WG_INTERFACE_PORT"
 WG_TRANSPORT_MODE="$WG_TRANSPORT_MODE"
+
+# IDAgent Scaling (Envoy load balancer handles sticky sessions for TCP and UDP)
+IDAGENT_REPLICAS="${IDAGENT_REPLICAS:-1}"
 
 # WireGuard Private Key (optional - if set, written to Vault for idagent)
 WG_PRIVATE_KEY="${WG_PRIVATE_KEY:-}"
@@ -419,8 +425,9 @@ save_wireguard_key_to_config() {
     return 1
   fi
   
-  # Get the public key from idagent logs
-  WG_PUBKEY=$(docker logs stargate-idagent 2>&1 | grep "wireguard public key:" | head -1 | sed 's/.*wireguard public key: //' | tr -d '[:space:]')
+  # Get the public key from first idagent replica logs
+  IDAGENT_CID=$(cd "$PROJECT_DIR" && docker compose ps -q idagent 2>/dev/null | head -1)
+  WG_PUBKEY=$(docker logs "$IDAGENT_CID" 2>&1 | grep "wireguard public key:" | head -1 | sed 's/.*wireguard public key: //' | tr -d '[:space:]')
   
   # Check if WG_PRIVATE_KEY is already set in customer-config.sh
   if grep -q '^WG_PRIVATE_KEY=""' "$CONFIG_FILE" || grep -q "^WG_PRIVATE_KEY=\$" "$CONFIG_FILE" || ! grep -q '^WG_PRIVATE_KEY=' "$CONFIG_FILE"; then
