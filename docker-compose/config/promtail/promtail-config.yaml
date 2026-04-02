@@ -18,13 +18,6 @@ scrape_configs:
     docker_sd_configs:
       - host: unix:///var/run/docker.sock
         refresh_interval: 5s
-        filters:
-          - name: label
-            values:
-              - com.docker.compose.service=smimekeys-client
-              - com.docker.compose.service=policy
-              - com.docker.compose.service=idagent
-              - com.docker.compose.service=mxengine
     relabel_configs:
       # Keep only our app containers
       - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
