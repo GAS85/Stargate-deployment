@@ -51,6 +51,8 @@ static_resources:
                     "@type": type.googleapis.com/envoy.extensions.filters.udp.udp_proxy.v3.Route
                     cluster: idagent_wg_udp
             idle_timeout: 300s
+            hash_policies:
+              - source_ip: true
 
     # IDAgent HTTP API (port 8080)
     - name: http_api
