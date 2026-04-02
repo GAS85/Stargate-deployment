@@ -83,7 +83,7 @@ static_resources:
                 http_filters:
                   - name: envoy.filters.http.router
                     typed_config:
-                      "@type": type.googleapis.com/envoy.extensions.http.router.v3.Router
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 
     # IDAgent Metrics (port 2112)
     - name: metrics
@@ -113,7 +113,7 @@ static_resources:
                 http_filters:
                   - name: envoy.filters.http.router
                     typed_config:
-                      "@type": type.googleapis.com/envoy.extensions.http.router.v3.Router
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
 
   clusters:
     # WireGuard TCP — ring hash for source-IP sticky sessions
