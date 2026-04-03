@@ -264,7 +264,7 @@ services:
       # HTTP Server
       HTTP_HOST: ""
       HTTP_PORT: "8080"
-      HTTP_IDLE_TIMEOUT: "60s"
+      HTTP_IDLE_TIMEOUT: "180s"
       HTTP_READ_TIMEOUT: "60s"
       HTTP_WRITE_TIMEOUT: "60s"
       METRICS_ADDR: ":2112"
