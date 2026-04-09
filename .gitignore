@@ -1,3 +1,6 @@
 .idea
 .copilot-instructions.md
 docs/dashboard-installation-guide.md
+
+# Support agent (local only, persists across branches)
+/support/
