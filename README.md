@@ -51,6 +51,10 @@ The beta phase will be announced separately. During beta, the system will still 
   * Proxmox image installation [Proxmox-image-install.md](https://code.vereign.com/svdh/stargate-deployment/-/blob/main/Proxmox-image-install.md)
 * HELM charts [helm-deploy.md](https://code.vereign.com/svdh/stargate-deployment/-/blob/main/helm-deploy.md)
 
+### Exchange Integration
+
+* [Exchange-integration.md](https://code.vereign.com/svdh/stargate-deployment/-/blob/main/Exchange-integration.md) - Configure Microsoft Exchange (Online and On-Premises) connectors and transport rules to route mail through Stargate
+
 ### Prerequisites
 
 **Server Requirements:**
@@ -241,6 +245,44 @@ nano customer-config.sh
 ./scripts/onboard.sh --regenerate-cert
 ```
 
+### Step 5: WireGuard Peer Registration
+
+After installation, the S/MIME certificate issuance will fail if your Stargate instance is not yet registered as a WireGuard peer on the HIN CA side. This is the most common issue during initial setup.
+
+**What you need to provide to HIN:**
+
+1. **WireGuard public key** - extract from idagent logs:
+   ```bash
+   docker compose logs idagent | grep "public key"
+   ```
+2. **`DEPLOYMENT_NAME`** - from your `customer-config.sh`
+3. **`SERVER_STATIC_IP`** - the public IP of your Stargate server
+4. **`WG_INTERFACE_PORT`** - only if you changed it from the default `19818`
+
+Send these values to HIN so they can register your peer on the CA side.
+
+**After HIN confirms your peer is registered:**
+
+Restart the services and regenerate the certificate:
+
+```bash
+./scripts/onboard.sh --regenerate-cert
+```
+
+This restarts services (including idagent), which triggers a new WireGuard handshake. Since the CA now has your keys, the tunnel should establish and the certificate should be issued.
+
+**To verify the tunnel before requesting the certificate:**
+
+```bash
+# Restart just idagent
+docker compose restart idagent
+
+# Check for successful WireGuard handshake
+docker compose logs idagent 2>&1 | grep -i "handshake\|peer"
+```
+
+> **Also check your firewall**: Port `19818/TCP` must be open **both inbound and outbound** on the Stargate server.
+
 ### Subsequent Starts (after reboot)
 
 ```bash
@@ -382,9 +424,35 @@ tar -xzf backups/20260130_143022.tar.gz -C /tmp/
 cat /tmp/20260130_143022/database/mxengine.sql | docker exec -i stargate-postgres psql -U postgres -d mxengine
 ```
 
-## Updating Service Images
+## Updating Stargate
 
-### Update a Single Service
+### Update Deployment Scripts and Configuration
+
+The Stargate deployment repository receives updates to scripts (`onboard.sh`, `start.sh`, `health-check.sh`, etc.), configuration templates, and documentation. To apply these updates:
+
+```bash
+# 1. Create a backup before updating
+./scripts/backup.sh
+
+# 2. Pull the latest changes from the repository
+git pull
+
+# 3. Restart services to pick up any script or config changes
+./scripts/stop.sh
+./scripts/start.sh
+```
+
+> **Note**: `git pull` will not overwrite your `customer-config.sh`, `.env`, or `secrets/` directory - these are in `.gitignore`. If you have local changes to tracked files (e.g. `docker-compose.yml`), git will warn you. In that case, stash your changes first with `git stash`, pull, then re-apply with `git stash pop`.
+
+If the update includes changes to `customer-config.sh.template`, compare it with your existing config to see if new variables were added:
+
+```bash
+diff customer-config.sh customer-config.sh.template
+```
+
+### Update Service Images
+
+#### Update a Single Service
 
 Edit the version in `.env`, then pull and recreate:
 
@@ -397,7 +465,7 @@ docker compose pull mxengine
 docker compose up -d --force-recreate mxengine
 ```
 
-### Quick Test (without editing .env)
+#### Quick Test (without editing .env)
 
 Override the version directly:
 
@@ -405,7 +473,7 @@ Override the version directly:
 MXENGINE_VERSION=v0.0.31 docker compose up -d --force-recreate mxengine
 ```
 
-### Update Multiple Services
+#### Update Multiple Services
 
 ```bash
 # Edit versions in .env, then:
@@ -413,7 +481,7 @@ docker compose pull smimekeys-client policy idagent mxengine
 docker compose up -d --force-recreate smimekeys-client policy idagent mxengine
 ```
 
-### Update All Services
+#### Update All Services
 
 ```bash
 # Pull all latest images
@@ -423,7 +491,7 @@ docker compose pull
 docker compose up -d --force-recreate
 ```
 
-### Cleanup Old Images
+#### Cleanup Old Images
 
 After updates, remove unused images to free disk space:
 
@@ -431,7 +499,7 @@ After updates, remove unused images to free disk space:
 docker image prune -f
 ```
 
-### Rollback
+#### Rollback
 
 To rollback, edit `.env` to the previous version and recreate:
 
@@ -667,6 +735,64 @@ The container will (for each domain):
 4. Configure `content_filter` to route incoming mail through mxengine
 5. Set up transport maps to relay processed mail to the destination MX
 
+### Mail Routing (Migrating from Old MGW)
+
+> **Key difference from the old HIN-MGW**: In the old MGW, you had to manually configure a target server per domain. In Stargate, Postfix **automatically discovers** where to deliver mail by looking up the MX records of each domain in DNS. Manual per-domain routing is also available via `DOMAIN_RELAY_MAP` if needed (see below).
+
+**How it works:**
+
+When the Stargate Postfix container starts, it queries the DNS MX records for each domain listed in `MAIL_DOMAINS`. It filters out its own hostname and uses the remaining MX entries as the delivery target. So for each domain, Postfix knows exactly which Exchange server to forward the processed mail to - based purely on DNS.
+
+**What you need to do:**
+
+For each of your domains, make sure there is an MX record in DNS pointing to the corresponding Exchange (or other mail) server:
+
+```
+domain1.com    MX 10  exchange1.domain1.com
+domain2.com    MX 10  exchange2.domain2.com
+domain3.com    MX 10  exchange3.domain3.com
+```
+
+This works for any number of domains - each domain can point to a different mail server, and Postfix will route accordingly.
+
+**If Stargate is the only MX record** for a domain, Postfix will filter it out and have no delivery target. In that case, add a second MX record pointing to your mail server. Give Stargate a higher priority number (= lower priority) so it acts as the inbound gateway, and give your mail server a lower number (= higher priority) so Postfix uses it as the delivery target:
+
+```
+example.com    MX 10  exchange.example.com      ← delivery target (mail server)
+example.com    MX 20  stargate.example.com      ← inbound gateway (Stargate)
+```
+
+**Alternative - single relay for all domains:**
+
+If all your domains deliver to the same mail server, you can use `RELAYHOST` in `customer-config.sh` instead of MX records:
+
+```bash
+RELAYHOST=[smtp.office365.com]
+```
+
+> **Note**: `RELAYHOST` sends **all** mail to a single host and does not support per-domain routing. For setups with multiple domains and different mail servers, use `DOMAIN_RELAY_MAP` or the MX-based approach.
+
+**Alternative - explicit per-domain relay mapping:**
+
+If you prefer not to manage MX record priorities, you can configure explicit per-domain relay targets in `customer-config.sh`:
+
+```bash
+DOMAIN_RELAY_MAP="domain1.ch:[exchange1.domain1.ch]:25,domain2.ch:[exchange2.domain2.ch]:25"
+```
+
+Each entry maps a domain to a specific relay host and port. Domains not listed fall back to `RELAYHOST` (if set) or MX lookup. This is useful for setups with many domains routed to different Exchange servers.
+
+**Precedence** (highest to lowest):
+1. `DOMAIN_RELAY_MAP` - explicit per-domain target (if the domain is listed)
+2. `RELAYHOST` - global fallback for all unmapped domains
+3. MX lookup - automatic discovery from DNS (default)
+
+**After updating MX records**, restart the Postfix container so it picks them up:
+
+```bash
+docker compose restart postfix-relay
+```
+
 ### Ports
 
 | Port | Purpose |
@@ -680,12 +806,17 @@ The container will (for each domain):
 If DNS lookups fail or you need custom configuration:
 
 ```bash
-# Skip MX lookup - specify relay host directly
+# Skip MX lookup - specify relay host directly (all domains use the same host)
 RELAYHOST=[smtp.office365.com]
+
+# Per-domain relay targets (overrides MX lookup for listed domains)
+DOMAIN_RELAY_MAP="domain1.ch:[exchange1.domain1.ch]:25,domain2.ch:[exchange2.domain2.ch]:25"
 
 # Skip SPF lookup - specify allowed networks directly
 POSTFIX_MYNETWORKS=10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
 ```
+
+> **Using Exchange?** See [Exchange-integration.md](https://code.vereign.com/svdh/stargate-deployment/-/blob/main/Exchange-integration.md) for the full Exchange Online / On-Premises connector and transport rule setup.
 
 ### Verification
 
@@ -1017,6 +1148,34 @@ docker compose logs -f vault
 ```
 
 ## Troubleshooting
+
+### Certificate issuance failed / WireGuard tunnel not established
+
+This is the most common issue after initial installation. The S/MIME certificate cannot be issued because the WireGuard tunnel to the HIN CA is not established.
+
+**Symptoms:**
+- `onboard.sh` shows: `⚠ Certificate issuance failed (WireGuard tunnel may not be established yet)`
+- smimekeys-client logs show: `issue certificate error: certcatunnel: error sending request: idagent: ... context deadline exceeded`
+
+**Root causes (check in order):**
+
+1. **Peer not registered on HIN CA** - Your WireGuard public key must be registered on the HIN side. Provide HIN with:
+   ```bash
+   # Get your WireGuard public key
+   docker compose logs idagent | grep "public key"
+   ```
+   Along with your `DEPLOYMENT_NAME`, `SERVER_STATIC_IP`, and `WG_INTERFACE_PORT` (if changed from 19818).
+
+2. **Firewall blocking port 19818** - Ensure `19818/TCP` is open both inbound and outbound on the Stargate server.
+
+3. **Wrong `MAIL_HOSTNAME`** - If still set to `mail.example.com` (the template default), update it in `customer-config.sh`.
+
+**After the issue is resolved:**
+```bash
+./scripts/onboard.sh --regenerate-cert
+```
+
+See [Step 5: WireGuard Peer Registration](#step-5-wireguard-peer-registration) for the full process.
 
 ### Vault is sealed after restart
 Run the start script which handles unsealing:

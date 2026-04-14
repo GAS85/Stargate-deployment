@@ -127,6 +127,13 @@ POSTFIX_MYNETWORKS=""
 DNS_SERVER=""
 DNS_TIMEOUT="2"
 
+# Per-domain relay mapping (optional, overrides MX lookup for listed domains)
+# Format: comma-separated domain:[relay_host]:port pairs
+# Domains not listed here fall back to RELAYHOST (if set) or MX lookup.
+# Example with multiple domains routed to different Exchange servers:
+#   DOMAIN_RELAY_MAP="domain1.ch:[exchange1.domain1.ch]:25,domain2.ch:[exchange2.domain2.ch]:25"
+DOMAIN_RELAY_MAP=""
+
 # ==============================================================================
 # OPTIONAL: Policy Sync Configuration
 # ==============================================================================

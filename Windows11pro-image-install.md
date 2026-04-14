@@ -26,7 +26,8 @@ Deploy Stargate on Windows Pro(non-pro versions do not support Hyper-V)
 - Click "Start"
 
 ## Log in and initialize the stargate instance:
-- Log in to the VM console with the hinadmin user in order to configure and install the stargate components:
+- Log in to the VM console with the `hinadmin` user in order to configure and install the stargate components.
+- To obtain the `hinadmin` password, send an email to aroel.vandenbroele@hin.com with the subject: **"Password required for VM installation."**
 ```
 [hinadmin@stargate ~]$ sudo su -
 [root@stargate ~]# cd stargate-deployment/docker-compose/

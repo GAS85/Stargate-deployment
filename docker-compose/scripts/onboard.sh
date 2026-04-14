@@ -147,6 +147,7 @@ load_onboard_config() {
   CERT_CA_IDAGENT_DOMAIN="${CERT_CA_IDAGENT_DOMAIN:-}"
   OUTBOUND_SMTP_HOST="${OUTBOUND_SMTP_HOST:-postfix-relay}"
   OUTBOUND_SMTP_PORT="${OUTBOUND_SMTP_PORT:-10026}"
+  DOMAIN_RELAY_MAP="${DOMAIN_RELAY_MAP:-}"
 
   # Derive WG_LOCAL_IP and MXENGINE_PUBLIC_ADDRESS from SERVER_STATIC_IP
   SERVER_STATIC_IP="${SERVER_STATIC_IP:-}"
@@ -209,6 +210,7 @@ update_env_settings() {
   update_env_var "CERT_CA_IDAGENT_DOMAIN" "${CERT_CA_IDAGENT_DOMAIN}"
   update_env_var "OUTBOUND_SMTP_HOST" "$OUTBOUND_SMTP_HOST"
   update_env_var "OUTBOUND_SMTP_PORT" "$OUTBOUND_SMTP_PORT"
+  update_env_var "DOMAIN_RELAY_MAP" "${DOMAIN_RELAY_MAP:-}"
 
   # WireGuard settings
   update_env_var "WG_LOCAL_IP" "$WG_LOCAL_IP"
@@ -299,7 +301,13 @@ generate_smime_key_and_csr() {
 
   # Step 2: Generate CSR and request certificate
   echo "Generating CSR and requesting certificate (this may take up to 60s)..."
-  CSR_RESPONSE=$(curl -s --max-time 90 --location 'http://localhost:8081/v1/certs/csr' \
+
+  local tmp_response="$SECRETS_DIR/.csr_response.tmp"
+  mkdir -p "$SECRETS_DIR"
+
+  local http_code
+  http_code=$(curl -s -o "$tmp_response" -w '%{http_code}' --max-time 90 \
+    --location 'http://localhost:8081/v1/certs/csr' \
     --header 'Content-Type: application/json' \
     --header 'Accept: application/json' \
     --data "{
@@ -308,22 +316,33 @@ generate_smime_key_and_csr() {
       \"subjectCN\": \"$CERT_COMMON_NAME\",
       \"subjectCountry\": $COUNTRY_JSON,
       \"subjectOrg\": \"$CERT_ORGANIZATION\"
-    }")
+    }") || true
 
-  # Save CSR to file if present
-  mkdir -p "$SECRETS_DIR"
-  CSR_VALUE=$(echo "$CSR_RESPONSE" | jq -r '.csr // empty' 2>/dev/null || true)
+  CSR_RESPONSE=$(cat "$tmp_response" 2>/dev/null || true)
+  rm -f "$tmp_response"
 
-  if [ -n "$CSR_VALUE" ]; then
-    echo "$CSR_VALUE" > "$CSR_FILE"
+  # Check for success: HTTP 2xx means the CA endpoint processed the request.
+  # The response may contain a .csr field (CSR returned) or certificate fields
+  # (cert was issued immediately by the CA) - both are success cases.
+  if [[ "$http_code" =~ ^2 ]]; then
+    CSR_VALUE=$(echo "$CSR_RESPONSE" | jq -r '.csr // empty' 2>/dev/null || true)
+
+    if [ -n "$CSR_VALUE" ]; then
+      echo "$CSR_VALUE" > "$CSR_FILE"
+    else
+      # Certificate was issued directly by the CA - save the response as marker
+      echo "$CSR_RESPONSE" > "$CSR_FILE"
+    fi
+
     echo ""
     echo "============================================"
-    echo "  CSR Generated Successfully"
+    echo "  Certificate Request Successful"
     echo "============================================"
     echo ""
     echo "$CSR_RESPONSE" | jq . 2>/dev/null || echo "$CSR_RESPONSE"
     echo ""
-    echo "  CSR saved to: $CSR_FILE"
+    echo "  Key ID: $KEY_ID"
+    echo "  Saved:  $CSR_FILE"
     echo ""
     return 0
   else
@@ -336,6 +355,7 @@ generate_smime_key_and_csr() {
     echo "  request failed. This usually means the WireGuard tunnel to the CA"
     echo "  is not yet established."
     echo ""
+    echo "  HTTP status: $http_code"
     echo "  Response from smimekeys-client:"
     echo "$CSR_RESPONSE" | jq . 2>/dev/null || echo "  $CSR_RESPONSE"
     echo ""
