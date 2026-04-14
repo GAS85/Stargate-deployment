@@ -20,6 +20,24 @@ MXENGINE_PORT="${MXENGINE_PORT:-1587}"
 # Optional manual overrides (skip DNS lookup if set)
 MANUAL_RELAYHOST="${RELAYHOST:-}"
 MANUAL_MYNETWORKS="${MYNETWORKS:-}"
+DOMAIN_RELAY_MAP_RAW="${DOMAIN_RELAY_MAP:-}"
+
+# Parse DOMAIN_RELAY_MAP into an associative array
+# Format: "domain1:[host1]:25,domain2:[host2]:25"
+declare -A RELAY_MAP
+if [ -n "$DOMAIN_RELAY_MAP_RAW" ]; then
+    IFS=',' read -ra MAP_ENTRIES <<< "$DOMAIN_RELAY_MAP_RAW"
+    for entry in "${MAP_ENTRIES[@]}"; do
+        entry=$(echo "$entry" | xargs)  # trim spaces
+        local_domain="${entry%%:*}"
+        local_relay="${entry#*:}"
+        if [ -n "$local_domain" ] && [ -n "$local_relay" ]; then
+            RELAY_MAP["$local_domain"]="$local_relay"
+            echo "  Domain relay map: $local_domain -> $local_relay"
+        fi
+    done
+    echo "Loaded ${#RELAY_MAP[@]} explicit domain relay mappings"
+fi
 
 if [ -z "$MAIL_DOMAINS" ]; then
     echo "ERROR: MAIL_DOMAINS (or MAIL_DOMAIN) environment variable is required"
@@ -235,8 +253,11 @@ for domain in "${DOMAIN_ARRAY[@]}"; do
     echo ""
     echo "--- Processing domain: $domain ---"
     
-    # Get relay host from MX or use manual override
-    if [ -n "$MANUAL_RELAYHOST" ]; then
+    # Get relay host: explicit map > RELAYHOST > MX lookup
+    if [ -n "${RELAY_MAP[$domain]+_}" ]; then
+        echo "  Using explicit relay map: ${RELAY_MAP[$domain]}"
+        DOMAIN_RELAY="${RELAY_MAP[$domain]}"
+    elif [ -n "$MANUAL_RELAYHOST" ]; then
         echo "  Using manual RELAYHOST: $MANUAL_RELAYHOST"
         DOMAIN_RELAY="$MANUAL_RELAYHOST"
     else

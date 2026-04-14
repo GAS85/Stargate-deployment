@@ -485,6 +485,8 @@ services:
       DNS_SERVER: "${DNS_SERVER:-}"
       # Optional: Manual relay host (skip MX lookup for transport map)
       RELAYHOST: "${RELAYHOST:-}"
+      # Optional: Per-domain relay mapping (overrides MX lookup for listed domains)
+      DOMAIN_RELAY_MAP: "${DOMAIN_RELAY_MAP:-}"
       # Optional: Manual allowed networks (skip SPF lookup)
       MYNETWORKS: "${POSTFIX_MYNETWORKS:-}"
     volumes:

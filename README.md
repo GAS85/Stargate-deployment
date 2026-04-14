@@ -424,9 +424,35 @@ tar -xzf backups/20260130_143022.tar.gz -C /tmp/
 cat /tmp/20260130_143022/database/mxengine.sql | docker exec -i stargate-postgres psql -U postgres -d mxengine
 ```
 
-## Updating Service Images
+## Updating Stargate
 
-### Update a Single Service
+### Update Deployment Scripts and Configuration
+
+The Stargate deployment repository receives updates to scripts (`onboard.sh`, `start.sh`, `health-check.sh`, etc.), configuration templates, and documentation. To apply these updates:
+
+```bash
+# 1. Create a backup before updating
+./scripts/backup.sh
+
+# 2. Pull the latest changes from the repository
+git pull
+
+# 3. Restart services to pick up any script or config changes
+./scripts/stop.sh
+./scripts/start.sh
+```
+
+> **Note**: `git pull` will not overwrite your `customer-config.sh`, `.env`, or `secrets/` directory - these are in `.gitignore`. If you have local changes to tracked files (e.g. `docker-compose.yml`), git will warn you. In that case, stash your changes first with `git stash`, pull, then re-apply with `git stash pop`.
+
+If the update includes changes to `customer-config.sh.template`, compare it with your existing config to see if new variables were added:
+
+```bash
+diff customer-config.sh customer-config.sh.template
+```
+
+### Update Service Images
+
+#### Update a Single Service
 
 Edit the version in `.env`, then pull and recreate:
 
@@ -439,7 +465,7 @@ docker compose pull mxengine
 docker compose up -d --force-recreate mxengine
 ```
 
-### Quick Test (without editing .env)
+#### Quick Test (without editing .env)
 
 Override the version directly:
 
@@ -447,7 +473,7 @@ Override the version directly:
 MXENGINE_VERSION=v0.0.31 docker compose up -d --force-recreate mxengine
 ```
 
-### Update Multiple Services
+#### Update Multiple Services
 
 ```bash
 # Edit versions in .env, then:
@@ -455,7 +481,7 @@ docker compose pull smimekeys-client policy idagent mxengine
 docker compose up -d --force-recreate smimekeys-client policy idagent mxengine
 ```
 
-### Update All Services
+#### Update All Services
 
 ```bash
 # Pull all latest images
@@ -465,7 +491,7 @@ docker compose pull
 docker compose up -d --force-recreate
 ```
 
-### Cleanup Old Images
+#### Cleanup Old Images
 
 After updates, remove unused images to free disk space:
 
@@ -473,7 +499,7 @@ After updates, remove unused images to free disk space:
 docker image prune -f
 ```
 
-### Rollback
+#### Rollback
 
 To rollback, edit `.env` to the previous version and recreate:
 
@@ -744,7 +770,22 @@ If all your domains deliver to the same mail server, you can use `RELAYHOST` in 
 RELAYHOST=[smtp.office365.com]
 ```
 
-> **Note**: `RELAYHOST` sends **all** mail to a single host and does not support per-domain routing. For setups with multiple domains and different mail servers, use the MX-based approach.
+> **Note**: `RELAYHOST` sends **all** mail to a single host and does not support per-domain routing. For setups with multiple domains and different mail servers, use `DOMAIN_RELAY_MAP` or the MX-based approach.
+
+**Alternative - explicit per-domain relay mapping:**
+
+If you prefer not to manage MX record priorities, you can configure explicit per-domain relay targets in `customer-config.sh`:
+
+```bash
+DOMAIN_RELAY_MAP="domain1.ch:[exchange1.domain1.ch]:25,domain2.ch:[exchange2.domain2.ch]:25"
+```
+
+Each entry maps a domain to a specific relay host and port. Domains not listed fall back to `RELAYHOST` (if set) or MX lookup. This is useful for setups with many domains routed to different Exchange servers.
+
+**Precedence** (highest to lowest):
+1. `DOMAIN_RELAY_MAP` - explicit per-domain target (if the domain is listed)
+2. `RELAYHOST` - global fallback for all unmapped domains
+3. MX lookup - automatic discovery from DNS (default)
 
 **After updating MX records**, restart the Postfix container so it picks them up:
 
@@ -765,8 +806,11 @@ docker compose restart postfix-relay
 If DNS lookups fail or you need custom configuration:
 
 ```bash
-# Skip MX lookup - specify relay host directly
+# Skip MX lookup - specify relay host directly (all domains use the same host)
 RELAYHOST=[smtp.office365.com]
+
+# Per-domain relay targets (overrides MX lookup for listed domains)
+DOMAIN_RELAY_MAP="domain1.ch:[exchange1.domain1.ch]:25,domain2.ch:[exchange2.domain2.ch]:25"
 
 # Skip SPF lookup - specify allowed networks directly
 POSTFIX_MYNETWORKS=10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
