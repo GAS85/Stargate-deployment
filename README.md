@@ -737,7 +737,7 @@ The container will (for each domain):
 
 ### Mail Routing (Migrating from Old MGW)
 
-> **Key difference from the old HIN-MGW**: In the old MGW, you had to manually configure a target server per domain. In Stargate, Postfix **automatically discovers** where to deliver mail by looking up the MX records of each domain in DNS. There is no manual "target server" setting.
+> **Key difference from the old HIN-MGW**: In the old MGW, you had to manually configure a target server per domain. In Stargate, Postfix **automatically discovers** where to deliver mail by looking up the MX records of each domain in DNS. Manual per-domain routing is also available via `DOMAIN_RELAY_MAP` if needed (see below).
 
 **How it works:**
 
