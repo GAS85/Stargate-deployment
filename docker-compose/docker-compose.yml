@@ -485,6 +485,11 @@ services:
       DNS_SERVER: "${DNS_SERVER:-}"
       # Optional: Manual relay host (skip MX lookup for transport map)
       RELAYHOST: "${RELAYHOST:-}"
+      # Optional: SASL credentials for relay host (e.g. for port 587 submission)
+      RELAYHOST_USERNAME: "${RELAYHOST_USERNAME:-}"
+      RELAYHOST_PASSWORD: "${RELAYHOST_PASSWORD:-}"
+      # Optional: TLS level for relay connection (default: encrypt when SASL is used)
+      RELAYHOST_TLS_LEVEL: "${RELAYHOST_TLS_LEVEL:-}"
       # Optional: Per-domain relay mapping (overrides MX lookup for listed domains)
       DOMAIN_RELAY_MAP: "${DOMAIN_RELAY_MAP:-}"
       # Optional: Manual allowed networks (skip SPF lookup)

@@ -22,6 +22,11 @@ MANUAL_RELAYHOST="${RELAYHOST:-}"
 MANUAL_MYNETWORKS="${MYNETWORKS:-}"
 DOMAIN_RELAY_MAP_RAW="${DOMAIN_RELAY_MAP:-}"
 
+# SASL relay authentication (for port 587 submission)
+SASL_USERNAME="${RELAYHOST_USERNAME:-}"
+SASL_PASSWORD="${RELAYHOST_PASSWORD:-}"
+SASL_TLS_LEVEL="${RELAYHOST_TLS_LEVEL:-}"
+
 # Parse DOMAIN_RELAY_MAP into an associative array
 # Format: "domain1:[host1]:25,domain2:[host2]:25"
 declare -A RELAY_MAP
@@ -306,8 +311,19 @@ export ALLOWED_SENDER_DOMAINS=$(echo "$MAIL_DOMAINS" | tr ',' ' ')
 # Set hostname
 export HOSTNAME="$MAIL_HOSTNAME"
 
-# Disable relayhost - we use transport maps instead
-export RELAYHOST=""
+# When SASL credentials are provided, keep RELAYHOST so boky/postfix sets up
+# native SASL auth. All outbound mail goes via the relay; transport maps only
+# handle inbound relay-domain routing. Without SASL we clear RELAYHOST and
+# rely solely on transport maps for outbound delivery.
+if [ -n "$SASL_USERNAME" ] && [ -n "$SASL_PASSWORD" ]; then
+    echo "SASL relay mode: keeping RELAYHOST=$MANUAL_RELAYHOST"
+    export RELAYHOST="$MANUAL_RELAYHOST"
+    export RELAYHOST_USERNAME="$SASL_USERNAME"
+    export RELAYHOST_PASSWORD="$SASL_PASSWORD"
+else
+    # Disable relayhost - we use transport maps instead
+    export RELAYHOST=""
+fi
 
 # Set IPv6
 if [ "$ENABLE_IPV6" = "true" ]; then
@@ -323,6 +339,9 @@ echo "  HOSTNAME: $HOSTNAME"
 echo "  MXENGINE: $MXENGINE_HOST:$MXENGINE_PORT"
 echo "  MYNETWORKS: $MYNETWORKS"
 echo "  ALLOWED_SENDER_DOMAINS: $ALLOWED_SENDER_DOMAINS"
+if [ -n "$SASL_USERNAME" ]; then
+    echo "  SASL RELAY: $MANUAL_RELAYHOST (user: $SASL_USERNAME)"
+fi
 echo ""
 
 ##############################################################################
@@ -400,9 +419,40 @@ configure_postfix() {
     sed -i '/^relay_domains/d' /etc/postfix/main.cf
     echo "relay_domains = $relay_domains_str" >> /etc/postfix/main.cf
     
-    # Disable relayhost (we use transport maps)
-    sed -i 's/^relayhost/#relayhost/' /etc/postfix/main.cf
-    
+    # Disable relayhost when not using SASL (we use transport maps instead).
+    # When SASL is active, boky/postfix already set relayhost - keep it.
+    if [ -z "$SASL_USERNAME" ] || [ -z "$SASL_PASSWORD" ]; then
+        sed -i 's/^relayhost/#relayhost/' /etc/postfix/main.cf
+    fi
+
+    # Configure per-destination TLS policy for SASL relay hosts
+    # Global smtp_tls_security_level stays "may" so the mxengine hop works.
+    # We enforce TLS only for the authenticated relay destination.
+    if [ -n "$SASL_USERNAME" ] && [ -n "$SASL_PASSWORD" ]; then
+        echo "Configuring TLS policy for SASL relay..."
+        > /etc/postfix/tls_policy
+        local seen_relays=""
+        # Collect unique relay hosts from transport map
+        while IFS= read -r line; do
+            [ -z "$line" ] && continue
+            local relay_part=$(echo "$line" | awk '{print $2}' | sed 's/^relay://')
+            [ -z "$relay_part" ] && continue
+            if ! echo "$seen_relays" | grep -qF "$relay_part"; then
+                echo "$relay_part encrypt" >> /etc/postfix/tls_policy
+                seen_relays="$seen_relays $relay_part"
+            fi
+        done < /etc/postfix/transport
+        # Also add the relayhost itself
+        if [ -n "$MANUAL_RELAYHOST" ]; then
+            if ! echo "$seen_relays" | grep -qF "$MANUAL_RELAYHOST"; then
+                echo "$MANUAL_RELAYHOST encrypt" >> /etc/postfix/tls_policy
+            fi
+        fi
+        postmap lmdb:/etc/postfix/tls_policy
+        postconf -e "smtp_tls_policy_maps = lmdb:/etc/postfix/tls_policy"
+        echo "  TLS policy: encrypt for relay hosts"
+    fi
+
     # Set myhostname
     sed -i '/^myhostname/d' /etc/postfix/main.cf
     echo "myhostname = $MAIL_HOSTNAME" >> /etc/postfix/main.cf

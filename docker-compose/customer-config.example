@@ -123,6 +123,13 @@ OUTBOUND_SMTP_PORT=""
 
 POSTFIX_ENABLE_IPV6="false"
 RELAYHOST=""
+# SASL credentials for authenticated relay (e.g. RELAYHOST=[smtp.office365.com]:587)
+# Required when outbound port 25 is blocked (e.g. Azure, some ISPs)
+RELAYHOST_USERNAME=""
+RELAYHOST_PASSWORD=""
+# TLS level for relay connection (default: "encrypt" when SASL is used, "may" otherwise)
+# See http://www.postfix.org/postconf.5.html#smtp_tls_security_level
+RELAYHOST_TLS_LEVEL=""
 POSTFIX_MYNETWORKS=""
 DNS_SERVER=""
 DNS_TIMEOUT="2"
