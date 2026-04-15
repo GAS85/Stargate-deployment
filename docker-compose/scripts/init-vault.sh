@@ -13,6 +13,25 @@ until vault status -address=http://vault:8200 2>/dev/null | grep -q "Initialized
   sleep 2
 done
 
+# Helper: validate vault-keys.json exists and is valid JSON
+validate_keys_file() {
+  if [ ! -f "$KEYS_FILE" ]; then
+    echo "ERROR: Vault keys file not found at $KEYS_FILE"
+    echo "Cannot unseal Vault automatically."
+    return 1
+  fi
+  if ! jq empty "$KEYS_FILE" 2>/dev/null; then
+    echo "ERROR: $KEYS_FILE is not valid JSON."
+    echo "File contents (first 5 lines):"
+    head -5 "$KEYS_FILE"
+    echo ""
+    echo "The file may have been created by a manual 'vault operator init' without -format=json."
+    echo "Please re-create it or fix it manually."
+    return 1
+  fi
+  return 0
+}
+
 # Check if Vault is already initialized
 INITIALIZED=$(vault status -address=http://vault:8200 -format=json 2>/dev/null | jq -r '.initialized')
 
@@ -20,12 +39,12 @@ if [ "$INITIALIZED" = "true" ]; then
   echo "Vault is already initialized."
   
   # Check if sealed
-  SEALED=$(vault status -address=http://vault:8200 -format=json | jq -r '.sealed')
+  SEALED=$(vault status -address=http://vault:8200 -format=json 2>/dev/null | jq -r '.sealed')
   
   if [ "$SEALED" = "true" ]; then
     echo "Vault is sealed. Attempting to unseal..."
     
-    if [ -f "$KEYS_FILE" ]; then
+    if validate_keys_file; then
       # Unseal with stored keys
       UNSEAL_KEY_1=$(jq -r '.unseal_keys_b64[0]' "$KEYS_FILE")
       UNSEAL_KEY_2=$(jq -r '.unseal_keys_b64[1]' "$KEYS_FILE")
@@ -37,14 +56,12 @@ if [ "$INITIALIZED" = "true" ]; then
       
       echo "Vault unsealed successfully!"
     else
-      echo "ERROR: Vault keys file not found at $KEYS_FILE"
-      echo "Cannot unseal Vault automatically."
       exit 1
     fi
   fi
   
   # Verify we can authenticate
-  if [ -f "$KEYS_FILE" ]; then
+  if [ -f "$KEYS_FILE" ] && jq empty "$KEYS_FILE" 2>/dev/null; then
     ROOT_TOKEN=$(jq -r '.root_token' "$KEYS_FILE")
     export VAULT_TOKEN="$ROOT_TOKEN"
   fi
@@ -127,9 +144,11 @@ vault status -address=http://vault:8200
 
 echo ""
 echo "=== Vault Mounts ==="
-if [ -f "$KEYS_FILE" ]; then
+if [ -f "$KEYS_FILE" ] && jq empty "$KEYS_FILE" 2>/dev/null; then
   ROOT_TOKEN=$(jq -r '.root_token' "$KEYS_FILE")
   VAULT_TOKEN="$ROOT_TOKEN" vault secrets list -address=http://vault:8200 2>/dev/null || echo "Could not list mounts"
+else
+  echo "Could not list mounts (keys file missing or invalid)"
 fi
 
 echo ""
