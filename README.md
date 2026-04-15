@@ -984,8 +984,8 @@ docker exec stargate-postgres psql -U postgres -d idagent \
 docker exec stargate-postgres psql -U postgres -d idagent \
   -c "SELECT connection_id, external_id FROM connection_external_ids;"
 
-# Test WireGuard connectivity (ping the remote peer's tunnel IP)
-docker exec stargate-idagent ping -c 3 5.102.144.182
+# Test WireGuard connectivity (check tunnel status from host)
+docker logs stargate-idagent 2>&1 | grep -i "handshake\|peer.*added\|started listening"
 
 # Check IDAgent logs for tunnel activity
 docker logs stargate-idagent | grep -i wireguard
