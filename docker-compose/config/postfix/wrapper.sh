@@ -486,6 +486,10 @@ configure_postfix() {
     sed -i 's/^smtpd_sender_restrictions/#smtpd_sender_restrictions/' /etc/postfix/main.cf
     sed -i 's/^smtpd_recipient_restrictions/#smtpd_recipient_restrictions/' /etc/postfix/main.cf
     
+    # Ensure aliases database exists (prevents "open database /etc/aliases.lmdb" errors)
+    touch /etc/aliases
+    newaliases
+
     echo "=== Reloading Postfix ==="
     postfix reload || true
     
@@ -520,6 +524,10 @@ wait_for_postfix() {
 
 # Run configuration in background after postfix fully starts
 (wait_for_postfix && configure_postfix) &
+
+# Ensure aliases database exists before postfix starts
+touch /etc/aliases
+newaliases 2>/dev/null || true
 
 # Execute the original boky/postfix entrypoint
 exec /scripts/run.sh "$@"
