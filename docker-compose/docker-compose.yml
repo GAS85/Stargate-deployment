@@ -148,6 +148,7 @@ services:
       WG_PEER_EXTERNAL_ID: ${WG_PEER_EXTERNAL_ID:-}
       WG_PEER_DESCRIPTION: ${WG_PEER_DESCRIPTION:-}
       WG_TRANSPORT_MODE: ${WG_TRANSPORT_MODE:-tcp}
+      WG_PEER_FORCE_UPDATE: ${WG_PEER_FORCE_UPDATE:-false}
     volumes:
       - ./scripts:/scripts:ro
     entrypoint: /bin/sh /scripts/init-idagent.sh
@@ -490,6 +491,8 @@ services:
       DOMAIN_RELAY_MAP: "${DOMAIN_RELAY_MAP:-}"
       # Optional: Manual allowed networks (skip SPF lookup)
       MYNETWORKS: "${POSTFIX_MYNETWORKS:-}"
+      # Server public IP (used to filter own MX records and prevent mail loops)
+      SERVER_STATIC_IP: "${SERVER_STATIC_IP:-}"
     volumes:
       - postfix_spool:/var/spool/postfix
     ports:

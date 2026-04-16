@@ -211,6 +211,7 @@ update_env_settings() {
   update_env_var "OUTBOUND_SMTP_HOST" "$OUTBOUND_SMTP_HOST"
   update_env_var "OUTBOUND_SMTP_PORT" "$OUTBOUND_SMTP_PORT"
   update_env_var "DOMAIN_RELAY_MAP" "${DOMAIN_RELAY_MAP:-}"
+  update_env_var "SERVER_STATIC_IP" "${SERVER_STATIC_IP:-}"
 
   # WireGuard settings
   update_env_var "WG_LOCAL_IP" "$WG_LOCAL_IP"

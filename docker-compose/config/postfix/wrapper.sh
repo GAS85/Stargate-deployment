@@ -225,15 +225,63 @@ get_mx_relay() {
     local hostname=$2
     
     echo "Retrieving MX records for $domain..." >&2
-    local mxhosts=$(get_mx "$domain" | grep -v "$hostname" | sed 's/\.$//' | head -5)
+    local all_mx=$(get_mx "$domain" | sed 's/\.$//' | head -10)
     
-    if [ -z "$mxhosts" ]; then
+    if [ -z "$all_mx" ]; then
         echo "ERROR: No MX records found for $domain" >&2
         return 1
     fi
     
+    # Get our own IPs to filter out self-references (by hostname AND by IP)
+    local my_ips=""
+    if command -v hostname >/dev/null 2>&1; then
+        my_ips=$(hostname -I 2>/dev/null | tr ' ' '\n' | grep -v '^$')
+    fi
+    # Also resolve SERVER_STATIC_IP if set in environment
+    if [ -n "${SERVER_STATIC_IP:-}" ]; then
+        my_ips="$my_ips
+$SERVER_STATIC_IP"
+    fi
+    
+    local filtered_mx=""
+    while IFS= read -r mx; do
+        [ -z "$mx" ] && continue
+        
+        # Filter by hostname match
+        if [ "$mx" = "$hostname" ]; then
+            echo "  Skipping MX $mx (matches MAIL_HOSTNAME)" >&2
+            continue
+        fi
+        
+        # Filter by IP match - resolve MX and check against our IPs
+        local mx_skip=false
+        if [ -n "$my_ips" ]; then
+            local mx_ips=$(get_addr A "$mx" 2>/dev/null)
+            for mx_ip in $mx_ips; do
+                if echo "$my_ips" | grep -qxF "$mx_ip"; then
+                    echo "  Skipping MX $mx (resolves to own IP $mx_ip)" >&2
+                    mx_skip=true
+                    break
+                fi
+            done
+        fi
+        
+        if [ "$mx_skip" = false ]; then
+            filtered_mx="$filtered_mx
+$mx"
+        fi
+    done <<< "$all_mx"
+    
+    # Trim leading newline and limit
+    filtered_mx=$(echo "$filtered_mx" | grep -v '^$' | head -5)
+    
+    if [ -z "$filtered_mx" ]; then
+        echo "ERROR: All MX records for $domain point to this server" >&2
+        return 1
+    fi
+    
     # Format for Postfix: [host1],[host2]
-    echo "$mxhosts" | sed 's/^/[/;s/$/]/' | tr '\n' ',' | sed 's/,$//'
+    echo "$filtered_mx" | sed 's/^/[/;s/$/]/' | tr '\n' ',' | sed 's/,$//'
 }
 
 ##############################################################################
@@ -373,6 +421,25 @@ configure_postfix() {
         echo "0.0.0.0:10026 inet n - n - 10 smtpd -o content_filter= -o receive_override_options=no_unknown_recipient_checks,no_header_body_checks,no_milters -o smtpd_authorized_xforward_hosts=${docker_nets} -o smtpd_tls_security_level=none -o mynetworks=${docker_nets}" >> /etc/postfix/master.cf
     fi
     
+    # Resolve mxengine hostname to IP and add to chroot /etc/hosts
+    # This ensures Postfix can resolve Docker service names from inside the chroot
+    local mxengine_ip
+    mxengine_ip=$(getent hosts "$MXENGINE_HOST" 2>/dev/null | awk '{print $1}')
+    if [ -n "$mxengine_ip" ]; then
+        echo "Resolved $MXENGINE_HOST to $mxengine_ip"
+        # Add to both system and chroot /etc/hosts
+        if ! grep -q "$MXENGINE_HOST" /etc/hosts 2>/dev/null; then
+            echo "$mxengine_ip $MXENGINE_HOST" >> /etc/hosts
+        fi
+        if [ -f /var/spool/postfix/etc/hosts ]; then
+            if ! grep -q "$MXENGINE_HOST" /var/spool/postfix/etc/hosts 2>/dev/null; then
+                echo "$mxengine_ip $MXENGINE_HOST" >> /var/spool/postfix/etc/hosts
+            fi
+        fi
+    else
+        echo "WARNING: Could not resolve $MXENGINE_HOST - content_filter may fail"
+    fi
+
     # Configure content_filter to send mail to mxengine
     if ! grep -q "^content_filter" /etc/postfix/main.cf 2>/dev/null; then
         echo "Setting content_filter to mxengine..."
