@@ -23,6 +23,7 @@ WG_PEER_ALLOWED_IPS="${WG_PEER_ALLOWED_IPS:-${WG_PEER_IP}/32}"
 WG_PEER_EXTERNAL_ID="${WG_PEER_EXTERNAL_ID:-}"
 WG_PEER_DESCRIPTION="${WG_PEER_DESCRIPTION:-WireGuard peer connection}"
 WG_TRANSPORT_MODE="${WG_TRANSPORT_MODE:-tcp}"
+WG_PEER_FORCE_UPDATE="${WG_PEER_FORCE_UPDATE:-false}"
 
 # If connection_id not provided, generate UUID v4 using PostgreSQL
 if [ -z "$WG_PEER_CONNECTION_ID" ]; then
@@ -72,9 +73,11 @@ EXISTING=$(psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d idagent -tAc \
 
 if [ -n "$EXISTING" ]; then
   echo "Connection already exists with id: $EXISTING"
-  echo "Updating existing connection..."
   
-  psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d idagent <<EOF
+  if [ "$WG_PEER_FORCE_UPDATE" = "true" ]; then
+    echo "WG_PEER_FORCE_UPDATE=true - updating existing connection..."
+    
+    psql -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d idagent <<EOF
 UPDATE connections SET
   name = '$WG_PEER_NAME',
   public_key = '$WG_PEER_PUBLIC_KEY',
@@ -88,8 +91,11 @@ UPDATE connections SET
   updated_at = EXTRACT(EPOCH FROM NOW())::BIGINT
 WHERE connection_id = '$EXISTING' OR public_key = '$WG_PEER_PUBLIC_KEY';
 EOF
-  
-  echo "Connection updated successfully!"
+    
+    echo "Connection updated successfully!"
+  else
+    echo "Skipping update. Set WG_PEER_FORCE_UPDATE=true in .env to overwrite."
+  fi
 else
   echo "Creating new connection..."
   

@@ -148,6 +148,7 @@ services:
       WG_PEER_EXTERNAL_ID: ${WG_PEER_EXTERNAL_ID:-}
       WG_PEER_DESCRIPTION: ${WG_PEER_DESCRIPTION:-}
       WG_TRANSPORT_MODE: ${WG_TRANSPORT_MODE:-tcp}
+      WG_PEER_FORCE_UPDATE: ${WG_PEER_FORCE_UPDATE:-false}
     volumes:
       - ./scripts:/scripts:ro
     entrypoint: /bin/sh /scripts/init-idagent.sh
