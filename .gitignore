@@ -2,6 +2,10 @@
 .copilot-instructions.md
 docs/dashboard-installation-guide.md
 
+# Copilot agent and instructions (local only)
+.github/copilot-instructions.md
+.github/agents/
+
 # Support agent (local only, persists across branches)
 
 # Claude Code local overrides (secrets, personal prefs)
