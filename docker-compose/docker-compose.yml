@@ -491,6 +491,8 @@ services:
       DOMAIN_RELAY_MAP: "${DOMAIN_RELAY_MAP:-}"
       # Optional: Manual allowed networks (skip SPF lookup)
       MYNETWORKS: "${POSTFIX_MYNETWORKS:-}"
+      # Server public IP (used to filter own MX records and prevent mail loops)
+      SERVER_STATIC_IP: "${SERVER_STATIC_IP:-}"
     volumes:
       - postfix_spool:/var/spool/postfix
     ports:
