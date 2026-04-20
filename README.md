@@ -43,17 +43,17 @@ The beta phase will be announced separately. During beta, the system will still 
 
 ### Installation options 
 
-* Docker installation https://code.vereign.com/svdh/stargate-deployment#prerequisites
+* Docker installation [Prerequisites](#prerequisites)
 * VM image installation
-  * Azure VM image installation [ Azure-VM-image-install.md](https://code.vereign.com/svdh/stargate-deployment/-/blob/main/Azure-VM-image-install.md)
-  * Windows 11 pro (Hyper-V) image installation [Windows11pro-image-install.md](https://code.vereign.com/svdh/stargate-deployment/-/blob/main/Windows11pro-image-install.md)
-  * VMware image installation [VMware-image-install.md](https://code.vereign.com/svdh/stargate-deployment/-/blob/main/VMware-image-install.md)
-  * Proxmox image installation [Proxmox-image-install.md](https://code.vereign.com/svdh/stargate-deployment/-/blob/main/Proxmox-image-install.md)
-* HELM charts [helm-deploy.md](https://code.vereign.com/svdh/stargate-deployment/-/blob/main/helm-deploy.md)
+  * Azure VM image installation [Azure-VM-image-install.md](Azure-VM-image-install.md)
+  * Windows 11 pro (Hyper-V) image installation [Windows11pro-image-install.md](Windows11pro-image-install.md)
+  * VMware image installation [VMware-image-install.md](VMware-image-install.md)
+  * Proxmox image installation [Proxmox-image-install.md](Proxmox-image-install.md)
+* HELM charts [helm-deploy.md](helm-deploy.md)
 
 ### Exchange Integration
 
-* [Exchange-integration.md](https://code.vereign.com/svdh/stargate-deployment/-/blob/main/Exchange-integration.md) - Configure Microsoft Exchange (Online and On-Premises) connectors and transport rules to route mail through Stargate
+* [Exchange-integration.md](Exchange-integration.md) - Configure Microsoft Exchange (Online and On-Premises) connectors and transport rules to route mail through Stargate
 
 ### Prerequisites
 
@@ -816,7 +816,7 @@ DOMAIN_RELAY_MAP="domain1.ch:[exchange1.domain1.ch]:25,domain2.ch:[exchange2.dom
 POSTFIX_MYNETWORKS=10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
 ```
 
-> **Using Exchange?** See [Exchange-integration.md](https://code.vereign.com/svdh/stargate-deployment/-/blob/main/Exchange-integration.md) for the full Exchange Online / On-Premises connector and transport rule setup.
+> **Using Exchange?** See [Exchange-integration.md](Exchange-integration.md) for the full Exchange Online / On-Premises connector and transport rule setup.
 
 ### Verification
 
