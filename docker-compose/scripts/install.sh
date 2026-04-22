@@ -635,6 +635,35 @@ echo ""
 echo "  IMPORTANT: Back up customer-config.sh before recreating the VM!"
 echo "  It now contains your WireGuard private key for persistence."
 echo ""
+
+# ============================================
+# HIN WireGuard Peer Registration block
+# ============================================
+# Print the values HIN needs to register this Stargate as a WireGuard peer.
+# Without this registration the WG tunnel cannot be established and S/MIME
+# certificate issuance will keep failing.
+
+WG_PUBKEY_FOR_HIN="$(docker compose logs idagent 2>/dev/null \
+  | grep -m1 'wireguard public key:' \
+  | sed 's/.*wireguard public key: //' \
+  | tr -d '[:space:]')"
+
+echo "============================================"
+echo "  HIN WireGuard Peer Registration"
+echo "============================================"
+echo ""
+echo "  Send the following values to HIN (aroel.vandenbroele@hin.ch)"
+echo "  so they can register this Stargate as a WireGuard peer."
+echo "  Until the peer is registered, S/MIME cert issuance will fail."
+echo ""
+echo "  WireGuard Public Key: ${WG_PUBKEY_FOR_HIN:-<not yet available - run: docker compose logs idagent | grep \"wireguard public key\">}"
+echo "  DEPLOYMENT_NAME:      $DEPLOYMENT_NAME"
+echo "  SERVER_STATIC_IP:     $SERVER_STATIC_IP"
+echo "  WG_INTERFACE_PORT:    $WG_INTERFACE_PORT"
+echo ""
+echo "  After HIN confirms registration, run:"
+echo "    ./scripts/onboard.sh --regenerate-cert"
+echo ""
 echo "  Recommended next steps:"
 echo "    - SPF / DKIM / DMARC for your sending domains"
 echo "      (see README.md → 'Post-Onboarding Recommendations')"
