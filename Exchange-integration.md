@@ -9,18 +9,21 @@ This guide explains how to configure Microsoft Exchange (Online and On-Premises)
 Stargate acts as a mail relay between external mail servers and your Exchange environment. Two integration patterns are supported:
 
 **Pattern A - Stargate as primary MX (recommended for inbound S/MIME processing):**
-```
+
+```plain
 Internet → Stargate (MX priority 15) → Exchange Online (MX priority 20)
 Exchange Online → Transport Rule → Outbound Connector → Stargate → Internet
 ```
 
 **Pattern B - Exchange Online as primary MX with transport rules:**
-```
+
+```plain
 Internet → Exchange Online → Transport Rule → Connector → Stargate → Exchange Online
 Exchange Online → Transport Rule → Outbound Connector → Stargate → Internet
 ```
 
 In both patterns, you need:
+
 1. **DNS records** pointing to the Stargate server
 2. **Outbound connector** - routes mail from Exchange to Stargate
 3. **Inbound connector** - accepts mail from Stargate into Exchange
@@ -44,12 +47,13 @@ Before configuring Exchange, ensure:
 
 Create an A record pointing your mail hostname to the Stargate server:
 
-```
+```plain
 A <MAIL_HOSTNAME> <STARGATE_IP>
 ```
 
 Example:
-```
+
+```plain
 A mail 128.140.117.200
 ```
 
@@ -58,17 +62,20 @@ A mail 128.140.117.200
 Add an MX record with **higher priority** (lower number) than the existing Exchange Online MX record. This ensures inbound mail hits Stargate first:
 
 Existing Exchange Online MX record:
-```
+
+```plain
 MX @ 20 <YOUR_DOMAIN>.mail.protection.outlook.com.
 ```
 
 New Stargate MX record (higher priority):
-```
+
+```plain
 MX @ 15 <MAIL_HOSTNAME>.
 ```
 
 Example:
-```
+
+```plain
 MX @ 15 mail.vrgnservices.eu.
 MX @ 20 vrgnservices-eu.mail.protection.outlook.com.
 ```
@@ -80,12 +87,14 @@ MX @ 20 vrgnservices-eu.mail.protection.outlook.com.
 Add the Stargate server IP to your SPF record so mail relayed through it passes SPF checks:
 
 Before:
-```
+
+```plain
 TXT @ "v=spf1 include:spf.protection.outlook.com -all"
 ```
 
 After:
-```
+
+```plain
 TXT @ "v=spf1 ip4:<STARGATE_IP> include:spf.protection.outlook.com -all"
 ```
 
@@ -106,7 +115,8 @@ host -t txt <YOUR_DOMAIN> | grep v=spf1
 ```
 
 Example output:
-```
+
+```shell
 # host mail.vrgnservices.eu
 mail.vrgnservices.eu has address 128.140.117.200
 
@@ -131,33 +141,35 @@ This connector routes outbound mail from Exchange Online to the Stargate relay s
 2. Click **"+ Add a connector"**
 
 3. **Connection from**: Select **"Office 365"**
-   **Connection to**: Select **"Your organization's email server"**
-   Click **"Next"**
+   - **Connection to**: Select **"Your organization's email server"**
+   - Click **"Next"**
 
 4. **Connector name**: Enter a descriptive name, e.g.:
-   ```
+
+   ```plain
    From Office 365 to postfix relay server
    ```
-   Check **"Retain Internal Exchange email headers"**
-   Click **"Next"**
+
+   - Check **"Retain Internal Exchange email headers"**
+   - Click **"Next"**
 
 5. **Use of connector**: Select **"Only when I have a transport rule set up that redirects messages to this connector"**
-   Click **"Next"**
+   - Click **"Next"**
 
    > This is important - the connector won't route any mail by itself. It will only be used when triggered by the transport rule created in Step C.
 
 6. **Routing**: Select **"Route email through these smart hosts"**
-   Enter the Stargate server IP address: `<STARGATE_IP>`
-   Click **"+"** to add it, then click **"Next"**
+   - Enter the Stargate server IP address: `<STARGATE_IP>`
+   - Click **"+"** to add it, then click **"Next"**
 
 7. **Security restrictions**: Select **"Any digital certificate, including self-signed certificates"**
-   Click **"Next"**
+   - Click **"Next"**
 
    > Stargate uses opportunistic TLS (`smtpd_tls_security_level = may`). Selecting "any digital certificate" ensures connectivity even with self-signed certificates.
 
 8. **Validation email**: Enter a valid email address for your domain (e.g. `user@<YOUR_DOMAIN>`)
-   Click **"+"**, then click **"Validate"**
-   Wait for validation to complete, then click **"Next"**
+   - Click **"+"**, then click **"Validate"**
+   - Wait for validation to complete, then click **"Next"**
 
    > For validation to succeed, the Stargate server must be running and accepting mail on port 25.
 
@@ -172,19 +184,21 @@ This connector accepts mail from the Stargate relay server into Exchange Online.
 1. From the [Connectors page](https://admin.exchange.microsoft.com/#/connectors), click **"+ Add a connector"**
 
 2. **Connection from**: Select **"Your organization's email server"**
-   **Connection to**: Shows **"Office 365"** (automatic)
-   Click **"Next"**
+   - **Connection to**: Shows **"Office 365"** (automatic)
+   - Click **"Next"**
 
 3. **Connector name**: Enter a descriptive name, e.g.:
-   ```
+
+   ```plain
    Receive mail from postfix relay server
    ```
-   Check **"Retain internal Exchange email headers"**
-   Click **"Next"**
+
+   - Check **"Retain internal Exchange email headers"**
+   - Click **"Next"**
 
 4. **Authenticating sent email**: Select **"By verifying that the IP address of the sending server matches one of the following IP addresses that belong exclusively to your organization"**
-   Enter the Stargate server IP address: `<STARGATE_IP>`
-   Click **"+"** to add it, then click **"Next"**
+   - Enter the Stargate server IP address: `<STARGATE_IP>`
+   - Click **"+"** to add it, then click **"Next"**
 
    > This tells Exchange Online to trust mail from this specific IP address, bypassing additional spam/authentication checks for mail that has already been processed by Stargate.
 
@@ -210,22 +224,23 @@ The transport rule redirects all outbound mail through the Stargate outbound con
 2. Click **"+ Add a rule"** → **"Create a new rule"**
 
 3. **Rule name**: Enter a descriptive name, e.g.:
-   ```
+
+   ```plain
    Relay all mail to postfix except mail coming from it
    ```
 
 4. **Apply this rule if**: Select **"The recipient..."** → **"is external/internal"** → **"Outside the organization"**
-   Click **"Save"**
+   - Click **"Save"**
 
    > This condition ensures only outbound mail (to external recipients) is redirected through Stargate.
 
 5. **Do the following**: Select **"Redirect the message to..."** → **"the following connector"** → select the outbound connector created in Step A (e.g. "From Office 365 to postfix relay server")
-   Click **"Save"**
+   - Click **"Save"**
 
 6. **Except if**: Click **"+"** to add an exception
-   Select **"The sender..."** → **"IP address is in any of these ranges"**
-   Enter the Stargate server IP address: `<STARGATE_IP>`
-   Click **"Add"**, verify the IP is listed, then click **"Save"**
+   - Select **"The sender..."** → **"IP address is in any of these ranges"**
+   - Enter the Stargate server IP address: `<STARGATE_IP>`
+   - Click **"Add"**, verify the IP is listed, then click **"Save"**
 
    > **This exception is critical** - it prevents mail loops. Without it, mail from Stargate arriving at Exchange Online would be redirected back to Stargate in an infinite loop.
 
@@ -251,6 +266,7 @@ For on-premises Exchange Server (2016, 2019), the setup is similar but configure
 Create a Send connector to route outbound mail through Stargate:
 
 **Exchange Management Shell (PowerShell):**
+
 ```powershell
 New-SendConnector -Name "To Stargate Relay" `
   -AddressSpaces "SMTP:*;1" `
@@ -261,6 +277,7 @@ New-SendConnector -Name "To Stargate Relay" `
 ```
 
 **Exchange Admin Center (GUI):**
+
 1. Navigate to **Mail flow** → **Send connectors**
 2. Click **+** to create a new connector
 3. **Name**: "To Stargate Relay"
@@ -275,6 +292,7 @@ New-SendConnector -Name "To Stargate Relay" `
 Create or modify a Receive connector to accept mail from Stargate:
 
 **Exchange Management Shell (PowerShell):**
+
 ```powershell
 New-ReceiveConnector -Name "From Stargate Relay" `
   -Bindings "0.0.0.0:25" `
@@ -286,6 +304,7 @@ New-ReceiveConnector -Name "From Stargate Relay" `
 ```
 
 **Exchange Admin Center (GUI):**
+
 1. Navigate to **Mail flow** → **Receive connectors**
 2. Click **+** to create a new connector
 3. **Name**: "From Stargate Relay"
@@ -300,6 +319,7 @@ New-ReceiveConnector -Name "From Stargate Relay" `
 Create a transport rule to redirect outbound mail through the Send connector:
 
 **Exchange Management Shell (PowerShell):**
+
 ```powershell
 New-TransportRule -Name "Relay outbound via Stargate" `
   -SentToScope NotInOrganization `
@@ -308,6 +328,7 @@ New-TransportRule -Name "Relay outbound via Stargate" `
 ```
 
 **Exchange Admin Center (GUI):**
+
 1. Navigate to **Mail flow** → **Rules**
 2. Click **+** → **"Create a new rule"**
 3. **Name**: "Relay outbound via Stargate"
@@ -324,6 +345,7 @@ New-TransportRule -Name "Relay outbound via Stargate" `
 By default, the Stargate Postfix container automatically discovers where to deliver processed mail by looking up MX records for each domain in `MAIL_DOMAINS`. It filters out its own hostname and uses the remaining MX entries as delivery targets.
 
 This works when:
+
 - Your domain has MX records pointing to both Stargate and Exchange
 - Stargate has a higher-priority (lower number) MX record than Exchange
 
@@ -341,7 +363,7 @@ RELAYHOST=[smtp.office365.com]
 
 For setups with multiple domains and different Exchange servers (e.g. BALZ Informatik AG with 26 domains), use MX records for per-domain routing:
 
-```
+```plain
 domain1.com    MX 10  exchange1.domain1.com
 domain1.com    MX 20  stargate.domain1.com
 
@@ -407,6 +429,7 @@ Stargate uses opportunistic TLS with a self-signed certificate. The outbound con
 ### Validation fails during connector creation
 
 The outbound connector validation requires:
+
 - Stargate server is running and accepting connections on port 25
 - The validation email address is valid for your domain
 - Network path between Exchange Online and Stargate is open (no firewall blocking)

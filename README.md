@@ -10,41 +10,50 @@
 > $\textcolor{red}{\textsf{\textbf{all configuration and operations are performed over the terminal using the scripts in this repository.}}}$
 
 Recommendations and Expectations for the Alpha Phase
+
 * As HIN MGW is still under rapid development, you should expect periodic requests to update your instance.
 * We recommend preparing and using a test domain, not a production domain, during the alpha phase.
 * If you have a test environment available, please perform the initial installation there and connect it to a test email system.
 * Please do not use real production traffic before the official production release date. Routing production traffic during the alpha phase is done at your own risk.
-  * During the Alpha and Beta testing phases, you are allowed to register any test domain you own. During the onboarding process, a CSR request will be sent to the HIN Test CA server, and the certificate will be issued automatically. 
+  * During the Alpha and Beta testing phases, you are allowed to register any test domain you own. During the onboarding process, a CSR request will be sent to the HIN Test CA server, and the certificate will be issued automatically.
 
-#### Beta phase 
+#### Beta phase
 
 The beta phase will be announced separately. During beta, the system will still be connected to the HIN Test CA. Real traffic testing can begin once announced.
 
 ### Applications
-- **smimekeys-client** - S/MIME keys client service (port 8081)
-- **policy** - Policy service (port 8082)
-- **idagent** - ID Agent service (port 8083, WireGuard: 19818/tcp+udp)
-- **mxengine** - MX Engine service (port 8084, SMTP: 1587)
-- **policy-sync** - Syncs OPA/Rego policies from Git repository to database (runs continuously)
+
+* **smimekeys-client** - S/MIME keys client service (port 8081)
+
+* **policy** - Policy service (port 8082)
+* **idagent** - ID Agent service (port 8083, WireGuard: 19818/tcp+udp)
+* **mxengine** - MX Engine service (port 8084, SMTP: 1587)
+* **policy-sync** - Syncs OPA/Rego policies from Git repository to database (runs continuously)
 
 ### Infrastructure
-- **PostgreSQL** - Database (port 5432)
-- **Vault** - Secrets management (port 8200)
-- **MinIO** - S3-compatible storage (API: 9000, Console: 9001)
-- **Postfix Relay** - Mail relay server (port 25) - auto-configures from DNS
+
+* **PostgreSQL** - Database (port 5432)
+
+* **Vault** - Secrets management (port 8200)
+* **MinIO** - S3-compatible storage (API: 9000, Console: 9001)
+* **Postfix Relay** - Mail relay server (port 25) - auto-configures from DNS
 
 ### Init Containers
-- **vault-init** - Initializes and unseals Vault on first run
-- **idagent-init** - Creates WireGuard peer connection in idagent database
+
+* **vault-init** - Initializes and unseals Vault on first run
+
+* **idagent-init** - Creates WireGuard peer connection in idagent database
 
 ### Monitoring
-- **node-exporter** - Host metrics for Prometheus (port 9100)
-- **version-collector** - Collects app versions from `/liveness` endpoints for node-exporter
-- **Promtail** - Log collector for Loki (ships app logs)
+
+* **node-exporter** - Host metrics for Prometheus (port 9100)
+
+* **version-collector** - Collects app versions from `/liveness` endpoints for node-exporter
+* **Promtail** - Log collector for Loki (ships app logs)
 
 ## Quick Start
 
-### Installation options 
+### Installation options
 
 * Docker installation [Prerequisites](#prerequisites)
 * VM image installation
@@ -61,19 +70,22 @@ The beta phase will be announced separately. During beta, the system will still 
 ### Prerequisites
 
 **Server Requirements:**
-- 4 CPU cores (recommended minimum)
-- 8 GB RAM (recommended minimum)
-- 30 GB storage (recommended minimum)
-- Docker will be installed automatically if missing
-- Ensure there is an internet connection on the machine where you are installing Stargate services
-- Ensure traffic is properly configured to reach Stargate instance
+
+* 4 CPU cores (recommended minimum)
+* 8 GB RAM (recommended minimum)
+* 30 GB storage (recommended minimum)
+* Docker will be installed automatically if missing
+* Ensure there is an internet connection on the machine where you are installing Stargate services
+* Ensure traffic is properly configured to reach Stargate instance
 
 **Supported Linux Distributions:**
-- RHEL 8, 9 and 10 compatible distributions such as Alma Linux, Rocky Linux, Centos Stream
-- Ubuntu 22 and 24
-- Debian 11, 12 and 13
+
+* RHEL 8, 9 and 10 compatible distributions such as Alma Linux, Rocky Linux, Centos Stream
+* Ubuntu 22 and 24
+* Debian 11, 12 and 13
 
 **Inbound Network Access (firewall must allow):**
+
 | Port | Protocol | Purpose |
 |------|----------|---------|
 | 25 | TCP | SMTP - receiving mail from external servers |
@@ -81,6 +93,7 @@ The beta phase will be announced separately. During beta, the system will still 
 | 19818 | TCP+UDP | WireGuard - encrypted tunnel for agent-to-agent communication |
 
 **Outbound Network Access (server must reach):**
+
 | Destination | Port | Purpose |
 |-------------|------|---------|
 | registry.vereign.io | 443 | Docker image registry |
@@ -92,8 +105,9 @@ The beta phase will be announced separately. During beta, the system will still 
 | Destination mail servers | 25 | Outbound mail delivery (via MX lookup) |
 
 **DNS Access:**
-- Server must be able to resolve DNS (MX, SPF, A records)
-- Used for mail routing and SPF-based network allowlisting
+
+* Server must be able to resolve DNS (MX, SPF, A records)
+* Used for mail routing and SPF-based network allowlisting
 
 ### Step 1: Configure Customer Settings
 
@@ -168,8 +182,9 @@ The template comes with HIN Test peer defaults. These work out of the box for th
 | `LOKI_URL` | `https://loki.infra.vereign-cdn.com` | Loki endpoint for centralized log shipping |
 
 **Auto-generated (do not set manually):**
-- `VAULT_TOKEN` — Generated by Vault during first initialization, saved to `customer-config.sh`
-- `WG_PRIVATE_KEY` — Generated by IDAgent on first run, saved to `customer-config.sh`
+
+* `VAULT_TOKEN` — Generated by Vault during first initialization, saved to `customer-config.sh`
+* `WG_PRIVATE_KEY` — Generated by IDAgent on first run, saved to `customer-config.sh`
 
 ### Step 2: Deploy to a Server
 
@@ -202,9 +217,9 @@ The install script (`install.sh`) performs the following steps:
 6. **Save Vault keys** to `secrets/vault-keys.json` and update `.env` with the root token. The token is also saved to `customer-config.sh` for persistence across VM recreations.
 7. **Restart application services** to pick up the Vault token.
 8. **Run initial onboarding** (`onboard.sh --initial-setup`):
-   - Generate S/MIME signing key and CSR (saved to `secrets/signing-key.csr`)
-   - Set up WireGuard peer connection in the database
-   - If the WireGuard tunnel to the CA is not yet established, CSR submission may fail — this is expected on first install. Services still run; retry with `./scripts/onboard.sh --regenerate-cert` once the tunnel is up.
+   * Generate S/MIME signing key and CSR (saved to `secrets/signing-key.csr`)
+   * Set up WireGuard peer connection in the database
+   * If the WireGuard tunnel to the CA is not yet established, CSR submission may fail — this is expected on first install. Services still run; retry with `./scripts/onboard.sh --regenerate-cert` once the tunnel is up.
 9. **Save WireGuard private key** to `customer-config.sh` — extracted from Vault after IDAgent generates it.
 10. **Set up daily backup** cron job (runs at 2:00 AM).
 
@@ -221,29 +236,35 @@ nano customer-config.sh
 ```
 
 **What `onboard.sh` does:**
+
 1. Loads and validates settings from `customer-config.sh`
 2. Auto-derives certificate fields (`CERT_DNS_NAMES`, `CERT_ORGANIZATION`, `CERT_COMMON_NAME`) the same way `install.sh` does
 3. Updates `.env` with current domain, certificate, and WireGuard settings
 4. Generates S/MIME key + CSR (skips if already exists, use `--regenerate-cert` to force)
-   - The CSR is submitted to the CA via the WireGuard tunnel (90-second timeout)
-   - If submission fails (tunnel not ready), a warning is printed and the script continues — services remain running
+   * The CSR is submitted to the CA via the WireGuard tunnel (90-second timeout)
+   * If submission fails (tunnel not ready), a warning is printed and the script continues — services remain running
 5. Sets up or updates the WireGuard peer connection in the database (runs `idagent-init`)
 6. Restarts affected services (postfix-relay, mxengine, idagent)
 
 **Exit codes:**
-- `0` — Everything succeeded
-- `1` — Fatal error (missing config, etc.)
-- `2` — Partial success (services running, but certificate issuance failed — retry later)
+
+* `0` — Everything succeeded
+* `1` — Fatal error (missing config, etc.)
+* `2` — Partial success (services running, but certificate issuance failed — retry later)
 
 **Adding a new domain:**
+
 1. Edit `customer-config.sh` — add domain to `MAIL_DOMAINS` (comma-separated):
+
    ```bash
    MAIL_DOMAINS="example.com,example.org"
    ```
+
 2. Run `./scripts/onboard.sh`
 3. The script updates Postfix routing, regenerates certificate SANs (if auto-derived), and restarts services
 
 **Regenerating certificates:**
+
 ```bash
 ./scripts/onboard.sh --regenerate-cert
 ```
@@ -255,9 +276,11 @@ After installation, the S/MIME certificate issuance will fail if your Stargate i
 **What you need to provide to HIN:**
 
 1. **WireGuard public key** - extract from idagent logs:
+
    ```bash
    docker compose logs idagent | grep "public key"
    ```
+
 2. **`DEPLOYMENT_NAME`** - from your `customer-config.sh`
 3. **`SERVER_STATIC_IP`** - the public IP of your Stargate server
 4. **`WG_INTERFACE_PORT`** - only if you changed it from the default `19818`
@@ -298,19 +321,19 @@ For **each domain** you route through the Stargate, publish the following DNS re
 
 **SPF** - authorize the Stargate IP. If your mailboxes also live in M365, keep the Microsoft `include`:
 
-```
+```shell
 example.ch.  TXT  "v=spf1 ip4:<STARGATE_PUBLIC_IP> include:spf.protection.outlook.com -all"
 ```
 
 If you do not use M365 / Google Workspace, the minimal record is:
 
-```
+```shell
 example.ch.  TXT  "v=spf1 ip4:<STARGATE_PUBLIC_IP> -all"
 ```
 
 **DMARC** - publish at least a monitoring policy. This alone is enough to clear Outlook's "can't verify" banner once SPF passes:
 
-```
+```shell
 _dmarc.example.ch.  TXT  "v=DMARC1; p=none; rua=mailto:postmaster@example.ch"
 ```
 
@@ -321,8 +344,9 @@ Once you have confirmed alignment in the reports, you can tighten to `p=quaranti
 **Verifying:** send a test mail to a Gmail or Outlook account, open the message source / "View original", and look for the `Authentication-Results:` header. You want to see `spf=pass`, `dkim=pass` and `dmarc=pass`.
 
 Useful tools:
-- SPF / DNS lookup count: <https://mxtoolbox.com/spf.aspx> (the total `include:` chain must stay under 10 lookups)
-- DMARC: <https://mxtoolbox.com/dmarc.aspx>
+
+* SPF / DNS lookup count: <https://mxtoolbox.com/spf.aspx> (the total `include:` chain must stay under 10 lookups)
+* DMARC: <https://mxtoolbox.com/dmarc.aspx>
 
 #### 6.2 Relay outbound mail back through your mail platform (recommended for M365 / Exchange Online)
 
@@ -370,6 +394,7 @@ See `Exchange-integration.md` for full step-by-step instructions including scree
 ```
 
 The start script:
+
 1. Starts infrastructure services
 2. Unseals Vault using stored keys
 3. Starts application services
@@ -453,17 +478,19 @@ docker compose down -v   # The -v flag removes volumes!
 ## Backups
 
 ### Automatic Backups
-- Daily backups run at 2:00 AM via cron (set up during install)
-- Backups stored in `./backups/` as timestamped `.tar.gz` files
-- Old backups (>7 days) are automatically cleaned up
+
+* Daily backups run at 2:00 AM via cron (set up during install)
+* Backups stored in `./backups/` as timestamped `.tar.gz` files
+* Old backups (>7 days) are automatically cleaned up
 
 ### What's Included in Backups
-- **Full PostgreSQL dump** (all databases with users and permissions)
-- **Individual database dumps** (for partial restore if needed)
-- **Vault keys** (`vault-keys.json` for unsealing)
-- **Customer configuration** (`customer-config.sh` with WireGuard key)
-- **S/MIME CSR and certificates** (any `.crt`, `.pem`, `.cer` files)
-- **Backup manifest** (`manifest.json` with metadata)
+
+* **Full PostgreSQL dump** (all databases with users and permissions)
+* **Individual database dumps** (for partial restore if needed)
+* **Vault keys** (`vault-keys.json` for unsealing)
+* **Customer configuration** (`customer-config.sh` with WireGuard key)
+* **S/MIME CSR and certificates** (any `.crt`, `.pem`, `.cer` files)
+* **Backup manifest** (`manifest.json` with metadata)
 
 ### Manual Backup
 
@@ -483,6 +510,7 @@ To restore on a **new machine** or after a **purge**:
 ```
 
 The restore script will:
+
 1. Stop any running services
 2. Extract and validate the backup
 3. Install Docker if needed
@@ -594,7 +622,7 @@ The `.env` file is automatically generated by `install.sh` from `customer-config
 
 Key sections in the generated `.env`:
 
-```env
+```bash
 # PostgreSQL (auto-generated if empty in customer-config.sh)
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=<auto-generated>
@@ -630,15 +658,15 @@ WG_TRANSPORT_MODE=tcp
 
 | Service | URL/Port |
 |---------|----------|
-| smimekeys-client | http://localhost:8081 |
-| policy | http://localhost:8082 |
-| idagent | http://localhost:8083 |
-| mxengine HTTP | http://localhost:8084 |
+| smimekeys-client | <http://localhost:8081> |
+| policy | <http://localhost:8082> |
+| idagent | <http://localhost:8083> |
+| mxengine HTTP | <http://localhost:8084> |
 | mxengine SMTP | localhost:1587 |
 | Postfix SMTP | localhost:25 |
 | Postfix Reinjection | localhost:10026 (internal) |
-| Vault UI | http://localhost:8200 |
-| MinIO Console | http://localhost:9001 |
+| Vault UI | <http://localhost:8200> |
+| MinIO Console | <http://localhost:9001> |
 | PostgreSQL | localhost:5432 |
 
 ## Health Checks
@@ -660,11 +688,11 @@ All application services expose Prometheus metrics on port 2112 (internally), ma
 
 | Service | Metrics Port | Metrics URL |
 |---------|--------------|-------------|
-| smimekeys-client | 2113 | http://localhost:2113/metrics |
-| idagent | 2114 | http://localhost:2114/metrics |
-| policy | 2115 | http://localhost:2115/metrics |
-| mxengine | 2116 | http://localhost:2116/metrics |
-| node-exporter | 9100 | http://localhost:9100/metrics |
+| smimekeys-client | 2113 | <http://localhost:2113/metrics> |
+| idagent | 2114 | <http://localhost:2114/metrics> |
+| policy | 2115 | <http://localhost:2115/metrics> |
+| mxengine | 2116 | <http://localhost:2116/metrics> |
+| node-exporter | 9100 | <http://localhost:9100/metrics> |
 
 ### Prometheus Scrape Config Example
 
@@ -703,10 +731,11 @@ curl -s http://localhost:9100/metrics | head -20  # node-exporter
 Promtail collects logs from application containers and ships them to Loki.
 
 **Containers monitored:**
-- stargate-smimekeys-client
-- stargate-policy
-- stargate-idagent
-- stargate-mxengine
+
+* stargate-smimekeys-client
+* stargate-policy
+* stargate-idagent
+* stargate-mxengine
 
 **Configuration** in `.env`:
 
@@ -719,11 +748,12 @@ PROMTAIL_HOSTNAME=stargate-acme
 ```
 
 **Labels added to logs:**
-- `environment=<DEPLOYMENT_NAME>` - Identifies the deployment
-- `host=<PROMTAIL_HOSTNAME>` - Identifies the host (same as deployment name)
-- `container=<container-name>` - Container name
-- `service=<service-name>` - Service name (e.g., smimekeys-client, policy)
-- `level=<log-level>` - Extracted from JSON logs if available
+
+* `environment=<DEPLOYMENT_NAME>` - Identifies the deployment
+* `host=<PROMTAIL_HOSTNAME>` - Identifies the host (same as deployment name)
+* `container=<container-name>` - Container name
+* `service=<service-name>` - Service name (e.g., smimekeys-client, policy)
+* `level=<log-level>` - Extracted from JSON logs if available
 
 **Query logs in Grafana:**
 
@@ -751,7 +781,7 @@ The Postfix relay container automatically configures itself from DNS records and
 
 ### Mail Flow Architecture
 
-```
+```plain
 External Mail Server
          │
          ▼ (port 25)
@@ -809,6 +839,7 @@ MAIL_DOMAINS=example.com,example.org
 ```
 
 The container will (for each domain):
+
 1. Look up **MX records** to find the relay destination (where to deliver processed mail)
 2. Parse **SPF records** recursively to find allowed sender networks (which IPs may send mail via port 25)
 3. Auto-detect Docker networks for the port 10026 listener
@@ -827,7 +858,7 @@ When the Stargate Postfix container starts, it queries the DNS MX records for ea
 
 For each of your domains, make sure there is an MX record in DNS pointing to the corresponding Exchange (or other mail) server:
 
-```
+```plain
 domain1.com    MX 10  exchange1.domain1.com
 domain2.com    MX 10  exchange2.domain2.com
 domain3.com    MX 10  exchange3.domain3.com
@@ -837,7 +868,7 @@ This works for any number of domains - each domain can point to a different mail
 
 **If Stargate is the only MX record** for a domain, Postfix will filter it out and have no delivery target. In that case, add a second MX record pointing to your mail server. Give Stargate a higher priority number (= lower priority) so it acts as the inbound gateway, and give your mail server a lower number (= higher priority) so Postfix uses it as the delivery target:
 
-```
+```plain
 example.com    MX 10  exchange.example.com      ← delivery target (mail server)
 example.com    MX 20  stargate.example.com      ← inbound gateway (Stargate)
 ```
@@ -863,6 +894,7 @@ DOMAIN_RELAY_MAP="domain1.ch:[exchange1.domain1.ch]:25,domain2.ch:[exchange2.dom
 Each entry maps a domain to a specific relay host and port. Domains not listed fall back to `RELAYHOST` (if set) or MX lookup. This is useful for setups with many domains routed to different Exchange servers.
 
 **Precedence** (highest to lowest):
+
 1. `DOMAIN_RELAY_MAP` - explicit per-domain target (if the domain is listed)
 2. `RELAYHOST` - global fallback for all unmapped domains
 3. MX lookup - automatic discovery from DNS (default)
@@ -936,32 +968,38 @@ docker compose up -d postfix-relay
 ### Troubleshooting
 
 **Mail not being processed by mxengine**:
-- Check content_filter is set: `docker exec stargate-postfix-relay postconf content_filter`
-- Should show: `content_filter = smtp:[mxengine]:1587`
-- Verify mxengine is reachable: `docker exec stargate-postfix-relay nc -zv mxengine 1587`
+
+* Check content_filter is set: `docker exec stargate-postfix-relay postconf content_filter`
+* Should show: `content_filter = smtp:[mxengine]:1587`
+* Verify mxengine is reachable: `docker exec stargate-postfix-relay nc -zv mxengine 1587`
 
 **Mail stuck after mxengine processing**:
-- Check mxengine outbound config: OUTBOUND_SMTP_HOST=postfix-relay, OUTBOUND_SMTP_PORT=10026
-- Verify port 10026 listener: `docker exec stargate-postfix-relay ss -tlnp | grep 10026`
-- Check mynetworks on port 10026 includes Docker network (172.x.x.x/16)
+
+* Check mxengine outbound config: OUTBOUND_SMTP_HOST=postfix-relay, OUTBOUND_SMTP_PORT=10026
+* Verify port 10026 listener: `docker exec stargate-postfix-relay ss -tlnp | grep 10026`
+* Check mynetworks on port 10026 includes Docker network (172.x.x.x/16)
 
 **Greylisting errors (450 4.7.1)**:
-- This is normal! The destination server is temporarily rejecting mail
-- Postfix automatically retries after ~5 minutes
-- Check queue: `docker exec stargate-postfix-relay mailq`
+
+* This is normal! The destination server is temporarily rejecting mail
+* Postfix automatically retries after ~5 minutes
+* Check queue: `docker exec stargate-postfix-relay mailq`
 
 **Microsoft blocking IP (S3140)**:
-- Your server's IP has poor reputation with Microsoft
-- Request delisting at: https://sender.office.com
-- May take 24-48 hours to take effect
+
+* Your server's IP has poor reputation with Microsoft
+* Request delisting at: <https://sender.office.com>
+* May take 24-48 hours to take effect
 
 **DNS Lookup Failures**:
-- Set `DNS_SERVER=8.8.8.8` to use a specific DNS server
-- Use `RELAYHOST` and `POSTFIX_MYNETWORKS` to skip DNS lookups
+
+* Set `DNS_SERVER=8.8.8.8` to use a specific DNS server
+* Use `RELAYHOST` and `POSTFIX_MYNETWORKS` to skip DNS lookups
 
 **Connection Refused on port 25**:
-- Ensure port 25 is not blocked by firewall
-- Check if another service is using port 25: `ss -tlnp | grep :25`
+
+* Ensure port 25 is not blocked by firewall
+* Check if another service is using port 25: `ss -tlnp | grep :25`
 
 ## WireGuard (Agent-to-Agent Communication)
 
@@ -971,7 +1009,7 @@ IDAgent uses WireGuard to establish secure encrypted tunnels between Stargate in
 
 Each Stargate instance uses its server's real static public IP as the WireGuard tunnel address. This guarantees uniqueness across all deployments without manual coordination.
 
-```
+```plain
 ┌──────────────────────────────────────────┐       ┌──────────────────────────────────────────┐
 │ Your Stargate (203.0.113.50)             │       │ HIN Test (5.102.144.182)                 │
 │                                          │       │                                          │
@@ -1027,8 +1065,9 @@ The `idagent-init` container:
 2. Open the logs of the IDAgent `docker compose logs idagent` and copy the `wireguard public key:` value example: `V2Qvr...IB1A2wQCApmHY=`
 3. Get the public IP address for this machine
 4. Get the domain name
-5. The information from step 2, 3 and 4 should be provided to Vereign (kalin.canov@vereign.com)
+5. The information from step 2, 3 and 4 should be provided to Vereign (<kalin.canov@vereign.com>)
 6. For any **other** connection you would like to establish, through the Wireguard tunnel, you will need to provide to the other party the information from step 2, 3 and 4, and also receive/store their info. To store new peer after you received the info you should run the following curl command
+
 ```bash
 curl --location 'localhost:8083/v1/connections' \
 --header 'Content-Type: application/json' \
@@ -1074,18 +1113,21 @@ docker logs stargate-idagent | grep -i wireguard
 ### Troubleshooting
 
 **No WireGuard interface:**
-- Check IDAgent logs: `docker logs stargate-idagent`
-- Verify `WG_LOCAL_IP` is set in `.env` (auto-derived from `SERVER_STATIC_IP` — should be this server's static public IP)
+
+* Check IDAgent logs: `docker logs stargate-idagent`
+* Verify `WG_LOCAL_IP` is set in `.env` (auto-derived from `SERVER_STATIC_IP` — should be this server's static public IP)
 
 **Peer not reachable:**
-- Verify remote endpoint is accessible: `nc -zv <endpoint_host> <endpoint_port>`
-- Check firewall allows TCP+UDP port 19818
-- Verify public keys match on both ends
-- If TCP has issues, try setting `WG_TRANSPORT_MODE="udp"` in customer-config.sh
+
+* Verify remote endpoint is accessible: `nc -zv <endpoint_host> <endpoint_port>`
+* Check firewall allows TCP+UDP port 19818
+* Verify public keys match on both ends
+* If TCP has issues, try setting `WG_TRANSPORT_MODE="udp"` in customer-config.sh
 
 **Connection not in database:**
-- Run idagent-init manually: `docker compose run --rm idagent-init`
-- Check idagent-init logs: `docker logs stargate-idagent-init`
+
+* Run idagent-init manually: `docker compose run --rm idagent-init`
+* Check idagent-init logs: `docker logs stargate-idagent-init`
 
 ## Policy Sync
 
@@ -1093,7 +1135,7 @@ The `policy-sync` service automatically syncs OPA/Rego policies from a Git repos
 
 ### How It Works
 
-```
+```plain
 ┌─────────────────────┐      ┌─────────────────────┐      ┌─────────────────────┐
 │ Git Repository      │      │ policy-sync         │      │ PostgreSQL          │
 │                     │      │                     │      │                     │
@@ -1152,15 +1194,18 @@ docker restart stargate-policy-sync
 ## Vault
 
 ### Access Vault UI
-1. Open http://localhost:8200
+
+1. Open <http://localhost:8200>
 2. Use the root token from `secrets/vault-keys.json` or `.env` file
 
 ### Vault Mounts
+
 The following KV-v2 secret engines are created:
-- `secret-smimekeys-client`
-- `secret-policy`
-- `secret-idagent`
-- `secret-mxengine`
+
+* `secret-smimekeys-client`
+* `secret-policy`
+* `secret-idagent`
+* `secret-mxengine`
 
 ### Manual Vault Operations
 
@@ -1178,10 +1223,11 @@ docker exec -e VAULT_TOKEN=<token> stargate-vault vault kv put secret-smimekeys-
 ## Databases
 
 PostgreSQL databases created:
-- `smimekeys_client`
-- `policy`
-- `idagent`
-- `mxengine`
+
+* `smimekeys_client`
+* `policy`
+* `idagent`
+* `mxengine`
 
 ### Connect to PostgreSQL
 
@@ -1212,9 +1258,9 @@ docker exec stargate-postgres psql -U postgres -d policy \
 
 ### Policy Location
 
-- **MXEngine config:** `POLICY_OUTBOUND: "outbound/delivery"`
-- **Database:** `policy` database, `policies` table
-- **Managed by:** `policy-sync` service (syncs from Git repository)
+* **MXEngine config:** `POLICY_OUTBOUND: "outbound/delivery"`
+* **Database:** `policy` database, `policies` table
+* **Managed by:** `policy-sync` service (syncs from Git repository)
 
 ## Logs
 
@@ -1234,16 +1280,19 @@ docker compose logs -f vault
 This is the most common issue after initial installation. The S/MIME certificate cannot be issued because the WireGuard tunnel to the HIN CA is not established.
 
 **Symptoms:**
-- `onboard.sh` shows: `⚠ Certificate issuance failed (WireGuard tunnel may not be established yet)`
-- smimekeys-client logs show: `issue certificate error: certcatunnel: error sending request: idagent: ... context deadline exceeded`
+
+* `onboard.sh` shows: `⚠ Certificate issuance failed (WireGuard tunnel may not be established yet)`
+* smimekeys-client logs show: `issue certificate error: certcatunnel: error sending request: idagent: ... context deadline exceeded`
 
 **Root causes (check in order):**
 
 1. **Peer not registered on HIN CA** - Your WireGuard public key must be registered on the HIN side. Provide HIN with:
+
    ```bash
    # Get your WireGuard public key
    docker compose logs idagent | grep "public key"
    ```
+
    Along with your `DEPLOYMENT_NAME`, `SERVER_STATIC_IP`, and `WG_INTERFACE_PORT` (if changed from 19818).
 
 2. **Firewall blocking port 19818** - Ensure `19818/TCP` is open both inbound and outbound on the Stargate server.
@@ -1251,6 +1300,7 @@ This is the most common issue after initial installation. The S/MIME certificate
 3. **Wrong `MAIL_HOSTNAME`** - If still set to `mail.example.com` (the template default), update it in `customer-config.sh`.
 
 **After the issue is resolved:**
+
 ```bash
 ./scripts/onboard.sh --regenerate-cert
 ```
@@ -1258,24 +1308,31 @@ This is the most common issue after initial installation. The S/MIME certificate
 See [Step 5: WireGuard Peer Registration](#step-5-wireguard-peer-registration) for the full process.
 
 ### Vault is sealed after restart
+
 Run the start script which handles unsealing:
+
 ```bash
 ./scripts/start.sh
 ```
 
 ### Cannot pull images
+
 Login to the registry:
+
 ```bash
 docker login registry.vereign.io
 ```
 
 ### Service won't start
+
 Check logs:
+
 ```bash
 docker compose logs <service-name>
 ```
 
 ### Reset everything
+
 ```bash
 ./scripts/purge.sh
 ./scripts/install.sh
@@ -1283,7 +1340,7 @@ docker compose logs <service-name>
 
 ## Files Structure
 
-```
+```plain
 stargate/
 ├── docker-compose.yml      # Main compose file
 ├── .env                    # Environment variables (generated by install.sh)
@@ -1332,15 +1389,16 @@ Run the comprehensive health check:
 ```
 
 This checks:
-- All container statuses (running, healthy)
-- Liveness endpoints (smimekeys-client, policy, idagent, mxengine)
-- Vault seal status
-- PostgreSQL connectivity and all 4 databases
-- MinIO health
-- WireGuard tunnel status and peer handshakes
-- Postfix (running, port 25, port 10026, mail queue)
-- Prometheus metrics endpoints
-- Disk and memory usage
+
+* All container statuses (running, healthy)
+* Liveness endpoints (smimekeys-client, policy, idagent, mxengine)
+* Vault seal status
+* PostgreSQL connectivity and all 4 databases
+* MinIO health
+* WireGuard tunnel status and peer handshakes
+* Postfix (running, port 25, port 10026, mail queue)
+* Prometheus metrics endpoints
+* Disk and memory usage
 
 For manual log inspection:
 
