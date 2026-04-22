@@ -283,6 +283,83 @@ docker compose logs idagent 2>&1 | grep -i "handshake\|peer"
 
 > **Also check your firewall**: Port `19818/TCP` must be open **both inbound and outbound** on the Stargate server.
 
+### Step 6: Post-Onboarding Recommendations
+
+Once the certificate is issued and mail is flowing, two configuration items are strongly recommended for any production deployment. Skipping them does not break encryption, but it will degrade your sender reputation, cause "we can't verify the sender" warnings in Outlook/Gmail, and can eventually lead to outbound mail being blocklisted.
+
+#### 6.1 SPF / DKIM / DMARC for sender domains
+
+The Stargate sends notification mails (and S/MIME-encrypted mails) from its own public IP on behalf of your users. Recipients (Outlook, Gmail, Proofpoint, etc.) authenticate the sender by checking SPF, DKIM and DMARC against the `From:` domain. If the Stargate IP is not authorized for the sender's domain, recipients will show a yellow "we can't verify this email" banner and may flag the message as suspicious.
+
+For **each domain** you route through the Stargate, publish the following DNS records:
+
+**SPF** - authorize the Stargate IP. If your mailboxes also live in M365, keep the Microsoft `include`:
+
+```
+example.ch.  TXT  "v=spf1 ip4:<STARGATE_PUBLIC_IP> include:spf.protection.outlook.com -all"
+```
+
+If you do not use M365 / Google Workspace, the minimal record is:
+
+```
+example.ch.  TXT  "v=spf1 ip4:<STARGATE_PUBLIC_IP> -all"
+```
+
+**DMARC** - publish at least a monitoring policy. This alone is enough to clear Outlook's "can't verify" banner once SPF passes:
+
+```
+_dmarc.example.ch.  TXT  "v=DMARC1; p=none; rua=mailto:postmaster@example.ch"
+```
+
+Once you have confirmed alignment in the reports, you can tighten to `p=quarantine` and eventually `p=reject`.
+
+**DKIM** - if `example.ch` is an accepted domain in your M365 or Google Workspace tenant, enable DKIM signing in the admin centre and publish the two `selector1._domainkey` / `selector2._domainkey` CNAMEs as instructed there. Publishing the CNAMEs is not enough on its own - DKIM signing must be toggled on in the tenant.
+
+**Verifying:** send a test mail to a Gmail or Outlook account, open the message source / "View original", and look for the `Authentication-Results:` header. You want to see `spf=pass`, `dkim=pass` and `dmarc=pass`.
+
+Useful tools:
+- SPF / DNS lookup count: <https://mxtoolbox.com/spf.aspx> (the total `include:` chain must stay under 10 lookups)
+- DMARC: <https://mxtoolbox.com/dmarc.aspx>
+
+#### 6.2 Relay outbound mail back through your mail platform (recommended for M365 / Exchange Online)
+
+By default, after the Stargate signs/encrypts an outbound mail it delivers directly to the recipient's MX. This works, but the connecting IP is your Stargate's IP - and unless that IP has years of warm reputation, it can end up on third-party blocklists (e.g. Barracuda, abusix), causing intermittent delivery failures.
+
+The recommended pattern is to **send the signed mail back through your M365 / Exchange tenant** so that the final hop to the internet is Microsoft's well-reputed infrastructure. The Stargate still signs and policy-checks every message; only the last hop changes. This mirrors the original HIN MGW "Send to MX" connector pattern.
+
+##### Stargate side - per-domain relay
+
+In `customer-config.sh`, point each domain's outbound back at its M365 inbound endpoint:
+
+```bash
+DOMAIN_RELAY_MAP="example.ch:[example-ch.mail.protection.outlook.com]:25"
+```
+
+Apply:
+
+```bash
+./scripts/onboard.sh
+docker compose up -d postfix-relay
+```
+
+After mxengine signs the mail, Postfix will hand it back to your tenant on port 25 with TLS instead of delivering directly to the recipient's MX. See `Exchange-integration.md` for the full per-domain syntax.
+
+##### M365 / Exchange Online side
+
+You essentially recreate the same connector + transport-rule set as the old HIN MGW (the original HIN MGW O365 manual is the reference - the same five rules apply). The minimum is:
+
+1. **Inbound connector** - accept mail from the Stargate, identified by TLS certificate (the cert subject must match a domain accepted in your tenant). A self-signed cert on the Stargate will be rejected by this connector - use a valid CA-issued cert (Let's Encrypt is fine).
+2. **Outbound connector "Send to MX"** - delivers to the recipient's MX, activated only by transport rule.
+3. **Transport rule `set_header`** - tags outbound mail with a header like `outgoing: outgoing_<domain>` before it leaves O365 the first time, so the return trip can recognise it.
+4. **Transport rule `outgoing_to_mx`** - matches the `outgoing_<domain>` header on mail coming back from the Stargate and routes it via the "Send to MX" connector.
+5. **Transport rule `mgw_bypass_antispam`** - bypasses spam filtering on mail coming back from the Stargate.
+
+mxengine does not strip arbitrary headers, so the `outgoing_<domain>` tag set by `set_header` survives the round-trip and triggers `outgoing_to_mx` correctly.
+
+> **Why this pattern matters**: with the relay-back configuration, the public sender to the internet is Microsoft. Combined with correct SPF/DKIM/DMARC (section 6.1), recipients see a Microsoft IP with `spf=pass` and `dkim=pass` aligned to your domain - which is the cleanest reputation profile you can give them.
+
+See `Exchange-integration.md` for full step-by-step instructions including screenshots.
+
 ### Subsequent Starts (after reboot)
 
 ```bash
