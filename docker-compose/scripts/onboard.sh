@@ -477,6 +477,26 @@ if [ $ONBOARD_WARNINGS -gt 0 ]; then
   echo ""
   echo "  ⚠ Certificate issuance failed (WireGuard tunnel may not be established yet)."
   echo "    Retry with: ./scripts/onboard.sh --regenerate-cert"
+  echo ""
+  echo "============================================"
+  echo "  HIN WireGuard Peer Registration"
+  echo "============================================"
+  echo ""
+  echo "  The most common cause is that this Stargate is not yet registered"
+  echo "  as a WireGuard peer on the HIN side. Send the values below to HIN"
+  echo "  (aroel.vandenbroele@hin.ch) so they can register the peer."
+  echo ""
+  WG_PUBKEY_FOR_HIN="$(docker compose logs idagent 2>/dev/null \
+    | grep -m1 'wireguard public key:' \
+    | sed 's/.*wireguard public key: //' \
+    | tr -d '[:space:]')"
+  echo "  WireGuard Public Key: ${WG_PUBKEY_FOR_HIN:-<not yet available - run: docker compose logs idagent | grep \"wireguard public key\">}"
+  echo "  DEPLOYMENT_NAME:      $DEPLOYMENT_NAME"
+  echo "  SERVER_STATIC_IP:     ${SERVER_STATIC_IP:-<not set>}"
+  echo "  WG_INTERFACE_PORT:    $WG_INTERFACE_PORT"
+  echo ""
+  echo "  After HIN confirms registration, retry:"
+  echo "    ./scripts/onboard.sh --regenerate-cert"
 fi
 echo ""
 echo "  To add or change domains:"
