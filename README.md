@@ -7,7 +7,7 @@
 > $\textcolor{red}{\textsf{\textbf{Interfaces, configuration, and behaviour may change between releases.}}}$
 >
 > $\textcolor{red}{\textsf{\textbf{A web-based admin UI dashboard is in the works - until it ships,}}}$
-> $\textcolor{red}{\textsf{\textbf{all configuration and operations are performed over SSH using the scripts in this repository.}}}$
+> $\textcolor{red}{\textsf{\textbf{all configuration and operations are performed over the terminal using the scripts in this repository.}}}$
 
 Recommendations and Expectations for the Alpha Phase
 * As HIN MGW is still under rapid development, you should expect periodic requests to update your instance.
