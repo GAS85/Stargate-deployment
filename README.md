@@ -2,12 +2,12 @@
 
 > ## $\textcolor{red}{\textsf{\textbf{⚠ ACTIVE DEVELOPMENT - NOT A FINAL PRODUCT}}}$
 >
-> $\textcolor{red}{\textsf{\textbf{Stargate (HIN MGW) is under active development. Interfaces, configuration, and behaviour may change between releases. 
-A web-based admin UI dashboard is in the works - until it ships, all configuration and operations are performed over SSH using the scripts in this repository.}}}$
-
-#### Alpha phase 
-
-The alpha phase of HIN MGW is an early testing stage where most of the functionalities are built but still incomplete and may require improvements in processes and functionality.
+> $\textcolor{red}{\textsf{\textbf{Stargate (HIN MGW) is under active development.}}}$
+>
+> $\textcolor{red}{\textsf{\textbf{Interfaces, configuration, and behaviour may change between releases.}}}$
+>
+> $\textcolor{red}{\textsf{\textbf{A web-based admin UI dashboard is in the works - until it ships,}}}$
+> $\textcolor{red}{\textsf{\textbf{all configuration and operations are performed over SSH using the scripts in this repository.}}}$
 
 Recommendations and Expectations for the Alpha Phase
 * As HIN MGW is still under rapid development, you should expect periodic requests to update your instance.
