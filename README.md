@@ -975,7 +975,7 @@ Each Stargate instance uses its server's real static public IP as the WireGuard 
 ┌──────────────────────────────────────────┐       ┌──────────────────────────────────────────┐
 │ Your Stargate (203.0.113.50)             │       │ HIN Test (5.102.144.182)                 │
 │                                          │       │                                          │
-│  IDAgent (203.0.113.50:19818)            │◄─────►│  IDAgent (5.102.144.182:19818)            │
+│  IDAgent (203.0.113.50:19818)            │◄─────►│  IDAgent (5.102.144.182:19818)           │
 │     │                                    │  WG   │     │                                    │
 │     ▼                                    │ Tunnel│     ▼                                    │
 │  Sealed message delivery via WG tunnel   │ (TCP) │  Receive sealed message                  │
