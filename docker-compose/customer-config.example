@@ -38,8 +38,17 @@ DEPLOYMENT_NAME="stargate-example"
 # SPF records for each domain determine which networks are allowed to send
 MAIL_DOMAINS="example.com"
 
-# Mail server hostname (optional, defaults to mail.<first domain>)
-MAIL_HOSTNAME="mail.example.com"
+# Public FQDN of this Stargate as an SMTP relay.
+# Used in the SMTP EHLO greeting, in the TLS certificate subject, and as a SAN
+# on the S/MIME signing certificate. External mail servers and (if you relay
+# back through M365) Exchange Online's inbound connector check this value, so
+# it must be a real, DNS-resolvable FQDN that you control - not a placeholder.
+#
+# If left empty, it auto-derives to mail.<first domain in MAIL_DOMAINS>.
+# Override when:
+#   - the auto-derived value does not actually exist in DNS, or
+#   - your Stargate uses a different public hostname (e.g. stargate01.<domain>).
+MAIL_HOSTNAME=""
 
 # MXEngine public address (for seal strategy callbacks)
 # Auto-derived from SERVER_STATIC_IP if left empty: http://<SERVER_STATIC_IP>:8084

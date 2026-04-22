@@ -96,6 +96,46 @@ check_services() {
 }
 
 # ==============================================================================
+# MAIL_HOSTNAME validation
+# ==============================================================================
+
+# Reject obviously-bad MAIL_HOSTNAME values that produce a non-functional
+# deployment: empty, placeholder example.com, localhost, single-label, or
+# anything that does not look like a DNS FQDN.
+validate_mail_hostname() {
+  local h="$1"
+
+  if [ -z "$h" ]; then
+    echo "ERROR: MAIL_HOSTNAME is empty and could not be auto-derived."
+    echo "  Set MAIL_HOSTNAME explicitly in customer-config.sh, e.g.:"
+    echo "    MAIL_HOSTNAME=\"mail.yourdomain.ch\""
+    exit 1
+  fi
+
+  case "$h" in
+    *.example.com|*.example.org|*.example.net|example.com|example.org|example.net)
+      echo "ERROR: MAIL_HOSTNAME is set to a placeholder value: $h"
+      echo "  This is the template default. Set MAIL_HOSTNAME in customer-config.sh"
+      echo "  to the real public FQDN of this Stargate, e.g.:"
+      echo "    MAIL_HOSTNAME=\"mail.yourdomain.ch\""
+      exit 1
+      ;;
+    localhost|*.localdomain|*.local)
+      echo "ERROR: MAIL_HOSTNAME ($h) is not a public FQDN."
+      echo "  External servers and Exchange Online cannot route mail to this name."
+      echo "  Set MAIL_HOSTNAME in customer-config.sh to a real public FQDN."
+      exit 1
+      ;;
+  esac
+
+  if ! echo "$h" | grep -qE '^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)+$'; then
+    echo "ERROR: MAIL_HOSTNAME ($h) is not a valid FQDN."
+    echo "  Expected something like mail.yourdomain.ch."
+    exit 1
+  fi
+}
+
+# ==============================================================================
 # Load Configuration
 # ==============================================================================
 
@@ -136,6 +176,7 @@ load_onboard_config() {
 
   # Auto-derive certificate fields if not explicitly set
   MAIL_HOSTNAME="${MAIL_HOSTNAME:-mail.${MAIL_DOMAIN_PRIMARY}}"
+  validate_mail_hostname "$MAIL_HOSTNAME"
   if [ -z "$CERT_DNS_NAMES" ]; then
     CERT_DNS_NAMES="$MAIL_DOMAINS,$MAIL_HOSTNAME"
   fi
@@ -444,6 +485,12 @@ echo "    2. Run: ./scripts/onboard.sh"
 echo ""
 echo "  To regenerate S/MIME certificate:"
 echo "    ./scripts/onboard.sh --regenerate-cert"
+echo ""
+echo "  Recommended next steps:"
+echo "    - SPF / DKIM / DMARC for your sending domains"
+echo "      (see README.md → 'Post-Onboarding Recommendations')"
+echo "    - Microsoft 365 / Exchange Online relay-back connectors"
+echo "      (see Exchange-integration.md)"
 echo ""
 
 # Exit with warning code so callers can detect partial success
