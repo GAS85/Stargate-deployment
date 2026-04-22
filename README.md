@@ -1,6 +1,9 @@
 # Stargate Deployment Instruction
 
-### Alpha and Beta phase recommendations 
+> ## $\textcolor{red}{\textsf{\textbf{⚠ ACTIVE DEVELOPMENT - NOT A FINAL PRODUCT}}}$
+>
+> $\textcolor{red}{\textsf{\textbf{Stargate (HIN MGW) is under active development. Interfaces, configuration, and behaviour may change between releases. 
+A web-based admin UI dashboard is in the works - until it ships, all configuration and operations are performed over SSH using the scripts in this repository.}}}$
 
 #### Alpha phase 
 
