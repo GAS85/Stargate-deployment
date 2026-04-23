@@ -11,7 +11,7 @@ Deploy Stargate on Windows Pro(non-pro versions do not support Hyper-V)
 
 ## Get the image
 
-- Download the .vhdx image file. Please refer to [VM-images-list.md](Vm-images-list.md)
+- Download the .vhdx image file. Please refer to [VM-images-list.md](VM-images-list.md)
 
 ## Import the image file and create a VM with it
 
