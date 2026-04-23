@@ -1,11 +1,15 @@
 # Stargate Azure deployment using an image
+
 Deploy Stargate on Azure
+
+## Get the image file
 
 ## Get the image file:
 - Download  the latest VHD image file from https://images.vereign.io/
 
-## Upload the Azure VHD image file:
-- Navigate to https://portal.azure.com/#home
+## Upload the Azure VHD image file
+
+- Navigate to <https://portal.azure.com/#home>
 - Click Storage accounts.
 - Select the storage account to use or create a new one.
 - Click Block service and then Containers.
@@ -13,8 +17,9 @@ Deploy Stargate on Azure
 - Click Upload and choose the VHD image file.
 - Make sure that the Blob type is Page Blob.
 
-## Create the image:
-- Navigate to https://portal.azure.com/#home
+## Create the image
+
+- Navigate to <https://portal.azure.com/#home>
 - Click Images.
 - Click Create.
 - Choose the Resource group to be used or create a new one.
@@ -24,8 +29,9 @@ Deploy Stargate on Azure
 - Click Review and create.
 - Click Create.
 
-## Create a VM:
-- Navigate to https://portal.azure.com/#home
+## Create a VM
+
+- Navigate to <https://portal.azure.com/#home>
 - Click Virtual Machines.
 - Click Create, and choose Virtual Machine from the drop-down menu.
 - Choose the Resource group.
@@ -38,27 +44,34 @@ Deploy Stargate on Azure
 - Click Review + create
 - Click Create
 
-## Find the public IP address of the new VM and add inbound firewall rules:
-- Navigate to https://portal.azure.com/#home
+## Find the public IP address of the new VM and add inbound firewall rules
+
+- Navigate to <https://portal.azure.com/#home>
 - Click Virtual Machines.
 - Click on the new VM.
 - You can see the public IP address under "Primary NIC public IP"
 - Scroll down to Networking and click on it
 - Click +Create port rule, Inbound port rule, Destination port ranges 25, Protocol TCP, name it SMTP, repeat the same step with Destination port ranges 1587 and name it mxengine
 
-## Log in and initialize the stargate instance:
+## Log in and initialize the stargate instance
+
 - Log in to the VM with the user that you chose during VM creation and the public IP address of the new VM:
+
+```shell
+ssh user@11.22.33.44 
 ```
- ssh user@11.22.33.44 
-```
+
 - When logged in the VM:
+
+```shell
+sudo su -
+cd stargate-deployment/docker-compose/
 ```
-[stargate@stargate-beta ~]$ sudo su -
-[root@stargate-beta ~]# cd stargate-deployment/docker-compose/
-```
-- Use vi/nano to edit `customer-config.sh` 
+
+- Use vi/nano to edit `customer-config.sh`
 - Configuration details can be found in the [README - Step 1: Configure Customer Settings](README.md#step-1-configure-customer-settings)
 - Run the install script:
-```
-[root@stargate-beta docker-compose]# ./scripts/install.sh
+
+```shell
+./scripts/install.sh
 ```
