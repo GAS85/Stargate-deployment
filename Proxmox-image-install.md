@@ -5,7 +5,7 @@ Deploy Stargate on Proxmox
 ## Get the image file URL
 
 - Please refer to [VM-images-list.md](Vm-images-list.md) for a list of images with URLs.
-- Copy URL to clipboard, for example `https://images.hin.ch/AlmaLinux-10.stargate-202603021402.x86_64.qcow2`
+- Copy URL to clipboard, for example `https://images.hin.ch/vm-images/AlmaLinux-10.stargate-202603021402.x86_64.qcow2`
 
 ## Import the image file in Proxmox
 
