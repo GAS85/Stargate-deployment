@@ -11,9 +11,7 @@ Deploy Stargate on Windows Pro(non-pro versions do not support Hyper-V)
 
 ## Get the image
 
- 
-## Get the image:
-- Navigate to https://images.vereign.io/ and download the .vhdx image file
+- Download the .vhdx image file. Please refer to [VM-images-list.md](Vm-images-list.md)
 
 ## Import the image file and create a VM with it
 
