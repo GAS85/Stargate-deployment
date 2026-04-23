@@ -883,7 +883,7 @@ RELAYHOST=[smtp.office365.com]
 
 > **Note**: `RELAYHOST` sends **all** mail to a single host and does not support per-domain routing. For setups with multiple domains and different mail servers, use `DOMAIN_RELAY_MAP` or the MX-based approach.
 
-**Alternative - explicit per-domain relay mapping:**
+**Alternative - explicit per-domain relay mapping (sender-based):**
 
 If you prefer not to manage MX record priorities, you can configure explicit per-domain relay targets in `customer-config.sh`:
 
@@ -891,13 +891,13 @@ If you prefer not to manage MX record priorities, you can configure explicit per
 DOMAIN_RELAY_MAP="domain1.ch:[exchange1.domain1.ch]:25,domain2.ch:[exchange2.domain2.ch]:25"
 ```
 
-Each entry maps a domain to a specific relay host and port. Domains not listed fall back to `RELAYHOST` (if set) or MX lookup. This is useful for setups with many domains routed to different Exchange servers.
+Each entry maps a **sender** (envelope-From) domain to a specific relay host and port. After mxengine signs/encrypts the message, Postfix routes it via the listed relay based on the sender's domain - this is what implements the "relay back through M365" pattern in [section 6.2](#62-relay-outbound-mail-back-through-your-mail-platform-recommended-for-m365--exchange-online). Mail from senders not listed falls back to `RELAYHOST` (if set) or MX lookup of the recipient.
 
 **Precedence** (highest to lowest):
 
-1. `DOMAIN_RELAY_MAP` - explicit per-domain target (if the domain is listed)
-2. `RELAYHOST` - global fallback for all unmapped domains
-3. MX lookup - automatic discovery from DNS (default)
+1. `DOMAIN_RELAY_MAP` - explicit per-sender-domain target (if the sender's domain is listed)
+2. `RELAYHOST` - global fallback for all unmapped senders
+3. MX lookup - automatic discovery from DNS for the recipient (default)
 
 **After updating MX records**, restart the Postfix container so it picks them up:
 
@@ -921,7 +921,7 @@ If DNS lookups fail or you need custom configuration:
 # Skip MX lookup - specify relay host directly (all domains use the same host)
 RELAYHOST=[smtp.office365.com]
 
-# Per-domain relay targets (overrides MX lookup for listed domains)
+# Per-domain relay targets (sender-based; for relay-back through M365/Exchange)
 DOMAIN_RELAY_MAP="domain1.ch:[exchange1.domain1.ch]:25,domain2.ch:[exchange2.domain2.ch]:25"
 
 # Skip SPF lookup - specify allowed networks directly

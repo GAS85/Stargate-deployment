@@ -22,8 +22,18 @@ MANUAL_RELAYHOST="${RELAYHOST:-}"
 MANUAL_MYNETWORKS="${MYNETWORKS:-}"
 DOMAIN_RELAY_MAP_RAW="${DOMAIN_RELAY_MAP:-}"
 
-# Parse DOMAIN_RELAY_MAP into an associative array
+# Parse DOMAIN_RELAY_MAP into an associative array.
 # Format: "domain1:[host1]:25,domain2:[host2]:25"
+#
+# Semantics: each entry maps a *sender* domain (envelope From) to the relay
+# host that should be used for outbound delivery. This implements the
+# "relay back through the sender's M365/Exchange tenant" pattern documented
+# in README section 6.2 - it is keyed on the sender, not on the recipient.
+#
+# Postfix uses sender_dependent_relayhost_maps for this. The same entries
+# are also written to transport_maps so that mail received *for* one of the
+# owned domains (inbound MX lookup) is routed to the same relay; this is
+# harmless when the inbound path is not used.
 declare -A RELAY_MAP
 if [ -n "$DOMAIN_RELAY_MAP_RAW" ]; then
     IFS=',' read -ra MAP_ENTRIES <<< "$DOMAIN_RELAY_MAP_RAW"
@@ -33,7 +43,7 @@ if [ -n "$DOMAIN_RELAY_MAP_RAW" ]; then
         local_relay="${entry#*:}"
         if [ -n "$local_domain" ] && [ -n "$local_relay" ]; then
             RELAY_MAP["$local_domain"]="$local_relay"
-            echo "  Domain relay map: $local_domain -> $local_relay"
+            echo "  Domain relay map: @$local_domain -> $local_relay (sender-based)"
         fi
     done
     echo "Loaded ${#RELAY_MAP[@]} explicit domain relay mappings"
@@ -460,6 +470,25 @@ configure_postfix() {
     # Add transport_maps if not present
     if ! grep -q "^transport_maps" /etc/postfix/main.cf 2>/dev/null; then
         echo "transport_maps = lmdb:/etc/postfix/transport" >> /etc/postfix/main.cf
+    fi
+
+    # Build sender_dependent_relayhost_maps from DOMAIN_RELAY_MAP.
+    # This is what actually re-routes *outbound* mail back through the
+    # sender's M365/Exchange tenant. transport_maps above is keyed on the
+    # recipient domain and does not help for outbound to third-party MXs.
+    if [ ${#RELAY_MAP[@]} -gt 0 ]; then
+        echo "Creating sender_dependent_relayhost map..."
+        > /etc/postfix/sender_relay
+        for sender_domain in "${!RELAY_MAP[@]}"; do
+            echo "@${sender_domain} ${RELAY_MAP[$sender_domain]}" >> /etc/postfix/sender_relay
+        done
+        postmap lmdb:/etc/postfix/sender_relay
+        sed -i '/^sender_dependent_relayhost_maps/d' /etc/postfix/main.cf
+        echo "sender_dependent_relayhost_maps = lmdb:/etc/postfix/sender_relay" >> /etc/postfix/main.cf
+    else
+        # Make sure no stale map is left behind on reconfigure
+        sed -i '/^sender_dependent_relayhost_maps/d' /etc/postfix/main.cf
+        rm -f /etc/postfix/sender_relay /etc/postfix/sender_relay.lmdb
     fi
     
     # Set relay_domains (all domains, space-separated)
