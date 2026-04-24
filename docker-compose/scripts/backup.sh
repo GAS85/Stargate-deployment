@@ -8,9 +8,37 @@ SECRETS_DIR="$PROJECT_DIR/secrets"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 BACKUP_SUBDIR="$BACKUP_DIR/$TIMESTAMP"
 
-# Load environment variables
+# Load environment variables from .env without sourcing it as a shell script.
+# Docker Compose .env files use shell-like KEY=VALUE syntax but do NOT require
+# quoting values that contain spaces or shell metacharacters. Sourcing such a
+# file with `source` causes bash to interpret the unquoted tail as a command
+# (e.g. `WG_PEER_DESCRIPTION=WireGuard peer connection` -> bash tries to run
+# `peer connection`). Under `set -e` this aborts the entire script.
+#
+# We only need POSTGRES_USER, POSTGRES_PASSWORD and VAULT_TOKEN here, so read
+# them out individually with a small helper that strips optional surrounding
+# quotes.
+read_env_var() {
+  local key="$1" file="$2" line value
+  [ -f "$file" ] || return 0
+  line=$(grep -E "^${key}=" "$file" 2>/dev/null | tail -1) || return 0
+  [ -n "$line" ] || return 0
+  value="${line#${key}=}"
+  # Strip a single pair of surrounding double or single quotes if present.
+  if [[ "$value" =~ ^\".*\"$ ]]; then
+    value="${value#\"}"
+    value="${value%\"}"
+  elif [[ "$value" =~ ^\'.*\'$ ]]; then
+    value="${value#\'}"
+    value="${value%\'}"
+  fi
+  printf '%s' "$value"
+}
+
 if [ -f "$PROJECT_DIR/.env" ]; then
-  source "$PROJECT_DIR/.env"
+  POSTGRES_USER=$(read_env_var POSTGRES_USER "$PROJECT_DIR/.env")
+  POSTGRES_PASSWORD=$(read_env_var POSTGRES_PASSWORD "$PROJECT_DIR/.env")
+  VAULT_TOKEN=$(read_env_var VAULT_TOKEN "$PROJECT_DIR/.env")
 fi
 
 POSTGRES_USER="${POSTGRES_USER:-postgres}"
