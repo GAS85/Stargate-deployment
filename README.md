@@ -1,13 +1,13 @@
 # Stargate Deployment Instruction
 
-> ## $\textcolor{red}{\textsf{\textbf{⚠ ACTIVE DEVELOPMENT - NOT A FINAL PRODUCT}}}$
+> $\textcolor{red}{\textsf{\textbf{⚠ ACTIVE DEVELOPMENT - NOT A FINAL PRODUCT}}}$
 >
 > $\textcolor{red}{\textsf{\textbf{Stargate (HIN MGW) is under active development.}}}$
 >
 > $\textcolor{red}{\textsf{\textbf{Interfaces, configuration, and behaviour may change between releases.}}}$
 >
-> $\textcolor{red}{\textsf{\textbf{A web-based admin UI dashboard is in the works - until it ships,}}}$
-> $\textcolor{red}{\textsf{\textbf{all configuration and operations are performed over the terminal using the scripts in this repository.}}}$
+> $\textcolor{red}{\textsf{\textbf{A web-based admin UI dashboard is currently under development. Until it is released,}}}$
+> $\textcolor{red}{\textsf{\textbf{all configuration and operations are performed via the terminal using the scripts in this repository.}}}$
 
 Recommendations and Expectations for the Alpha Phase
 
@@ -17,14 +17,15 @@ Recommendations and Expectations for the Alpha Phase
 * Please do not use real production traffic before the official production release date. Routing production traffic during the alpha phase is done at your own risk.
   * During the Alpha and Beta testing phases, you are allowed to register any test domain you own. During the onboarding process, a CSR request will be sent to the HIN Test CA server, and the certificate will be issued automatically.
 
-#### Beta phase
+> **Beta phase**
+>
+> The beta phase will be announced separately. During beta, the system will still be connected to the HIN Test CA. Real traffic testing can begin once announced.
 
-The beta phase will be announced separately. During beta, the system will still be connected to the HIN Test CA. Real traffic testing can begin once announced.
+## Overview
 
 ### Applications
 
 * **smimekeys-client** - S/MIME keys client service (port 8081)
-
 * **policy** - Policy service (port 8082)
 * **idagent** - ID Agent service (port 8083, WireGuard: 19818/tcp+udp)
 * **mxengine** - MX Engine service (port 8084, SMTP: 1587)
@@ -33,7 +34,6 @@ The beta phase will be announced separately. During beta, the system will still 
 ### Infrastructure
 
 * **PostgreSQL** - Database (port 5432)
-
 * **Vault** - Secrets management (port 8200)
 * **MinIO** - S3-compatible storage (API: 9000, Console: 9001)
 * **Postfix Relay** - Mail relay server (port 25) - auto-configures from DNS
@@ -41,13 +41,11 @@ The beta phase will be announced separately. During beta, the system will still 
 ### Init Containers
 
 * **vault-init** - Initializes and unseals Vault on first run
-
 * **idagent-init** - Creates WireGuard peer connection in idagent database
 
 ### Monitoring
 
 * **node-exporter** - Host metrics for Prometheus (port 9100)
-
 * **version-collector** - Collects app versions from `/liveness` endpoints for node-exporter
 * **Promtail** - Log collector for Loki (ships app logs)
 
@@ -133,7 +131,7 @@ nano customer-config.sh
 **Auto-derived settings — leave empty unless you need to override:**
 
 | Setting | Derived from | Default |
-|---------|-------------|---------|
+|---------|--------------|---------|
 | `MXENGINE_PUBLIC_ADDRESS` | `SERVER_STATIC_IP` | `http://<SERVER_STATIC_IP>:8084` |
 | `CERT_DNS_NAMES` | `MAIL_DOMAINS` + `MAIL_HOSTNAME` | `example.com,mail.example.com` |
 | `CERT_ORGANIZATION` | `CUSTOMER_NAME` | `Acme Corp` |
@@ -152,7 +150,7 @@ nano customer-config.sh
 The template comes with HIN Test peer defaults. These work out of the box for the alpha/beta phase. Override only if connecting to a different peer.
 
 | Setting | Default (HIN Test) | Description |
-|---------|---------------------|-------------|
+|---------|--------------------|-------------|
 | `WG_PEER_NAME` | `hin-test` | Human-readable peer name |
 | `WG_PEER_PUBLIC_KEY` | `ol2zlG40M7+Rn81V9RUFmkIQV2ILLmEJHZww7HfoLxA=` | Remote peer's WireGuard public key |
 | `WG_PEER_ENDPOINT` | `5.102.144.182:19818` | Remote peer's public endpoint (host:port) |
@@ -377,7 +375,7 @@ You essentially recreate the same connector + transport-rule set as the old HIN 
 
 1. **Inbound connector** - accept mail from the Stargate, identified by TLS certificate (the cert subject must match a domain accepted in your tenant). A self-signed cert on the Stargate will be rejected by this connector - use a valid CA-issued cert (Let's Encrypt is fine).
 2. **Outbound connector "Send to MX"** - delivers to the recipient's MX, activated only by transport rule.
-3. **Transport rule `set_header`** - tags outbound mail with a header like `outgoing: outgoing_<domain>` before it leaves O365 the first time, so the return trip can recognise it.
+3. **Transport rule `set_header`** - tags outbound mail with a header like `outgoing: outgoing_<domain>` before it leaves O365 the first time, so the return trip can recognize it.
 4. **Transport rule `outgoing_to_mx`** - matches the `outgoing_<domain>` header on mail coming back from the Stargate and routes it via the "Send to MX" connector.
 5. **Transport rule `mgw_bypass_antispam`** - bypasses spam filtering on mail coming back from the Stargate.
 
@@ -680,7 +678,7 @@ curl http://localhost:8083/liveness  # idagent
 curl http://localhost:8084/liveness  # mxengine
 ```
 
-## Monitoring
+## Stargate Monitoring
 
 ### Prometheus Metrics
 
@@ -826,7 +824,7 @@ Destination Mail Server (via MX lookup)
 
 **Seal callback flow (inbound):** When a remote sealer needs to deliver a sealed message, it calls `MXENGINE_PUBLIC_ADDRESS` (default: `http://<SERVER_STATIC_IP>:8084`). This is why port 8084 must be open for inbound traffic. The `http://` protocol is correct — TLS is not required because the seal payload is already encrypted.
 
-### Configuration
+### Postfix Relay Configuration
 
 Set `MAIL_DOMAINS` in your `customer-config.sh`:
 
@@ -1021,7 +1019,7 @@ Each Stargate instance uses its server's real static public IP as the WireGuard 
 └──────────────────────────────────────────┘       └──────────────────────────────────────────┘
 ```
 
-### Configuration
+### WireGuard Configuration
 
 WireGuard settings in `customer-config.sh`:
 
@@ -1089,7 +1087,7 @@ curl --location 'localhost:8083/v1/connections' \
 }'
 ```
 
-### Verification
+### WireGuard Verification
 
 ```bash
 # Check IDAgent WireGuard interface
@@ -1110,7 +1108,7 @@ docker logs stargate-idagent 2>&1 | grep -i "handshake\|peer.*added\|started lis
 docker logs stargate-idagent | grep -i wireguard
 ```
 
-### Troubleshooting
+### WireGuard Troubleshooting
 
 **No WireGuard interface:**
 
@@ -1133,7 +1131,7 @@ docker logs stargate-idagent | grep -i wireguard
 
 The `policy-sync` service automatically syncs OPA/Rego policies from a Git repository to the PostgreSQL database.
 
-### How It Works
+### How Policy Sync Works
 
 ```plain
 ┌─────────────────────┐      ┌─────────────────────┐      ┌─────────────────────┐
@@ -1146,7 +1144,7 @@ The `policy-sync` service automatically syncs OPA/Rego policies from a Git repos
 └─────────────────────┘      └─────────────────────┘      └─────────────────────┘
 ```
 
-### Configuration
+### Policy Sync Configuration
 
 Settings in `customer-config.sh`:
 
@@ -1168,7 +1166,7 @@ POLICY_SYNC_REPO_FOLDER=""
 POLICY_SYNC_INTERVAL="1h"
 ```
 
-### Verification
+### Policy Sync Verification
 
 ```bash
 # Check policy-sync status
@@ -1273,7 +1271,7 @@ docker compose logs -f smimekeys-client
 docker compose logs -f vault
 ```
 
-## Troubleshooting
+## Policies Troubleshooting
 
 ### Certificate issuance failed / WireGuard tunnel not established
 
@@ -1415,3 +1413,36 @@ docker logs -f stargate-mxengine
 # Check all container statuses
 docker ps --format 'table {{.Names}}\t{{.Status}}'
 ```
+
+### Provide logs to support
+
+You can provide logs to support via our pastebin, and CLI commands.
+
+Upload specific container logs:
+
+```shell
+docker logs <CONTAINER_NAME> 2>&1 | curl https://pastebin.hin-infra.ch/ --data-binary @-
+```
+
+Upload specific container logs for the last day (`24h`) or, for example, the last hour (`1h`):
+
+```shell
+docker logs --since 24h <CONTAINER_NAME> 2>&1 | curl https://pastebin.hin-infra.ch/ --data-binary @-
+```
+
+Upload all container logs:
+
+```shell
+docker ps --format '{{.Names}}' | xargs -I {} sh -c 'docker logs --timestamps {} 2>&1 | sed "s/^/[{}] /"' | curl https://pastebin.hin-infra.ch/ --data-binary @-
+```
+
+Upload all containers logs for the last day (`24h`) or, for example, the last hour (`1h`):
+
+```shell
+docker ps --format '{{.Names}}' | xargs -I {} sh -c 'docker logs --since 24h --timestamps {} 2>&1 | sed "s/^/[{}] /"' | curl https://pastebin.hin-infra.ch/ --data-binary @-
+```
+
+After that, you will receive a unique link in the format `https://pastebin.hin-infra.ch/<20 symbols>` that you can provide to support / ticket.
+
+**Important Note**
+The expiration time is set to 30 days. If some parts of the logs or the logs themselves need to be saved for a longer period, please make sure you keep a copy of them.
