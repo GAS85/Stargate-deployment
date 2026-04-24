@@ -4,15 +4,14 @@ Here you can find an actual VM images list for different platforms. Please do no
 
 | Image name | Link | SHA256 Checksum |
 |:-----------|:-----|:----------------|
-
-| `Alma10-202604231136.stargate-827cf52.x86_64.mf` - 4.0K / 247 bytes | https://images.hin.ch/vm-images/Alma10-202604231136.stargate-827cf52.x86_64.mf | `390f0fcd1959074d530f0c8f76dc4f401b93c0fb29827bc5f172f9863bc8409d` |
-| `Alma10-202604231136.stargate-827cf52.x86_64.ova` - 982M / 1028925440 bytes | https://images.hin.ch/vm-images/Alma10-202604231136.stargate-827cf52.x86_64.ova | `8f707c89f2782d8488fd7b6ce2ab4ac6d3b4c7f038a18c5e6745b1001c29983f` |
-| `Alma10-202604231136.stargate-827cf52.x86_64.ovf` - 8.0K / 7680 bytes | https://images.hin.ch/vm-images/Alma10-202604231136.stargate-827cf52.x86_64.ovf | `4a6cdd3c5060b62529d87d49ccf49e2ea660786b117973c651abbefd699f5844` |
-| `Alma10-202604231136.stargate-827cf52.x86_64.qcow2` - 1.5G / 1568604160 bytes | https://images.hin.ch/vm-images/Alma10-202604231136.stargate-827cf52.x86_64.qcow2 | `c9eab7365f1853b3fe7f0bc72e86ae51aa6d49db7b994dc998a90d535628a795` |
-| `Alma10-202604231136.stargate-827cf52.x86_64.raw` - 10G / 10737418240 bytes | https://images.hin.ch/vm-images/Alma10-202604231136.stargate-827cf52.x86_64.raw | `c49ced9eaaf20e2ba6c90f091af64dde7462be6c485f0126d35c429089f621d2` |
-| `Alma10-202604231136.stargate-827cf52.x86_64.raw.gz` - 970M / 1016833703 bytes | https://images.hin.ch/vm-images/Alma10-202604231136.stargate-827cf52.x86_64.raw.gz | `ed2d05f5e5b0498a127b6de9e55283e39243ee4a3efe25b7e540f6549dff631e` |
-| `Alma10-202604231136.stargate-827cf52.x86_64.vhd` - 11G / 10737418752 bytes | https://images.hin.ch/vm-images/Alma10-202604231136.stargate-827cf52.x86_64.vhd | `a24e9ff4af4acbdc8c1c4a469da29033feaaf80f393776bc6e280688c032472f` |
-| `Alma10-202604231136.stargate-827cf52.x86_64.vhd.gz` - 967M / 1013445954 bytes | https://images.hin.ch/vm-images/Alma10-202604231136.stargate-827cf52.x86_64.vhd.gz | `7bc92ba1179f70b30aa99f40c1b654052d6d3b1f97d7bec0b844dcd88498d034` |
-| `Alma10-202604231136.stargate-827cf52.x86_64.vhdx` - 2.0G / 2071986176 bytes | https://images.hin.ch/vm-images/Alma10-202604231136.stargate-827cf52.x86_64.vhdx | `3e6cac5e4d2691c86bbb4f8065f6017488229f6c89e6906d8a2e11209fd3de7b` |
-| `Alma10-202604231136.stargate-827cf52.x86_64.vmdk` - 982M / 1028911104 bytes | https://images.hin.ch/vm-images/Alma10-202604231136.stargate-827cf52.x86_64.vmdk | `942d4d92821759a05dbb6dc33d0078d8dd3d97e7aa9f925145b7f2a4169d03bb` |
+| `Alma10-202604240828.stargate-0620537.x86_64.mf` - 4.0K / 247 bytes | https://images.hin.ch/vm-images/Alma10-202604240828.stargate-0620537.x86_64.mf | `7fa2601eb140a47bd2b04084459c8b65f736bc9dbbe4ab16848ae769ac3d2c64` |
+| `Alma10-202604240828.stargate-0620537.x86_64.ova` - 972M / 1018736640 bytes | https://images.hin.ch/vm-images/Alma10-202604240828.stargate-0620537.x86_64.ova | `70ba514b98b51ecf9cd2bac7dbab412f8fc4d16369ad280c0711aae572e8f782` |
+| `Alma10-202604240828.stargate-0620537.x86_64.ovf` - 8.0K / 7680 bytes | https://images.hin.ch/vm-images/Alma10-202604240828.stargate-0620537.x86_64.ovf | `d8fa2411e6e159c9d29d0011fe7ea80434ffb5436cab29ecee044660d750954b` |
+| `Alma10-202604240828.stargate-0620537.x86_64.qcow2` - 1.5G / 1564540928 bytes | https://images.hin.ch/vm-images/Alma10-202604240828.stargate-0620537.x86_64.qcow2 | `240c8d9b5443bc980d32b113cec02ec2a0eae9b9ac228a7acf6a4e6737c75475` |
+| `Alma10-202604240828.stargate-0620537.x86_64.raw` - 10G / 10737418240 bytes | https://images.hin.ch/vm-images/Alma10-202604240828.stargate-0620537.x86_64.raw | `55d5de9da7a2bab39d943bd0e93f9521ed9d8a00aa83fc3c79c38f94a6fa0b4d` |
+| `Alma10-202604240828.stargate-0620537.x86_64.raw.gz` - 960M / 1006553140 bytes | https://images.hin.ch/vm-images/Alma10-202604240828.stargate-0620537.x86_64.raw.gz | `078059284ece29690f8b372c793d6e6a929a60d52ea93a388b1a80d83803e0a4` |
+| `Alma10-202604240828.stargate-0620537.x86_64.vhd` - 11G / 10737418752 bytes | https://images.hin.ch/vm-images/Alma10-202604240828.stargate-0620537.x86_64.vhd | `6c7bbac3b8666b465f694dedeb3bc6eef63565a94b7ff481cf18c1f1e60d134e` |
+| `Alma10-202604240828.stargate-0620537.x86_64.vhd.gz` - 961M / 1007557222 bytes | https://images.hin.ch/vm-images/Alma10-202604240828.stargate-0620537.x86_64.vhd.gz | `0e76a67d8fde434c365801150639d8f7830acb30fc43b89b55b4cacadeaf43f8` |
+| `Alma10-202604240828.stargate-0620537.x86_64.vhdx` - 2.0G / 2071986176 bytes | https://images.hin.ch/vm-images/Alma10-202604240828.stargate-0620537.x86_64.vhdx | `52830af8f98472373931b8a65f716e404e708f38f7519fc353b51e3937f6fa33` |
+| `Alma10-202604240828.stargate-0620537.x86_64.vmdk` - 972M / 1018721792 bytes | https://images.hin.ch/vm-images/Alma10-202604240828.stargate-0620537.x86_64.vmdk | `0c3b00e5dd8ac10b53e0699a4fc5562cc08e69ad5d25aab57a12caff3b67b1e2` |
 
