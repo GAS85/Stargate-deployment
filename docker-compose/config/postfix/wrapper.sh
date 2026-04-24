@@ -558,5 +558,33 @@ wait_for_postfix() {
 touch /etc/aliases
 newaliases 2>/dev/null || true
 
+# Patch supervisord so the postfix program is restarted if it exits.
+# The boky/postfix base image ships with autorestart=false for the postfix
+# program, which means a Postfix master crash leaves the container "Up" but
+# unable to accept mail on :25 (silent failure). We flip it to autorestart=true
+# inside the [program:postfix] block, and add startretries so transient
+# failures recover automatically.
+# This must run before exec'ing run.sh (which starts supervisord).
+SUPERVISORD_CONF="/etc/supervisord.conf"
+if [ -f "$SUPERVISORD_CONF" ] && grep -qE '^\[program:postfix\]' "$SUPERVISORD_CONF"; then
+    if ! awk '/^\[program:postfix\]/,/^\[/' "$SUPERVISORD_CONF" | grep -qE '^autorestart[[:space:]]*=[[:space:]]*true'; then
+        echo "Patching supervisord: enabling autorestart for [program:postfix]..."
+        # Operate only inside the [program:postfix] block (range from the section
+        # header to the next [section] header). Replace existing autorestart line
+        # if present, otherwise append one before the next section.
+        sed -i '/^\[program:postfix\]/,/^\[/{
+            s/^autorestart[[:space:]]*=.*/autorestart     = true/
+        }' "$SUPERVISORD_CONF"
+        # If no autorestart line existed in the block, add one after the command line.
+        if ! awk '/^\[program:postfix\]/,/^\[/' "$SUPERVISORD_CONF" | grep -qE '^autorestart[[:space:]]*=[[:space:]]*true'; then
+            sed -i '/^\[program:postfix\]/a autorestart     = true' "$SUPERVISORD_CONF"
+        fi
+        # Add startretries inside the block if missing, to bound restart attempts.
+        if ! awk '/^\[program:postfix\]/,/^\[/' "$SUPERVISORD_CONF" | grep -qE '^startretries[[:space:]]*='; then
+            sed -i '/^\[program:postfix\]/a startretries    = 5' "$SUPERVISORD_CONF"
+        fi
+    fi
+fi
+
 # Execute the original boky/postfix entrypoint
 exec /scripts/run.sh "$@"
