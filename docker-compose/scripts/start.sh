@@ -6,6 +6,7 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 SECRETS_DIR="$PROJECT_DIR/secrets"
 KEYS_FILE="$SECRETS_DIR/vault-keys.json"
 ENV_FILE="$PROJECT_DIR/.env"
+CONFIG_FILE="$PROJECT_DIR/customer-config.sh"
 
 cd "$PROJECT_DIR"
 
@@ -66,6 +67,15 @@ echo "Vault unsealed!"
 # Start application services
 echo "Starting application services..."
 docker compose up -d
+
+# Start Dozzle if enabled
+if [ -f "$CONFIG_FILE" ]; then
+  DOZZLE_ENABLED_VALUE=$(grep -m1 '^DOZZLE_ENABLED=' "$CONFIG_FILE" 2>/dev/null | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+  if [ "$DOZZLE_ENABLED_VALUE" = "true" ]; then
+    echo "Starting Dozzle log viewer..."
+    docker compose --profile dozzle up -d
+  fi
+fi
 
 echo ""
 echo "============================================"

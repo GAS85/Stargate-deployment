@@ -430,6 +430,78 @@ setup_wireguard_peer() {
 }
 
 # ==============================================================================
+# Update Dozzle Configuration
+# ==============================================================================
+
+update_dozzle_config() {
+  local dozzle_enabled=$(grep -m1 '^DOZZLE_ENABLED=' "$CONFIG_FILE" 2>/dev/null | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+
+  if [ "$dozzle_enabled" != "true" ]; then
+    # If Dozzle was previously running but is now disabled, stop it
+    if docker compose ps --profile dozzle --format '{{.Name}}' 2>/dev/null | grep -q stargate-dozzle; then
+      echo "Dozzle disabled - stopping service..."
+      docker compose --profile dozzle down
+    fi
+    return 0
+  fi
+
+  echo "============================================"
+  echo "  Updating Dozzle Configuration"
+  echo "============================================"
+  echo ""
+
+  local dozzle_username=$(grep -m1 '^DOZZLE_USERNAME=' "$CONFIG_FILE" 2>/dev/null | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+  local dozzle_password=$(grep -m1 '^DOZZLE_PASSWORD=' "$CONFIG_FILE" 2>/dev/null | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+
+  dozzle_username="${dozzle_username:-admin}"
+  if [ -z "$dozzle_password" ]; then
+    dozzle_password=$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 16)
+    if grep -q '^DOZZLE_PASSWORD=' "$CONFIG_FILE"; then
+      sed -i "s|^DOZZLE_PASSWORD=.*|DOZZLE_PASSWORD=\"$dozzle_password\"|" "$CONFIG_FILE"
+    else
+      echo "DOZZLE_PASSWORD=\"$dozzle_password\"" >> "$CONFIG_FILE"
+    fi
+  fi
+
+  DOZZLE_DATA_DIR="$PROJECT_DIR/dozzle"
+  mkdir -p "$DOZZLE_DATA_DIR"
+
+  local dozzle_version=$(grep -m1 '^DOZZLE_VERSION=' "$CONFIG_FILE" 2>/dev/null | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+  dozzle_version="${dozzle_version:-v10.5.0}"
+  local dozzle_image="amir20/dozzle:${dozzle_version}"
+
+  local dozzle_gen_error=""
+  local dozzle_gen_ok=false
+  if docker run --rm "$dozzle_image" generate \
+    "$dozzle_username" \
+    --password "$dozzle_password" \
+    --name "Stargate Admin" \
+    --user-filter "name=stargate" \
+    > "$DOZZLE_DATA_DIR/users.yml" 2>"$DOZZLE_DATA_DIR/.gen-error.tmp"; then
+    dozzle_gen_ok=true
+  else
+    dozzle_gen_error=$(cat "$DOZZLE_DATA_DIR/.gen-error.tmp" 2>/dev/null || true)
+    dozzle_gen_error="${dozzle_gen_error:-unknown error}"
+  fi
+  rm -f "$DOZZLE_DATA_DIR/.gen-error.tmp"
+
+  if [ "$dozzle_gen_ok" = true ] && [ -f "$DOZZLE_DATA_DIR/users.yml" ]; then
+    echo "Dozzle configuration updated"
+    echo "  Username: $dozzle_username"
+    echo "  Password: $dozzle_password"
+  else
+    echo "WARNING: Failed to update Dozzle users.yml"
+    echo "  Error: $dozzle_gen_error"
+  fi
+
+  # Start or restart Dozzle
+  echo "Starting Dozzle..."
+  docker compose --profile dozzle up -d --force-recreate
+  echo "Dozzle started/updated."
+  echo ""
+}
+
+# ==============================================================================
 # Restart Services
 # ==============================================================================
 
@@ -457,6 +529,7 @@ generate_smime_key_and_csr || ONBOARD_WARNINGS=$((ONBOARD_WARNINGS + 1))
 
 if [ "$INITIAL_SETUP" = false ]; then
   setup_wireguard_peer
+  update_dozzle_config
   restart_services
 fi
 

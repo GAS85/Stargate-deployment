@@ -34,7 +34,11 @@ if [ "$confirmation" = "DELETE ALL DATA" ]; then
   echo ""
   echo "Removing secrets directory..."
   rm -rf "$SECRETS_DIR"
-  
+
+  echo ""
+  echo "Removing Dozzle data directory..."
+  rm -rf "$PROJECT_DIR/dozzle"
+
   echo ""
   echo "============================================"
   echo "  All data has been deleted"

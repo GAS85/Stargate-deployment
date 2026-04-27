@@ -313,6 +313,10 @@ generate_env_file() {
 # Deployment: $DEPLOYMENT_NAME
 # ==============================================================================
 
+# Deployment Identity
+CUSTOMER_NAME="$CUSTOMER_NAME"
+DEPLOYMENT_NAME="$DEPLOYMENT_NAME"
+
 # PostgreSQL
 POSTGRES_USER="$POSTGRES_USER"
 POSTGRES_PASSWORD="$POSTGRES_PASSWORD"
@@ -485,6 +489,71 @@ save_wireguard_key_to_config() {
   fi
 }
 
+# Function to setup Dozzle log viewer
+setup_dozzle() {
+  if [ "$DOZZLE_ENABLED" != "true" ]; then
+    return 0
+  fi
+
+  echo ""
+  echo "============================================"
+  echo "  Setting up Dozzle Log Viewer"
+  echo "============================================"
+  echo ""
+
+  # Generate password if not set
+  DOZZLE_USERNAME="${DOZZLE_USERNAME:-admin}"
+  if [ -z "$DOZZLE_PASSWORD" ]; then
+    DOZZLE_PASSWORD=$(generate_password 16)
+    # Save generated password to customer-config.sh
+    if grep -q '^DOZZLE_PASSWORD=' "$CONFIG_FILE"; then
+      sed -i "s|^DOZZLE_PASSWORD=.*|DOZZLE_PASSWORD=\"$DOZZLE_PASSWORD\"|" "$CONFIG_FILE"
+    else
+      echo "DOZZLE_PASSWORD=\"$DOZZLE_PASSWORD\"" >> "$CONFIG_FILE"
+    fi
+  fi
+
+  # Generate bcrypt hash for the password using Dozzle's built-in generator
+  echo "Generating Dozzle authentication..."
+  DOZZLE_DATA_DIR="$PROJECT_DIR/dozzle"
+  mkdir -p "$DOZZLE_DATA_DIR"
+
+  DOZZLE_GEN_ERROR=""
+  DOZZLE_GEN_OK=false
+  DOZZLE_IMAGE="amir20/dozzle:${DOZZLE_VERSION:-v10.5.0}"
+  if docker run --rm "$DOZZLE_IMAGE" generate \
+    "$DOZZLE_USERNAME" \
+    --password "$DOZZLE_PASSWORD" \
+    --name "Stargate Admin" \
+    --user-filter "name=stargate" \
+    > "$DOZZLE_DATA_DIR/users.yml" 2>"$DOZZLE_DATA_DIR/.gen-error.tmp"; then
+    DOZZLE_GEN_OK=true
+  else
+    DOZZLE_GEN_ERROR=$(cat "$DOZZLE_DATA_DIR/.gen-error.tmp" 2>/dev/null || true)
+    DOZZLE_GEN_ERROR="${DOZZLE_GEN_ERROR:-unknown error}"
+  fi
+  rm -f "$DOZZLE_DATA_DIR/.gen-error.tmp"
+
+  if [ "$DOZZLE_GEN_OK" = true ] && [ -f "$DOZZLE_DATA_DIR/users.yml" ]; then
+    echo "Dozzle authentication configured successfully"
+    echo ""
+    echo "  Username: $DOZZLE_USERNAME"
+    echo "  Password: $DOZZLE_PASSWORD"
+    echo ""
+    echo "  IMPORTANT: Save these credentials - they are also stored in customer-config.sh"
+    echo "  Dozzle will be available at: http://localhost:8090"
+  else
+    echo "WARNING: Failed to generate Dozzle users.yml"
+    echo "  Error: $DOZZLE_GEN_ERROR"
+    echo "  Dozzle will still work but without authentication."
+  fi
+
+  # Start Dozzle
+  echo "Starting Dozzle..."
+  docker compose --profile dozzle up -d
+  echo "Dozzle started."
+}
+
 # ============================================
 # Main Installation
 # ============================================
@@ -561,6 +630,9 @@ if [ -f "$KEYS_FILE" ]; then
   # Save WireGuard key to customer-config.sh for persistence
   save_wireguard_key_to_config
 
+  # Setup Dozzle if enabled
+  setup_dozzle
+
 else
   echo "ERROR: Vault keys file not found."
   echo "Check vault-init logs: docker compose logs vault-init"
@@ -612,6 +684,9 @@ echo "  Monitoring:"
 echo "  -----------"
 echo "  Node Exporter:     http://localhost:9100/metrics"
 echo "  Promtail:          Logs -> $LOKI_URL"
+if [ "${DOZZLE_ENABLED:-false}" = "true" ]; then
+  echo "  Dozzle (logs):     http://localhost:8090"
+fi
 echo ""
 echo "  Scripts:"
 echo "  --------"
