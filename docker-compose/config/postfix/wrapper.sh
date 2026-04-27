@@ -22,8 +22,18 @@ MANUAL_RELAYHOST="${RELAYHOST:-}"
 MANUAL_MYNETWORKS="${MYNETWORKS:-}"
 DOMAIN_RELAY_MAP_RAW="${DOMAIN_RELAY_MAP:-}"
 
-# Parse DOMAIN_RELAY_MAP into an associative array
+# Parse DOMAIN_RELAY_MAP into an associative array.
 # Format: "domain1:[host1]:25,domain2:[host2]:25"
+#
+# Semantics: each entry maps a *sender* domain (envelope From) to the relay
+# host that should be used for outbound delivery. This implements the
+# "relay back through the sender's M365/Exchange tenant" pattern documented
+# in README section 6.2 - it is keyed on the sender, not on the recipient.
+#
+# Postfix uses sender_dependent_relayhost_maps for this. The same entries
+# are also written to transport_maps so that mail received *for* one of the
+# owned domains (inbound MX lookup) is routed to the same relay; this is
+# harmless when the inbound path is not used.
 declare -A RELAY_MAP
 if [ -n "$DOMAIN_RELAY_MAP_RAW" ]; then
     IFS=',' read -ra MAP_ENTRIES <<< "$DOMAIN_RELAY_MAP_RAW"
@@ -33,7 +43,7 @@ if [ -n "$DOMAIN_RELAY_MAP_RAW" ]; then
         local_relay="${entry#*:}"
         if [ -n "$local_domain" ] && [ -n "$local_relay" ]; then
             RELAY_MAP["$local_domain"]="$local_relay"
-            echo "  Domain relay map: $local_domain -> $local_relay"
+            echo "  Domain relay map: @$local_domain -> $local_relay (sender-based)"
         fi
     done
     echo "Loaded ${#RELAY_MAP[@]} explicit domain relay mappings"
@@ -461,6 +471,25 @@ configure_postfix() {
     if ! grep -q "^transport_maps" /etc/postfix/main.cf 2>/dev/null; then
         echo "transport_maps = lmdb:/etc/postfix/transport" >> /etc/postfix/main.cf
     fi
+
+    # Build sender_dependent_relayhost_maps from DOMAIN_RELAY_MAP.
+    # This is what actually re-routes *outbound* mail back through the
+    # sender's M365/Exchange tenant. transport_maps above is keyed on the
+    # recipient domain and does not help for outbound to third-party MXs.
+    if [ ${#RELAY_MAP[@]} -gt 0 ]; then
+        echo "Creating sender_dependent_relayhost map..."
+        > /etc/postfix/sender_relay
+        for sender_domain in "${!RELAY_MAP[@]}"; do
+            echo "@${sender_domain} ${RELAY_MAP[$sender_domain]}" >> /etc/postfix/sender_relay
+        done
+        postmap lmdb:/etc/postfix/sender_relay
+        sed -i '/^sender_dependent_relayhost_maps/d' /etc/postfix/main.cf
+        echo "sender_dependent_relayhost_maps = lmdb:/etc/postfix/sender_relay" >> /etc/postfix/main.cf
+    else
+        # Make sure no stale map is left behind on reconfigure
+        sed -i '/^sender_dependent_relayhost_maps/d' /etc/postfix/main.cf
+        rm -f /etc/postfix/sender_relay /etc/postfix/sender_relay.lmdb
+    fi
     
     # Set relay_domains (all domains, space-separated)
     local relay_domains_str=$(echo "$MAIL_DOMAINS" | tr ',' ' ')
@@ -528,6 +557,34 @@ wait_for_postfix() {
 # Ensure aliases database exists before postfix starts
 touch /etc/aliases
 newaliases 2>/dev/null || true
+
+# Patch supervisord so the postfix program is restarted if it exits.
+# The boky/postfix base image ships with autorestart=false for the postfix
+# program, which means a Postfix master crash leaves the container "Up" but
+# unable to accept mail on :25 (silent failure). We flip it to autorestart=true
+# inside the [program:postfix] block, and add startretries so transient
+# failures recover automatically.
+# This must run before exec'ing run.sh (which starts supervisord).
+SUPERVISORD_CONF="/etc/supervisord.conf"
+if [ -f "$SUPERVISORD_CONF" ] && grep -qE '^\[program:postfix\]' "$SUPERVISORD_CONF"; then
+    if ! awk '/^\[program:postfix\]/,/^\[/' "$SUPERVISORD_CONF" | grep -qE '^autorestart[[:space:]]*=[[:space:]]*true'; then
+        echo "Patching supervisord: enabling autorestart for [program:postfix]..."
+        # Operate only inside the [program:postfix] block (range from the section
+        # header to the next [section] header). Replace existing autorestart line
+        # if present, otherwise append one before the next section.
+        sed -i '/^\[program:postfix\]/,/^\[/{
+            s/^autorestart[[:space:]]*=.*/autorestart     = true/
+        }' "$SUPERVISORD_CONF"
+        # If no autorestart line existed in the block, add one after the command line.
+        if ! awk '/^\[program:postfix\]/,/^\[/' "$SUPERVISORD_CONF" | grep -qE '^autorestart[[:space:]]*=[[:space:]]*true'; then
+            sed -i '/^\[program:postfix\]/a autorestart     = true' "$SUPERVISORD_CONF"
+        fi
+        # Add startretries inside the block if missing, to bound restart attempts.
+        if ! awk '/^\[program:postfix\]/,/^\[/' "$SUPERVISORD_CONF" | grep -qE '^startretries[[:space:]]*='; then
+            sed -i '/^\[program:postfix\]/a startretries    = 5' "$SUPERVISORD_CONF"
+        fi
+    fi
+fi
 
 # Execute the original boky/postfix entrypoint
 exec /scripts/run.sh "$@"
