@@ -552,11 +552,18 @@ git pull
 
 > **Note**: `git pull` will not overwrite your `customer-config.sh`, `.env`, or `secrets/` directory - these are in `.gitignore`. If you have local changes to tracked files (e.g. `docker-compose.yml`), git will warn you. In that case, stash your changes first with `git stash`, pull, then re-apply with `git stash pop`.
 
-If the update includes changes to `customer-config.sh.template`, compare it with your existing config to see if new variables were added:
+If the update includes changes to `customer-config.example`, compare it with your existing config to see if new variables were added:
 
 ```bash
-diff customer-config.sh customer-config.sh.template
+diff customer-config.sh customer-config.example
 ```
+
+> **Rebuilding the Postfix relay image**: The `postfix-relay` service is built locally from `config/postfix/Dockerfile` and `wrapper.sh` - it is **not** pulled from a registry. If a `git pull` brings in changes to those files, `docker compose pull` will not pick them up. Rebuild and recreate the container explicitly:
+>
+> ```bash
+> docker compose build postfix-relay
+> docker compose up -d --force-recreate postfix-relay
+> ```
 
 ### Update Service Images
 
