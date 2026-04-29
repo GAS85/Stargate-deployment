@@ -443,7 +443,7 @@ generate_keycloak_tls_cert() {
   echo ""
 }
 
-# Render config/keycloak/realm-svdh.json template into config/keycloak/generated/
+# Render config/keycloak/realm-stargate.json template into config/keycloak/generated/
 # by substituting the two client-secret placeholders with the values from the
 # customer config.  Keycloak does not resolve ${env.VAR} syntax at import time,
 # so the substitution must happen before the container starts.
@@ -459,10 +459,10 @@ generate_keycloak_realm() {
   sed \
     -e "s|\${KEYCLOAK_APISIX_CLIENT_SECRET}|${KEYCLOAK_APISIX_CLIENT_SECRET}|g" \
     -e "s|\${KEYCLOAK_DASHBOARD_CLIENT_SECRET}|${KEYCLOAK_DASHBOARD_CLIENT_SECRET}|g" \
-    "$PROJECT_DIR/config/keycloak/realm-svdh.json" \
-    > "$out_dir/realm-svdh.json"
+    "$PROJECT_DIR/config/keycloak/realm-stargate.json" \
+    > "$out_dir/realm-stargate.json"
 
-  echo "Keycloak realm config generated: $out_dir/realm-svdh.json"
+  echo "Keycloak realm config generated: $out_dir/realm-stargate.json"
   echo ""
 }
 
