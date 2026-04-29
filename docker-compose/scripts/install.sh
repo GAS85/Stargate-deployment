@@ -233,6 +233,8 @@ load_customer_config() {
   POLICY_VERSION="${POLICY_VERSION:-latest}"
   IDAGENT_VERSION="${IDAGENT_VERSION:-latest}"
   MXENGINE_VERSION="${MXENGINE_VERSION:-latest}"
+  CUSTOMERS_VERSION="${CUSTOMERS_VERSION:-latest}"
+  DASHBOARD_VERSION="${DASHBOARD_VERSION:-latest}"
   
   # Derive WG_LOCAL_IP and MXENGINE_PUBLIC_ADDRESS from SERVER_STATIC_IP
   SERVER_STATIC_IP="${SERVER_STATIC_IP:-}"
@@ -250,6 +252,8 @@ load_customer_config() {
 
   WG_LOCAL_IP="${WG_LOCAL_IP:-$SERVER_STATIC_IP}"
   MXENGINE_PUBLIC_ADDRESS="${MXENGINE_PUBLIC_ADDRESS:-http://${SERVER_STATIC_IP}:8084}"
+  KEYCLOAK_PUBLIC_URL="${KEYCLOAK_PUBLIC_URL:-https://${SERVER_STATIC_IP}:8180}"
+  DASHBOARD_PUBLIC_URL="${DASHBOARD_PUBLIC_URL:-https://${SERVER_STATIC_IP}:3000}"
 
   MAIL_HOSTNAME="${MAIL_HOSTNAME:-mail.${MAIL_DOMAIN_PRIMARY}}"
   validate_mail_hostname "$MAIL_HOSTNAME"
@@ -268,7 +272,15 @@ load_customer_config() {
   DNS_TIMEOUT="${DNS_TIMEOUT:-2}"
   
   LOKI_URL="${LOKI_URL:-https://loki.infra.vereign-cdn.com}"
-  
+
+  # Keycloak / APISIX / Dashboard
+  KEYCLOAK_ADMIN_USER="${KEYCLOAK_ADMIN_USER:-admin}"
+  KEYCLOAK_ADMIN_PASSWORD="${KEYCLOAK_ADMIN_PASSWORD:-$(generate_password)}"
+  KEYCLOAK_APISIX_CLIENT_SECRET="${KEYCLOAK_APISIX_CLIENT_SECRET:-$(generate_password 32)}"
+  KEYCLOAK_DASHBOARD_CLIENT_SECRET="${KEYCLOAK_DASHBOARD_CLIENT_SECRET:-$(generate_password 32)}"
+  APISIX_ADMIN_KEY="${APISIX_ADMIN_KEY:-$(generate_password 32)}"
+  DASHBOARD_SHOW_DEV_PAGES="${DASHBOARD_SHOW_DEV_PAGES:-false}"
+
   # WireGuard local configuration
   WG_INTERFACE_PORT="${WG_INTERFACE_PORT:-19818}"
   WG_TRANSPORT_MODE="${WG_TRANSPORT_MODE:-tcp}"
@@ -330,6 +342,8 @@ SMIMEKEYS_VERSION="$SMIMEKEYS_VERSION"
 POLICY_VERSION="$POLICY_VERSION"
 IDAGENT_VERSION="$IDAGENT_VERSION"
 MXENGINE_VERSION="$MXENGINE_VERSION"
+CUSTOMERS_VERSION="$CUSTOMERS_VERSION"
+DASHBOARD_VERSION="$DASHBOARD_VERSION"
 
 # Postfix Mail Relay
 MAIL_DOMAINS="$MAIL_DOMAINS"
@@ -361,6 +375,16 @@ POLICY_SYNC_REPO_BRANCH="${POLICY_SYNC_REPO_BRANCH:-}"
 POLICY_SYNC_REPO_FOLDER="${POLICY_SYNC_REPO_FOLDER:-}"
 POLICY_SYNC_INTERVAL="${POLICY_SYNC_INTERVAL:-1h}"
 
+# Keycloak / APISIX / Dashboard
+KEYCLOAK_ADMIN_USER="$KEYCLOAK_ADMIN_USER"
+KEYCLOAK_ADMIN_PASSWORD="$KEYCLOAK_ADMIN_PASSWORD"
+KEYCLOAK_APISIX_CLIENT_SECRET="$KEYCLOAK_APISIX_CLIENT_SECRET"
+KEYCLOAK_DASHBOARD_CLIENT_SECRET="$KEYCLOAK_DASHBOARD_CLIENT_SECRET"
+APISIX_ADMIN_KEY="$APISIX_ADMIN_KEY"
+KEYCLOAK_PUBLIC_URL="$KEYCLOAK_PUBLIC_URL"
+DASHBOARD_PUBLIC_URL="$DASHBOARD_PUBLIC_URL"
+DASHBOARD_SHOW_DEV_PAGES="$DASHBOARD_SHOW_DEV_PAGES"
+
 # WireGuard Local Configuration
 WG_LOCAL_IP="$WG_LOCAL_IP"
 WG_INTERFACE_PORT="$WG_INTERFACE_PORT"
@@ -383,6 +407,62 @@ WG_PEER_DESCRIPTION="$WG_PEER_DESCRIPTION"
 EOF
 
   echo "Environment file created: $ENV_FILE"
+  echo ""
+}
+
+# Generate a self-signed TLS certificate for the Keycloak nginx proxy.
+# The cert is written to config/nginx/ssl/ and mounted read-only into the
+# keycloak-proxy container.  Skipped on re-runs when the cert already exists.
+generate_keycloak_tls_cert() {
+  echo "============================================"
+  echo "  Generating Keycloak TLS Certificate"
+  echo "============================================"
+  echo ""
+
+  local ssl_dir="$PROJECT_DIR/config/nginx/ssl"
+  mkdir -p "$ssl_dir"
+
+  if [ -f "$ssl_dir/server.crt" ] && [ -f "$ssl_dir/server.key" ]; then
+    echo "TLS certificate already exists, skipping generation."
+    echo ""
+    return
+  fi
+
+  # Extract hostname/IP from KEYCLOAK_PUBLIC_URL (strip scheme and port)
+  local kc_host
+  kc_host=$(echo "$KEYCLOAK_PUBLIC_URL" | sed 's|https\?://||' | cut -d: -f1 | cut -d/ -f1)
+
+  openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
+    -keyout "$ssl_dir/server.key" \
+    -out    "$ssl_dir/server.crt" \
+    -subj   "/CN=${kc_host}/O=Stargate" 2>/dev/null
+
+  chmod 600 "$ssl_dir/server.key"
+  echo "TLS certificate generated: $ssl_dir/server.crt"
+  echo "  CN: $kc_host  |  Valid: 10 years"
+  echo ""
+}
+
+# Render config/keycloak/realm-svdh.json template into config/keycloak/generated/
+# by substituting the two client-secret placeholders with the values from the
+# customer config.  Keycloak does not resolve ${env.VAR} syntax at import time,
+# so the substitution must happen before the container starts.
+generate_keycloak_realm() {
+  echo "============================================"
+  echo "  Generating Keycloak Realm Config"
+  echo "============================================"
+  echo ""
+
+  local out_dir="$PROJECT_DIR/config/keycloak/generated"
+  mkdir -p "$out_dir"
+
+  sed \
+    -e "s|\${KEYCLOAK_APISIX_CLIENT_SECRET}|${KEYCLOAK_APISIX_CLIENT_SECRET}|g" \
+    -e "s|\${KEYCLOAK_DASHBOARD_CLIENT_SECRET}|${KEYCLOAK_DASHBOARD_CLIENT_SECRET}|g" \
+    "$PROJECT_DIR/config/keycloak/realm-svdh.json" \
+    > "$out_dir/realm-svdh.json"
+
+  echo "Keycloak realm config generated: $out_dir/realm-svdh.json"
   echo ""
 }
 
@@ -502,6 +582,12 @@ mkdir -p "$PROJECT_DIR/backups"
 
 # Generate .env file from customer config
 generate_env_file
+
+# Generate self-signed TLS cert for the Keycloak nginx proxy
+generate_keycloak_tls_cert
+
+# Generate Keycloak realm JSON with actual client secrets substituted in
+generate_keycloak_realm
 
 # Start all services
 echo ""
