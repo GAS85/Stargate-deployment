@@ -178,7 +178,6 @@ services:
     command:
       - start
       - --import-realm
-      - --override=true
     volumes:
       - ./config/keycloak/generated:/opt/keycloak/data/import:ro
     healthcheck:
