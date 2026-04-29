@@ -459,6 +459,7 @@ generate_keycloak_realm() {
   sed \
     -e "s|\${KEYCLOAK_APISIX_CLIENT_SECRET}|${KEYCLOAK_APISIX_CLIENT_SECRET}|g" \
     -e "s|\${KEYCLOAK_DASHBOARD_CLIENT_SECRET}|${KEYCLOAK_DASHBOARD_CLIENT_SECRET}|g" \
+    -e "s|\${DASHBOARD_PUBLIC_URL}|${DASHBOARD_PUBLIC_URL}|g" \
     "$PROJECT_DIR/config/keycloak/realm-stargate.json" \
     > "$out_dir/realm-stargate.json"
 
