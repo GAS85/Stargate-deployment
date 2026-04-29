@@ -50,8 +50,8 @@
       "standardFlowEnabled": true,
       "implicitFlowEnabled": false,
       "directAccessGrantsEnabled": false,
-      "redirectUris": ["*"],
-      "webOrigins": ["*"]
+      "redirectUris": ["${DASHBOARD_PUBLIC_URL}/*"],
+      "webOrigins": ["${DASHBOARD_PUBLIC_URL}"]
     },
     {
       "clientId": "app",
@@ -66,8 +66,8 @@
       "attributes": {
         "pkce.code.challenge.method": "S256"
       },
-      "redirectUris": ["*"],
-      "webOrigins": ["*"]
+      "redirectUris": ["${DASHBOARD_PUBLIC_URL}/*"],
+      "webOrigins": ["${DASHBOARD_PUBLIC_URL}"]
     }
   ]
 }

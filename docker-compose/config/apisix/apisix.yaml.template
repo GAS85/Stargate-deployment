@@ -96,7 +96,6 @@ routes:
         allowlist:
           - "127.0.0.1"
           - "172.16.0.0/12"
-          - "10.0.0.0/8"
 
   - id: "idagent-wg-public-key"
     uri: "/idagent/v1/wg/public-key"
@@ -109,7 +108,6 @@ routes:
         allowlist:
           - "127.0.0.1"
           - "172.16.0.0/12"
-          - "10.0.0.0/8"
 
   - id: "idagent-message"
     uri: "/idagent/v1/message"
@@ -122,7 +120,6 @@ routes:
         allowlist:
           - "127.0.0.1"
           - "172.16.0.0/12"
-          - "10.0.0.0/8"
 
   - id: "customers-import"
     uri: "/customers/v1/customers/import"
@@ -135,7 +132,6 @@ routes:
         allowlist:
           - "127.0.0.1"
           - "172.16.0.0/12"
-          - "10.0.0.0/8"
 
   - id: "customers-register"
     uri: "/customers/v1/customers/register"
@@ -150,7 +146,6 @@ routes:
         allowlist:
           - "127.0.0.1"
           - "172.16.0.0/12"
-          - "10.0.0.0/8"
       limit-count:
         count: 10
         time_window: 60
@@ -172,7 +167,6 @@ routes:
         allowlist:
           - "127.0.0.1"
           - "172.16.0.0/12"
-          - "10.0.0.0/8"
 
   # ==================
   # Authenticated routes — Bearer token required via Keycloak OIDC
