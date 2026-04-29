@@ -1,0 +1,220 @@
+upstreams:
+  - id: "mxengine"
+    nodes:
+      "mxengine:8080": 1
+    type: roundrobin
+
+  - id: "policy"
+    nodes:
+      "policy:8080": 1
+    type: roundrobin
+
+  - id: "idagent"
+    nodes:
+      "idagent:8080": 1
+    type: roundrobin
+
+  - id: "smimekeys"
+    nodes:
+      "smimekeys-client:8080": 1
+    type: roundrobin
+
+  - id: "customers"
+    nodes:
+      "customers:8080": 1
+    type: roundrobin
+
+plugin_configs:
+  - id: "oidc-bearer"
+    plugins:
+      openid-connect:
+        client_id: apisix
+        client_secret: ${KEYCLOAK_APISIX_CLIENT_SECRET}
+        discovery: http://keycloak:8080/realms/master/.well-known/openid-configuration
+        bearer_only: true
+        realm: master
+        introspection_endpoint: http://keycloak:8080/realms/master/protocol/openid-connect/token/introspect
+        introspection_endpoint_auth_method: client_secret_post
+        set_access_token_header: true
+        access_token_in_authorization_header: true
+
+routes:
+  # ==================
+  # Liveness routes — no auth, direct pass-through
+  # ==================
+  - id: "mxengine-liveness"
+    uri: "/mxengine/liveness"
+    upstream_id: "mxengine"
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/mxengine/(.*)", "/$1"]
+
+  - id: "policy-liveness"
+    uri: "/policy/liveness"
+    upstream_id: "policy"
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/policy/(.*)", "/$1"]
+
+  - id: "idagent-liveness"
+    uri: "/idagent/liveness"
+    upstream_id: "idagent"
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/idagent/(.*)", "/$1"]
+
+  - id: "smimekeys-liveness"
+    uri: "/smimekeys/liveness"
+    upstream_id: "smimekeys"
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/smimekeys/(.*)", "/$1"]
+
+  - id: "customers-liveness"
+    uri: "/customers/liveness"
+    upstream_id: "customers"
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/customers/(.*)", "/$1"]
+
+  # ==================
+  # Internal routes — IP-restricted, no auth
+  # In Docker Compose all containers share stargate-network, so these are
+  # reachable by any container. Restriction mirrors the k8s cluster-internal
+  # model; tighten by removing APISIX host-port exposure if needed.
+  # ==================
+  - id: "idagent-connections"
+    uris:
+      - "/idagent/v1/connections"
+      - "/idagent/v1/connections/*"
+    upstream_id: "idagent"
+    priority: 100
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/idagent/(.*)", "/$1"]
+      ip-restriction:
+        allowlist:
+          - "127.0.0.1"
+          - "172.16.0.0/12"
+          - "10.0.0.0/8"
+
+  - id: "idagent-wg-public-key"
+    uri: "/idagent/v1/wg/public-key"
+    upstream_id: "idagent"
+    priority: 100
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/idagent/(.*)", "/$1"]
+      ip-restriction:
+        allowlist:
+          - "127.0.0.1"
+          - "172.16.0.0/12"
+          - "10.0.0.0/8"
+
+  - id: "idagent-message"
+    uri: "/idagent/v1/message"
+    upstream_id: "idagent"
+    priority: 100
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/idagent/(.*)", "/$1"]
+      ip-restriction:
+        allowlist:
+          - "127.0.0.1"
+          - "172.16.0.0/12"
+          - "10.0.0.0/8"
+
+  - id: "customers-import"
+    uri: "/customers/v1/customers/import"
+    upstream_id: "customers"
+    priority: 110
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/customers/(.*)", "/$1"]
+      ip-restriction:
+        allowlist:
+          - "127.0.0.1"
+          - "172.16.0.0/12"
+          - "10.0.0.0/8"
+
+  - id: "customers-register"
+    uri: "/customers/v1/customers/register"
+    methods:
+      - "POST"
+    upstream_id: "customers"
+    priority: 110
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/customers/(.*)", "/$1"]
+      ip-restriction:
+        allowlist:
+          - "127.0.0.1"
+          - "172.16.0.0/12"
+          - "10.0.0.0/8"
+      limit-count:
+        count: 10
+        time_window: 60
+        rejected_code: 429
+        key_type: var
+        key: remote_addr
+
+  - id: "customers-list"
+    uri: "/customers/v1/customers"
+    methods:
+      - "GET"
+      - "PUT"
+    upstream_id: "customers"
+    priority: 100
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/customers/(.*)", "/$1"]
+      ip-restriction:
+        allowlist:
+          - "127.0.0.1"
+          - "172.16.0.0/12"
+          - "10.0.0.0/8"
+
+  # ==================
+  # Authenticated routes — Bearer token required via Keycloak OIDC
+  # ==================
+  - id: "mxengine-route"
+    uri: "/mxengine/*"
+    upstream_id: "mxengine"
+    plugin_config_id: "oidc-bearer"
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/mxengine/(.*)", "/$1"]
+
+  - id: "policy-route"
+    uri: "/policy/*"
+    upstream_id: "policy"
+    plugin_config_id: "oidc-bearer"
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/policy/(.*)", "/$1"]
+
+  - id: "idagent-route"
+    uri: "/idagent/*"
+    upstream_id: "idagent"
+    plugin_config_id: "oidc-bearer"
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/idagent/(.*)", "/$1"]
+
+  - id: "smimekeys-route"
+    uri: "/smimekeys/*"
+    upstream_id: "smimekeys"
+    plugin_config_id: "oidc-bearer"
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/smimekeys/(.*)", "/$1"]
+
+  - id: "customers-route"
+    uri: "/customers/*"
+    upstream_id: "customers"
+    plugin_config_id: "oidc-bearer"
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/customers/(.*)", "/$1"]
+
+#END

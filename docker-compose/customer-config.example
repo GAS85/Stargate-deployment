@@ -116,6 +116,8 @@ POLICY_VERSION="v0.0.5"
 IDAGENT_VERSION="v0.0.8"
 MXENGINE_VERSION="v0.0.36"
 POLICY_SYNC_VERSION="dev"
+CUSTOMERS_VERSION="dev"
+DASHBOARD_VERSION="dev"
 
 # ==============================================================================
 # OPTIONAL: Advanced Mail Configuration
@@ -164,6 +166,29 @@ POLICY_SYNC_VERSION="dev"
 # Contact Vereign for the Loki URL if you want centralized logging.
 
 LOKI_URL="https://loki.infra.vereign-cdn.com"
+
+# ==============================================================================
+# OPTIONAL: Keycloak / APISIX / Dashboard Configuration
+# ==============================================================================
+
+# Keycloak admin console credentials
+KEYCLOAK_ADMIN_USER="admin"
+KEYCLOAK_ADMIN_PASSWORD=""  # Auto-generated if empty
+
+# Generate strong random values (e.g. openssl rand -hex 32).
+# IMPORTANT: change from defaults before exposing Keycloak to any network.
+KEYCLOAK_APISIX_CLIENT_SECRET=""    # Auto-generated if empty
+KEYCLOAK_DASHBOARD_CLIENT_SECRET="" # Auto-generated if empty
+
+# APISIX admin API key (for the debug admin endpoint on port 9180)
+APISIX_ADMIN_KEY=""  # Auto-generated if empty
+
+# Public-facing URLs (must be reachable from the end-user's browser)
+KEYCLOAK_PUBLIC_URL=""      # Default: https://<SERVER_STATIC_IP>:8180
+DASHBOARD_PUBLIC_URL=""     # Default: https://<SERVER_STATIC_IP>:3000
+
+# Show developer pages in the dashboard UI
+DASHBOARD_SHOW_DEV_PAGES="false"
 
 # ==============================================================================
 # REQUIRED: WireGuard Configuration

@@ -1,0 +1,34 @@
+apisix:
+  node_listen: 9080
+  enable_ipv6: false
+
+deployment:
+  mode: standalone
+  role: data_plane
+  role_data_plane:
+    config_provider: yaml
+  admin:
+    allow_admin:
+      - 127.0.0.1
+      - 172.16.0.0/12
+      - 10.0.0.0/8
+    admin_key:
+      - name: admin
+        key: ${{APISIX_ADMIN_KEY}}
+        role: admin
+
+plugins:
+  - prometheus
+  - openid-connect
+  - proxy-rewrite
+  - request-id
+  - public-api
+  - ip-restriction
+  - limit-count
+
+plugin_attr:
+  prometheus:
+    export_uri: /apisix/prometheus/metrics
+    export_addr:
+      ip: "0.0.0.0"
+      port: 9091
