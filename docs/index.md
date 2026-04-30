@@ -8,6 +8,8 @@
 
     A web-based admin UI dashboard is in the works - until it ships, all configuration and operations are performed over the terminal using the scripts in this repository.
 
+![Logo](https://www.hin.ch/files/png1/hero/stargate_visual.png)
+
 ## Quick Start
 
 ### Installation options
@@ -15,10 +17,10 @@
 * [Docker installation](./Docker-deploy.md)
 * [HELM charts](./helm-deploy.md)
 * VM image installation
-    * [Azure VM image installation](./Azure-VM-image-install.md)
-    * [Windows 11 pro (Hyper-V) image installation](./Windows11pro-image-install.md)
-    * [VMware image installation](./VMware-image-install.md)
-    * [Proxmox image installation](./Proxmox-image-install.md)
+    * [Azure VM image installation](vm/Azure-image-install.md)
+    * [Windows 11 pro (Hyper-V) image installation](vm/Windows11pro-image-install.md)
+    * [VMware image installation](vm/VMware-image-install.md)
+    * [Proxmox image installation](vm/Proxmox-image-install.md)
 
 ### Exchange Integration
 

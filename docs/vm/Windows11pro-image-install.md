@@ -39,7 +39,7 @@ cd stargate-deployment/docker-compose/
 ```
 
 - Use vi/nano to edit `customer-config.sh`
-- Configuration details can be found in the [README - Step 1: Configure Customer Settings](README.md#step-1-configure-customer-settings)
+- Configuration details can be found in the [README - Step 1: Configure Customer Settings](../Docker-deploy.md#step-1-configure-customer-settings)
 - Run the install script:
 
 ```shell

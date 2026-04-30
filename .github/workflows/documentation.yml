@@ -26,7 +26,10 @@ jobs:
         run: |
           docker run --rm \
             -v ${{ github.workspace }}:/docs \
-            squidfunk/mkdocs-material build --clean
+            --entrypoint sh \
+            squidfunk/mkdocs-material \
+            -c "pip install mkdocs-glightbox && mkdocs build --clean"
+
 
       - name: Adjust permissions
         run: |

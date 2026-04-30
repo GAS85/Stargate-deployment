@@ -416,7 +416,7 @@ If you prefer not to manage MX record priorities, you can configure explicit per
 DOMAIN_RELAY_MAP="domain1.ch:[exchange1.domain1.ch]:25,domain2.ch:[exchange2.domain2.ch]:25"
 ```
 
-Each entry maps a **sender** (envelope-From) domain to a specific relay host and port. After mxengine signs/encrypts the message, Postfix routes it via the listed relay based on the sender's domain - this is what implements the "relay back through M365" pattern in [section 6.2](#62-relay-outbound-mail-back-through-your-mail-platform-recommended-for-m365--exchange-online). Mail from senders not listed falls back to `RELAYHOST` (if set) or MX lookup of the recipient.
+Each entry maps a **sender** (envelope-From) domain to a specific relay host and port. After mxengine signs/encrypts the message, Postfix routes it via the listed relay based on the sender's domain - this is what implements the ["relay back through M365" pattern](Docker-deploy.md#m365-exchange-online-side). Mail from senders not listed falls back to `RELAYHOST` (if set) or MX lookup of the recipient.
 
 **Precedence** (highest to lowest):
 
@@ -830,7 +830,7 @@ This is the most common issue after initial installation. The S/MIME certificate
 ./scripts/onboard.sh --regenerate-cert
 ```
 
-See [Step 5: WireGuard Peer Registration](#step-5-wireguard-peer-registration) for the full process.
+See [Step 5: WireGuard Peer Registration](Docker-deploy.md#step-5-wireguard-peer-registration) for the full process.
 
 ### Vault is sealed after restart
 

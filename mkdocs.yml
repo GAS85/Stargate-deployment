@@ -60,6 +60,8 @@ plugins:
       minify_html: true
   - git-revision-date-localized:
       enable_creation_date: true
+  - glightbox
+
 
 # Additional configuration
 extra:
@@ -132,6 +134,7 @@ nav:
   - Getting started with Stargate:
       - Applications overview: Applications.md
       - Exchange Integration: Exchange-integration.md
+      - Mail relay setup: Mail-relay-setup/index.md
   - Container deployment:
       - Install with Docker: Docker-deploy.md
       - Docker Advanced configuration: Docker-advanced.md
