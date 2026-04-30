@@ -1,4 +1,4 @@
-### Applications
+## Applications
 
 * **smimekeys-client** - S/MIME keys client service (port 8081)
 
@@ -7,7 +7,7 @@
 * **mxengine** - MX Engine service (port 8084, SMTP: 1587)
 * **policy-sync** - Syncs OPA/Rego policies from Git repository to database (runs continuously)
 
-### Infrastructure
+## Infrastructure
 
 * **PostgreSQL** - Database (port 5432)
 
@@ -15,15 +15,19 @@
 * **MinIO** - S3-compatible storage (API: 9000, Console: 9001)
 * **Postfix Relay** - Mail relay server (port 25) - auto-configures from DNS
 
-### Init Containers
+## Init Containers
 
 * **vault-init** - Initializes and unseals Vault on first run
 
 * **idagent-init** - Creates WireGuard peer connection in idagent database
 
-### Monitoring
+## Monitoring
 
 * **node-exporter** - Host metrics for Prometheus (port 9100)
 
 * **version-collector** - Collects app versions from `/liveness` endpoints for node-exporter
 * **Promtail** - Log collector for Loki (ships app logs)
+
+## Architecture overview
+
+![Architecture](https://www.hin.ch/files/png1/blog-full/graph3-v5.png)

@@ -34,7 +34,7 @@ In both patterns, you need:
 
 Before configuring Exchange, ensure:
 
-- [ ] Stargate is installed and running ([deployment instructions](README.md))
+- [ ] Stargate is installed and running ([deployment instructions](Docker-deploy.md))
 - [ ] You have the **Stargate server's public IP address** (referred to as `<STARGATE_IP>` below)
 - [ ] You have the **mail hostname** of the Stargate server (referred to as `<MAIL_HOSTNAME>`, e.g. `mail.example.com`)
 - [ ] You know your **mail domain** (referred to as `<YOUR_DOMAIN>`, e.g. `example.com`)
