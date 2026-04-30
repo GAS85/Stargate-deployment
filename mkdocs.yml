@@ -2,7 +2,7 @@ site_name: Stargate Deployment
 site_url: https://Health-Info-Net-AG.github.io/stargate-deployment/
 site_author: HIN AG
 site_description: >-
-  Stargate deployment documentation
+  Stargate deployment User documentation. Docker, Helmcharts, Virtual Machine, Azure, etc.
 
 # Repository
 repo_name: Health-Info-Net-AG/Stargate-deployment
@@ -43,6 +43,7 @@ theme:
     # - toc.integrate
   palette:
     primary: orange
+
   font:
     text: Roboto
     code: Roboto Mono
@@ -55,8 +56,10 @@ plugins:
   #  - blog
   - search:
       separator: '[\s\u200b\-_,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
-#  - minify:
-#      minify_html: true
+  - minify:
+      minify_html: true
+  - git-revision-date-localized:
+      enable_creation_date: true
 
 # Additional configuration
 extra:
