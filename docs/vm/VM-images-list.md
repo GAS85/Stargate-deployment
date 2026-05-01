@@ -15,4 +15,3 @@ Here you can find an actual VM images list for different platforms. Please do no
 | `Alma10-202604271308.stargate-266bf2b.x86_64.vhdx` ![vhdx](https://img.shields.io/badge/Type-vhdx-blue) | 2.0G / 2071986176 bytes | https://images.hin.ch/vm-images/Alma10-202604271308.stargate-266bf2b.x86_64.vhdx | `1dba1723bd14f34edf6fa9aa3bf40f94f6d4e9ee80b8d6dcd3499035979f101b` |
 | `Alma10-202604271308.stargate-266bf2b.x86_64.vmdk` ![vmdk](https://img.shields.io/badge/Type-vmdk-blue) | 974M / 1020772864 bytes | https://images.hin.ch/vm-images/Alma10-202604271308.stargate-266bf2b.x86_64.vmdk | `15041890f1367c2c2e393a1a5d6d4554ff16c1ed90a01c847879e2e20a5f2ff5` |
 | `SHA256SUMS` ![Checksum](https://img.shields.io/badge/Type-SHA256_checksum-blue) | 4.0K / 1169 bytes | https://images.hin.ch/vm-images/SHA256SUMS |  |
-

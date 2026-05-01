@@ -2,7 +2,8 @@
 
 This guide explains how to configure Microsoft Exchange (Online and On-Premises) to route mail through the Stargate gateway for S/MIME signing and encryption.
 
-> **Internal reference**: This guide is based on the [Stargate mail relay setup](https://plan.vereign.com/projects/mail-gateway/wiki/stargate-mail-relay-setup) wiki page (by Zdravko Komitov).
+!!! tip "Internal reference"
+    This guide is based on the [Stargate mail relay setup](https://plan.vereign.com/projects/mail-gateway/wiki/stargate-mail-relay-setup) wiki page (by Zdravko Komitov).
 
 ## Overview
 
@@ -33,7 +34,7 @@ In both patterns, you need:
 
 Before configuring Exchange, ensure:
 
-- [ ] Stargate is installed and running ([deployment instructions](README.md))
+- [ ] Stargate is installed and running ([deployment instructions](Docker-deploy.md))
 - [ ] You have the **Stargate server's public IP address** (referred to as `<STARGATE_IP>` below)
 - [ ] You have the **mail hostname** of the Stargate server (referred to as `<MAIL_HOSTNAME>`, e.g. `mail.example.com`)
 - [ ] You know your **mail domain** (referred to as `<YOUR_DOMAIN>`, e.g. `example.com`)
