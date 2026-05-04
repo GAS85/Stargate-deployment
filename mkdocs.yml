@@ -7,7 +7,7 @@ site_description: >-
 # Repository
 repo_name: Health-Info-Net-AG/Stargate-deployment
 repo_url: https://github.com/Health-Info-Net-AG/Stargate-deployment
-edit_uri: blob/main/docs/
+edit_uri: edit/main/docs/
 
 # Copyright
 copyright: Copyright HIN AG 2026
