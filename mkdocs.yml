@@ -139,7 +139,7 @@ nav:
   - Getting started with Stargate:
       - Applications overview: Applications.md
       - Exchange Integration: Exchange-integration.md
-      - Mail relay setup: Mail-relay-setup/index.md
+      - Mail relay setup: Mail-relay-setup
   - Container deployment:
       - Install with Docker: Docker-deploy.md
       - Docker Advanced configuration: Docker-advanced.md
