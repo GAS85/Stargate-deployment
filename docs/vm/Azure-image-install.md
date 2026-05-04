@@ -64,7 +64,7 @@ ssh user@11.22.33.44
 
 ```shell
 sudo su -
-cd stargate-deployment/docker-compose/
+cd ~/stargate-deployment/docker-compose/
 ```
 
 - Use vi/nano to edit `customer-config.sh`

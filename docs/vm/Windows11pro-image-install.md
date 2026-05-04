@@ -35,7 +35,7 @@ Deploy Stargate on Windows Pro(non-pro versions do not support Hyper-V)
 
 ```shell
 sudo su -
-cd stargate-deployment/docker-compose/
+cd ~/stargate-deployment/docker-compose/
 ```
 
 - Use vi/nano to edit `customer-config.sh`
