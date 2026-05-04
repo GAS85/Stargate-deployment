@@ -16,11 +16,14 @@
 
 * [Docker installation](./Docker-deploy.md)
 * [HELM charts](./helm-deploy.md)
-* VM image installation
+* VM image installation:
     * [Azure VM image installation](vm/Azure-image-install.md)
     * [Windows 11 pro (Hyper-V) image installation](vm/Windows11pro-image-install.md)
     * [VMware image installation](vm/VMware-image-install.md)
     * [Proxmox image installation](vm/Proxmox-image-install.md)
+
+!!! tip "🖨️"
+    You can get this documentation printed or saved as pdf, please visit our [Print page view](print_page).
 
 ### Exchange Integration
 

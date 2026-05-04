@@ -75,7 +75,8 @@ git pull
 ./scripts/start.sh
 ```
 
-> **Note**: `git pull` will not overwrite your `customer-config.sh`, `.env`, or `secrets/` directory - these are in `.gitignore`. If you have local changes to tracked files (e.g. `docker-compose.yml`), git will warn you. In that case, stash your changes first with `git stash`, pull, then re-apply with `git stash pop`.
+!!! note
+    `git pull` will not overwrite your `customer-config.sh`, `.env`, or `secrets/` directory - these are in `.gitignore`. If you have local changes to tracked files (e.g. `docker-compose.yml`), git will warn you. In that case, stash your changes first with `git stash`, pull, then re-apply with `git stash pop`.
 
 If the update includes changes to `customer-config.sh.template`, compare it with your existing config to see if new variables were added:
 
@@ -177,7 +178,8 @@ WG_INTERFACE_PORT=19818
 WG_TRANSPORT_MODE=tcp
 ```
 
-> **Do not edit `.env` directly.** Changes will be overwritten by `onboard.sh`. Always edit `customer-config.sh` instead.
+!!! warning
+    **Do not edit `.env` directly.** Changes will be overwritten by `onboard.sh`. Always edit `customer-config.sh` instead.
 
 ## Service URLs
 
@@ -373,7 +375,8 @@ The container will (for each domain):
 
 ### Mail Routing (Migrating from Old MGW)
 
-> **Key difference from the old HIN-MGW**: In the old MGW, you had to manually configure a target server per domain. In Stargate, Postfix **automatically discovers** where to deliver mail by looking up the MX records of each domain in DNS. Manual per-domain routing is also available via `DOMAIN_RELAY_MAP` if needed (see below).
+!!! note "Key difference from the old HIN-MGW"
+    In the old MGW, you had to manually configure a target server per domain. In Stargate, Postfix **automatically discovers** where to deliver mail by looking up the MX records of each domain in DNS. Manual per-domain routing is also available via `DOMAIN_RELAY_MAP` if needed (see below).
 
 **How it works:**
 
@@ -406,7 +409,8 @@ If all your domains deliver to the same mail server, you can use `RELAYHOST` in 
 RELAYHOST=[smtp.office365.com]
 ```
 
-> **Note**: `RELAYHOST` sends **all** mail to a single host and does not support per-domain routing. For setups with multiple domains and different mail servers, use `DOMAIN_RELAY_MAP` or the MX-based approach.
+!!! note
+    `RELAYHOST` sends **all** mail to a single host and does not support per-domain routing. For setups with multiple domains and different mail servers, use `DOMAIN_RELAY_MAP` or the MX-based approach.
 
 **Alternative - explicit per-domain relay mapping (sender-based):**
 
@@ -453,7 +457,8 @@ DOMAIN_RELAY_MAP="domain1.ch:[exchange1.domain1.ch]:25,domain2.ch:[exchange2.dom
 POSTFIX_MYNETWORKS=10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
 ```
 
-> **Using Exchange?** See [Exchange-integration.md](Exchange-integration.md) for the full Exchange Online / On-Premises connector and transport rule setup.
+!!! tip "Using Exchange?"
+    See [Exchange-integration](Exchange-integration.md) for the full Exchange Online / On-Premises connector and transport rule setup.
 
 ### Verification
 
@@ -576,9 +581,11 @@ WG_PEER_EXTERNAL_ID="hintest.ch"      # Used for routing decisions
 WG_PEER_DESCRIPTION="Connection to HIN Test IDAgent"
 ```
 
-> **`WG_LOCAL_IP`** is auto-derived from `SERVER_STATIC_IP`. You do not need to set it separately.
+!!! note
+    **`WG_LOCAL_IP`** is auto-derived from `SERVER_STATIC_IP`. You do not need to set it separately.
 
-> **`WG_PEER_IP`** vs **`WG_PEER_PORT`**: `WG_PEER_IP` is the remote peer's tunnel address (used for WireGuard routing). `WG_PEER_PORT` is the HTTP port the remote IDAgent listens on for API calls over the tunnel (default `9090`). These are independent values.
+!!! note "`WG_PEER_IP` vs `WG_PEER_PORT`"
+    `WG_PEER_IP` is the remote peer's tunnel address (used for WireGuard routing). `WG_PEER_PORT` is the HTTP port the remote IDAgent listens on for API calls over the tunnel (default `9090`). These are independent values.
 
 ### Peer Connection Setup
 

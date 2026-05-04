@@ -93,7 +93,8 @@ The template comes with HIN Test peer defaults. These work out of the box for th
 | `WG_PEER_PORT` | `9090` | HTTP communication port on the remote peer |
 | `WG_PEER_EXTERNAL_ID` | `hintest.ch` | External identifier for routing (typically the peer's domain) |
 
-> **Note:** `WG_PEER_IP` is the peer's *tunnel address* (used for routing inside WireGuard), while `WG_PEER_PORT` is the HTTP port the peer's IDAgent listens on for API calls over the tunnel.
+!!! note
+   `WG_PEER_IP` is the peer's *tunnel address* (used for routing inside WireGuard), while `WG_PEER_PORT` is the HTTP port the peer's IDAgent listens on for API calls over the tunnel.
 
 **WireGuard local settings (typically left at defaults):**
 
@@ -240,7 +241,8 @@ docker compose restart idagent
 docker compose logs idagent 2>&1 | grep -i "handshake\|peer"
 ```
 
-> **Also check your firewall**: Port `19818/TCP` must be open **both inbound and outbound** on the Stargate server.
+!!! important
+    **Check your firewall**: Port `19818/TCP` must be open **both inbound and outbound** on the Stargate server.
 
 ## Step 6: Post-Onboarding Recommendations
 
@@ -316,7 +318,8 @@ You essentially recreate the same connector + transport-rule set as the old HIN 
 
 mxengine does not strip arbitrary headers, so the `outgoing_<domain>` tag set by `set_header` survives the round-trip and triggers `outgoing_to_mx` correctly.
 
-> **Why this pattern matters**: with the relay-back configuration, the public sender to the internet is Microsoft. Combined with correct SPF/DKIM/DMARC (section 6.1), recipients see a Microsoft IP with `spf=pass` and `dkim=pass` aligned to your domain - which is the cleanest reputation profile you can give them.
+!!! note "Why this pattern matters"
+    with the relay-back configuration, the public sender to the internet is Microsoft. Combined with correct SPF/DKIM/DMARC (section 6.1), recipients see a Microsoft IP with `spf=pass` and `dkim=pass` aligned to your domain - which is the cleanest reputation profile you can give them.
 
 See `Exchange-integration.md` for full step-by-step instructions including screenshots.
 

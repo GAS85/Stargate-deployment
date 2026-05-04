@@ -61,7 +61,7 @@ plugins:
   - git-revision-date-localized:
       enable_creation_date: true
   - glightbox
-
+  - print-site
 
 # Additional configuration
 extra:

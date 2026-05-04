@@ -81,7 +81,8 @@ MX @ 15 mail.vrgnservices.eu.
 MX @ 20 vrgnservices-eu.mail.protection.outlook.com.
 ```
 
-> **Note**: The lower MX number means higher priority. Stargate at priority 15 will receive mail before Exchange Online at priority 20.
+!!! tip
+    The lower MX number means higher priority. Stargate at priority 15 will receive mail before Exchange Online at priority 20.
 
 ### SPF Record
 
@@ -358,7 +359,8 @@ If you want all outbound mail from Stargate to go to a single Exchange endpoint 
 RELAYHOST=[smtp.office365.com]
 ```
 
-> **Note**: `RELAYHOST` sends all mail to a single host. It does not support per-domain routing. If you have multiple domains pointing to different Exchange servers, use the MX-based approach instead.
+!!! note
+    `RELAYHOST` sends all mail to a single host. It does not support per-domain routing. If you have multiple domains pointing to different Exchange servers, use the MX-based approach instead.
 
 ### Multi-Domain Setup
 
