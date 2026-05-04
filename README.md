@@ -1,6 +1,6 @@
 # Stargate Deployment Instruction
 
-> Please refer to our documentation under: https://Health-Info-Net-AG.github.io/stargate-deployment/
+> Please refer to our documentation under: https://health-info-net-ag.github.io/Stargate-deployment/
 
 > ## $\textcolor{red}{\textsf{\textbf{⚠ ACTIVE DEVELOPMENT - NOT A FINAL PRODUCT}}}$
 >
