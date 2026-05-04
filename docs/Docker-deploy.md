@@ -252,17 +252,33 @@ The Stargate sends notification mails (and S/MIME-encrypted mails) from its own 
 
 For **each domain** you route through the Stargate, publish the following DNS records:
 
-**SPF** - authorize the Stargate IP. If your mailboxes also live in M365, keep the Microsoft `include`:
+#### SPF
+
+**SPF** - authorize the Stargate IP **and the HIN sealer IP**. If your mailboxes also live in M365, keep the Microsoft `include`:
 
 ```shell
-example.ch.  TXT  "v=spf1 ip4:<STARGATE_PUBLIC_IP> include:spf.protection.outlook.com -all"
+example.ch.  TXT  "v=spf1 ip4:<STARGATE_PUBLIC_IP> ip4:<HIN_SEALER_IP> include:spf.protection.outlook.com -all"
 ```
 
 If you do not use M365 / Google Workspace, the minimal record is:
 
 ```shell
-example.ch.  TXT  "v=spf1 ip4:<STARGATE_PUBLIC_IP> -all"
+example.ch.  TXT  "v=spf1 ip4:<STARGATE_PUBLIC_IP> ip4:<HIN_SEALER_IP> -all"
 ```
+
+!!! important "Why the HIN sealer IP is required"
+    When the Stargate produces a SEAL'd (encrypted) message for a non-HIN recipient, the final outbound hop to the recipient is the **HIN sealer**, not your Stargate or M365. Without the sealer IP in your SPF record, every SEAL'd outbound message will fail SPF at the recipient and - because there is no DKIM signature on the SEAL'd payload - DMARC will fail too. Strict-DMARC recipients (Gmail, Outlook with `p=reject` enforcement, Proofpoint) will reject or junk the message.
+
+    Sealer IPs to add in SPF:
+
+    | Environment | Sealer host | IP to add to SPF |
+    |-------------|-------------|------------------|
+    | HIN Test (alpha/beta) | `mx3.hintest.ch` | `193.247.208.66` |
+    | HIN Production | TBD - request canonical list from HIN before go-live | TBD |
+
+    If HIN publishes more than one sealer host (e.g. `mx1`, `mx2`, `mx3`), include **all** their IPs. Resolve them with `dig +short mx hintest.ch` followed by `dig +short A <each-mx>`. Until you have the full list, leave the SPF policy at `~all` (softfail) instead of `-all` (hardfail) so that legitimate SEAL mail through any unlisted sealer IP is not outright rejected.
+
+#### DMARC
 
 **DMARC** - publish at least a monitoring policy. This alone is enough to clear Outlook's "can't verify" banner once SPF passes:
 
@@ -271,6 +287,8 @@ _dmarc.example.ch.  TXT  "v=DMARC1; p=none; rua=mailto:postmaster@example.ch"
 ```
 
 Once you have confirmed alignment in the reports, you can tighten to `p=quarantine` and eventually `p=reject`.
+
+#### DKIM
 
 **DKIM** - if `example.ch` is an accepted domain in your M365 or Google Workspace tenant, enable DKIM signing in the admin centre and publish the two `selector1._domainkey` / `selector2._domainkey` CNAMEs as instructed there. Publishing the CNAMEs is not enough on its own - DKIM signing must be toggled on in the tenant.
 
