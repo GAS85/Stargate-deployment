@@ -312,7 +312,7 @@ You essentially recreate the same connector + transport-rule set as the old HIN 
 
 1. **Inbound connector** - accept mail from the Stargate, identified by TLS certificate (the cert subject must match a domain accepted in your tenant). A self-signed cert on the Stargate will be rejected by this connector - use a valid CA-issued cert (Let's Encrypt is fine).
 2. **Outbound connector "Send to MX"** - delivers to the recipient's MX, activated only by transport rule.
-3. **Transport rule `set_header`** - tags outbound mail with a header like `outgoing: outgoing_<domain>` before it leaves O365 the first time, so the return trip can recognise it.
+3. **Transport rule `set_header`** - tags outbound mail with a header like `outgoing: outgoing_<domain>` before it leaves O365 the first time, so the return trip can recognize it.
 4. **Transport rule `outgoing_to_mx`** - matches the `outgoing_<domain>` header on mail coming back from the Stargate and routes it via the "Send to MX" connector.
 5. **Transport rule `mgw_bypass_antispam`** - bypasses spam filtering on mail coming back from the Stargate.
 

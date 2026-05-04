@@ -1,6 +1,6 @@
 # Stargate Deployment Instruction
 
-> Please refer to our documentation under: https://health-info-net-ag.github.io/Stargate-deployment/
+> Please refer to our documentation under: <https://health-info-net-ag.github.io/Stargate-deployment/>
 
 > ## $\textcolor{red}{\textsf{\textbf{⚠ ACTIVE DEVELOPMENT - NOT A FINAL PRODUCT}}}$
 >
@@ -8,7 +8,7 @@
 >
 > $\textcolor{red}{\textsf{\textbf{Interfaces, configuration, and behaviour may change between releases.}}}$
 >
-> $\textcolor{red}{\textsf{\textbf{A web-based admin UI dashboard is in the works - until it ships,}}}$
+> $\textcolor{red}{\textsf{\textbf{A web-based admin UI dashboard is currently under development. Until it is released,}}}$
 > $\textcolor{red}{\textsf{\textbf{all configuration and operations are performed over the terminal using the scripts in this repository.}}}$
 
 Recommendations and Expectations for the Alpha Phase

@@ -6,7 +6,7 @@
 
     Interfaces, configuration, and behaviour may change between releases.
 
-    A web-based admin UI dashboard is in the works - until it ships, all configuration and operations are performed over the terminal using the scripts in this repository.
+    A web-based admin UI dashboard is currently under development. Until it is released, all configuration and operations are performed over the terminal using the scripts in this repository.
 
 ![Logo](https://www.hin.ch/files/png1/hero/stargate_visual.png)
 
@@ -17,10 +17,10 @@
 * [Docker installation](./Docker-deploy.md)
 * [HELM charts](./helm-deploy.md)
 * VM image installation:
-    * [Azure VM image installation](vm/Azure-image-install.md)
-    * [Windows 11 pro (Hyper-V) image installation](vm/Windows11pro-image-install.md)
-    * [VMware image installation](vm/VMware-image-install.md)
-    * [Proxmox image installation](vm/Proxmox-image-install.md)
+  * [Azure VM image installation](vm/Azure-image-install.md)
+  * [Windows 11 pro (Hyper-V) image installation](vm/Windows11pro-image-install.md)
+  * [VMware image installation](vm/VMware-image-install.md)
+  * [Proxmox image installation](vm/Proxmox-image-install.md)
 
 !!! tip "🖨️"
     You can get this documentation printed or saved as pdf, please visit our [Print page view](print_page).

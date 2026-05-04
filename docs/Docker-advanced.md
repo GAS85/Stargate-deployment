@@ -353,7 +353,7 @@ Destination Mail Server (via MX lookup)
 
 **Seal callback flow (inbound):** When a remote sealer needs to deliver a sealed message, it calls `MXENGINE_PUBLIC_ADDRESS` (default: `http://<SERVER_STATIC_IP>:8084`). This is why port 8084 must be open for inbound traffic. The `http://` protocol is correct — TLS is not required because the seal payload is already encrypted.
 
-### Configuration
+### Postfix Relay Configuration
 
 Set `MAIL_DOMAINS` in your `customer-config.sh`:
 
@@ -495,7 +495,7 @@ docker compose build postfix-relay
 docker compose up -d postfix-relay
 ```
 
-### Troubleshooting
+### Stargate Troubleshooting
 
 **Mail not being processed by mxengine**:
 
@@ -551,7 +551,7 @@ Each Stargate instance uses its server's real static public IP as the WireGuard 
 └──────────────────────────────────────────┘       └──────────────────────────────────────────┘
 ```
 
-### Configuration
+### WireGuard Configuration
 
 WireGuard settings in `customer-config.sh`:
 
@@ -621,7 +621,7 @@ curl --location 'localhost:8083/v1/connections' \
 }'
 ```
 
-### Verification
+### WireGuard Verification
 
 ```bash
 ## Check IDAgent WireGuard interface
@@ -642,7 +642,7 @@ docker logs stargate-idagent 2>&1 | grep -i "handshake\|peer.*added\|started lis
 docker logs stargate-idagent | grep -i wireguard
 ```
 
-### Troubleshooting
+### Wireguard Troubleshooting
 
 **No WireGuard interface:**
 
@@ -665,7 +665,7 @@ docker logs stargate-idagent | grep -i wireguard
 
 The `policy-sync` service automatically syncs OPA/Rego policies from a Git repository to the PostgreSQL database.
 
-### How It Works
+### How Policy Sync Works
 
 ```plain
 ┌─────────────────────┐      ┌─────────────────────┐      ┌─────────────────────┐
@@ -678,7 +678,7 @@ The `policy-sync` service automatically syncs OPA/Rego policies from a Git repos
 └─────────────────────┘      └─────────────────────┘      └─────────────────────┘
 ```
 
-### Configuration
+### Policy Sync Configuration
 
 Settings in `customer-config.sh`:
 
@@ -700,7 +700,7 @@ POLICY_SYNC_REPO_FOLDER=""
 POLICY_SYNC_INTERVAL="1h"
 ```
 
-### Verification
+### Policy Sync Verification
 
 ```bash
 ## Check policy-sync status
@@ -951,18 +951,54 @@ docker ps --format 'table {{.Names}}\t{{.Status}}'
 docker ps --format '{{.Names}}' | xargs -I {} sh -c 'docker logs --timestamps -f {} 2>&1 | sed "s/^/[{}] /"'
 ```
 
-You can provide logs to our support via [pastebin.hin-infra.ch](pastebin.hin-infra.ch). Use following commands:
+### Provide logs to support
+
+You can provide logs to our support via [pastebin.hin-infra.ch](pastebin.hin-infra.ch), and CLI command:
+
+Upload specific container logs:
+
+=== "All"
+
+    ```shell
+    docker logs <CONTAINER_NAME> 2>&1 | curl https://pastebin.hin-infra.ch/ --data-binary @-
+    ```
+
+=== "For the last hour (`1h`)"
+
+    ```shell
+    docker logs --since 1h <CONTAINER_NAME> 2>&1 | curl https://pastebin.hin-infra.ch/ --data-binary @-
+    ```
 
 === "Last 500 lines of logs"
 
-    ```bash
-    docker ps --format '{{.Names}}' | xargs -I {} sh -c 'docker logs --timestamps - 500 {} 2>&1 | sed "s/^/[{}] /"' | curl https://pastebin.hin-infra.ch --data-binary @-
+    ```shell
+    docker logs –-tail 500 <CONTAINER_NAME> 2>&1 | curl https://pastebin.hin-infra.ch/ --data-binary @-
     ```
 
-=== "Last 5 minutes logs"
+Upload all containers logs:
 
-    ```bash
-    docker ps --format '{{.Names}}' | xargs -I {} sh -c 'docker logs --timestamps --since 5m {} 2>&1 | sed "s/^/[{}] /"' | curl https://pastebin.hin-infra.ch --data-binary @-
+=== "All"
+
+    ```shell
+    docker ps --format '{{.Names}}' | xargs -I {} sh -c 'docker logs --timestamps {} 2>&1 | sed "s/^/[{}] /"' | curl https://pastebin.hin-infra.ch/ --data-binary @-
+    ```
+    !!! tip
+        This operation can hit our upload limits - 20 Mb.
+
+=== "For the last hour (`1h`)"
+
+    ```shell
+    docker ps --format '{{.Names}}' | xargs -I {} sh -c 'docker logs --since 1h --timestamps {} 2>&1 | sed "s/^/[{}] /"' | curl https://pastebin.hin-infra.ch/ --data-binary @-
     ```
 
-You will get an URL that you can provide to support.
+=== "Last 500 lines of logs"
+
+    ```shell
+    docker ps --format '{{.Names}}' | xargs -I {} sh -c 'docker logs --tail 500 --timestamps {} 2>&1 | sed "s/^/[{}] /"' | curl https://pastebin.hin-infra.ch/ --data-binary @-
+    ```
+
+After that, you will receive a unique link in the format `https://pastebin.hin-infra.ch/<20 symbols>` that you can provide to support / ticket.
+
+!!! important
+
+    The expiration time is set to 30 days. If some parts of the logs or the logs themselves need to be saved for a longer period, please make sure you keep a copy of them.
