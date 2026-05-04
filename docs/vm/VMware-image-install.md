@@ -4,7 +4,7 @@ Deploy Stargate on VMware
 
 ## Get the image file
 
-- Download  the latest OVA(or OVF and VMDK if you prefer) image file. Please refer to [VM images list](VM-images-list.md)
+- Download  the latest OVA(or OVF and VMDK if you prefer) image file. Please refer to [VM images list](VM-images-list.md?h=ova)
 
 ## Navigate to the ESXi web UI
 

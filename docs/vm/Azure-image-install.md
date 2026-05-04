@@ -4,7 +4,7 @@ Deploy Stargate on Azure
 
 ## Get the image file
 
-- Download  the latest VHD image file. Please refer to [VM images list](VM-images-list.md)
+- Download  the latest VHD image file. Please refer to [VM images list](VM-images-list.md?h=vhd)
 
 ## Upload the Azure VHD image file
 
