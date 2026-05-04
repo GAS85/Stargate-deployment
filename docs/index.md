@@ -27,7 +27,7 @@
 
 ### Exchange Integration
 
-* [Exchange-integration.md](Exchange-integration.md) - Configure Microsoft Exchange (Online and On-Premises) connectors and transport rules to route mail through Stargate
+* [Exchange integration](Exchange-integration.md) - Configure Microsoft Exchange (Online and On-Premises) connectors and transport rules to route mail through Stargate
 
 ### Prerequisites
 
