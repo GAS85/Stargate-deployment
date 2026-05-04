@@ -10,17 +10,20 @@
 
 ![Logo](https://www.hin.ch/files/png1/hero/stargate_visual.png)
 
+[What is Stargate?](https://www.hin.ch/de/services/hin-mail/hin-gateway.cfm){ .md-button style="position:relative;left:50%;transform:translate(-50%,0%);" }
+
 ## Quick Start
 
 ### Installation options
 
-* [Docker installation](./Docker-deploy.md)
-* [HELM charts](./helm-deploy.md)
+* Container installation:
+    * [Docker installation](./Docker-deploy.md)
+    * [HELM charts](./helm-deploy.md)
 * VM image installation:
-  * [Azure VM image installation](vm/Azure-image-install.md)
-  * [Windows 11 pro (Hyper-V) image installation](vm/Windows11pro-image-install.md)
-  * [VMware image installation](vm/VMware-image-install.md)
-  * [Proxmox image installation](vm/Proxmox-image-install.md)
+    * [Azure VM image installation](vm/Azure-image-install.md)
+    * [Windows 11 pro (Hyper-V) image installation](vm/Windows11pro-image-install.md)
+    * [VMware image installation](vm/VMware-image-install.md)
+    * [Proxmox image installation](vm/Proxmox-image-install.md)
 
 !!! tip "🖨️"
     You can get this documentation printed or saved as pdf, please visit our [Print page view](print_page).
@@ -31,7 +34,7 @@
 
 ### Prerequisites
 
-**Server Requirements:**
+#### Server Requirements
 
 * 4 CPU cores (recommended minimum)
 * 8 GB RAM (recommended minimum)
@@ -40,13 +43,13 @@
 * Ensure there is an internet connection on the machine where you are installing Stargate services
 * Ensure traffic is properly configured to reach Stargate instance
 
-**Supported Linux Distributions:**
+#### Supported Linux Distributions
 
 * RHEL 8, 9 and 10 compatible distributions such as Alma Linux, Rocky Linux, Centos Stream
 * Ubuntu 22 and 24
 * Debian 11, 12 and 13
 
-**Inbound Network Access (firewall must allow):**
+#### Inbound Network Access (firewall must allow)
 
 | Port | Protocol | Purpose |
 |------|----------|---------|
@@ -54,7 +57,7 @@
 | 8084 | TCP | HTTP - seal callback from remote sealer service |
 | 19818 | TCP+UDP | WireGuard - encrypted tunnel for agent-to-agent communication |
 
-**Outbound Network Access (server must reach):**
+#### Outbound Network Access (server must reach)
 
 | Destination | Port | Purpose |
 |-------------|------|---------|
@@ -66,7 +69,11 @@
 | vereign-verifier.vrgnservices.eu | 4433 | Verifier service |
 | Destination mail servers | 25 | Outbound mail delivery (via MX lookup) |
 
-**DNS Access:**
+#### DNS Access
 
 * Server must be able to resolve DNS (MX, SPF, A records)
 * Used for mail routing and SPF-based network allowlisting
+
+## Contact us
+
+[Contact us](https://www.hin.ch/de/kontakt/kontaktformular.cfm){ .md-button style="position:relative;left:50%;transform:translate(-50%,0%);" }
