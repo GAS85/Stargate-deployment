@@ -47,5 +47,5 @@ cd ~/stargate-deployment/docker-compose/
 - Run the install script:
 
 ```shell
-[root@stargate docker-compose]# ./scripts/install.sh
+./scripts/install.sh
 ```
