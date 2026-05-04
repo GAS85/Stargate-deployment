@@ -4,43 +4,11 @@
 
 **Server Requirements:**
 
-* 4 CPU cores (recommended minimum)
-* 8 GB RAM (recommended minimum)
-* 30 GB storage (recommended minimum)
+Please refer to [Recomended Requirements](./index.md#recomended)
+
 * Docker will be installed automatically if missing
 * Ensure there is an internet connection on the machine where you are installing Stargate services
 * Ensure traffic is properly configured to reach Stargate instance
-
-**Supported Linux Distributions:**
-
-* RHEL 8, 9 and 10 compatible distributions such as Alma Linux, Rocky Linux, Centos Stream
-* Ubuntu 22 and 24
-* Debian 11, 12 and 13
-
-**Inbound Network Access (firewall must allow):**
-
-| Port | Protocol | Purpose |
-|------|----------|---------|
-| 25 | TCP | SMTP - receiving mail from external servers |
-| 8084 | TCP | HTTP - seal callback from remote sealer service |
-| 19818 | TCP+UDP | WireGuard - encrypted tunnel for agent-to-agent communication |
-
-**Outbound Network Access (server must reach):**
-
-| Destination | Port | Purpose |
-|-------------|------|---------|
-| registry.vereign.io | 443 | Docker image registry |
-| mxengine-dev.k8s.vereign-cdn.com | 443 | Remote sealer service |
-| smimekeys-ca-dev.k8s.vereign-cdn.com | 443 | S/MIME CA service |
-| loki.infra.vereign-cdn.com | 443 | Log shipping (Promtail → Loki) |
-| vereign-issuer.vrgnservices.eu | 443 | Issuer service |
-| vereign-verifier.vrgnservices.eu | 4433 | Verifier service |
-| Destination mail servers | 25 | Outbound mail delivery (via MX lookup) |
-
-**DNS Access:**
-
-* Server must be able to resolve DNS (MX, SPF, A records)
-* Used for mail routing and SPF-based network allowlisting
 
 ## Step 1: Configure Customer Settings
 
