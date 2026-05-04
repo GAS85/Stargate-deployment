@@ -94,7 +94,7 @@ The template comes with HIN Test peer defaults. These work out of the box for th
 | `WG_PEER_EXTERNAL_ID` | `hintest.ch` | External identifier for routing (typically the peer's domain) |
 
 !!! note
-   `WG_PEER_IP` is the peer's *tunnel address* (used for routing inside WireGuard), while `WG_PEER_PORT` is the HTTP port the peer's IDAgent listens on for API calls over the tunnel.
+    `WG_PEER_IP` is the peer's *tunnel address* (used for routing inside WireGuard), while `WG_PEER_PORT` is the HTTP port the peer's IDAgent listens on for API calls over the tunnel.
 
 **WireGuard local settings (typically left at defaults):**
 
@@ -241,8 +241,8 @@ docker compose restart idagent
 docker compose logs idagent 2>&1 | grep -i "handshake\|peer"
 ```
 
-!!! important
-    **Check your firewall**: Port `19818/TCP` must be open **both inbound and outbound** on the Stargate server.
+!!! tip
+    Check your firewall: Port `19818/TCP` must be open **both directions inbound and outbound** on the Stargate server.
 
 ## Step 6: Post-Onboarding Recommendations
 

@@ -946,4 +946,23 @@ docker logs -f stargate-mxengine
 
 # Check all container statuses
 docker ps --format 'table {{.Names}}\t{{.Status}}'
+
+# Follow all containers logs in real-time
+docker ps --format '{{.Names}}' | xargs -I {} sh -c 'docker logs --timestamps -f {} 2>&1 | sed "s/^/[{}] /"'
 ```
+
+You can provide logs to our support via [pastebin.hin-infra.ch](pastebin.hin-infra.ch). Use following commands:
+
+=== "Last 500 lines of logs"
+
+    ```bash
+    docker ps --format '{{.Names}}' | xargs -I {} sh -c 'docker logs --timestamps - 500 {} 2>&1 | sed "s/^/[{}] /"' | curl https://pastebin.hin-infra.ch --data-binary @-
+    ```
+
+=== "Last 5 minutes logs"
+
+    ```bash
+    docker ps --format '{{.Names}}' | xargs -I {} sh -c 'docker logs --timestamps --since 5m {} 2>&1 | sed "s/^/[{}] /"' | curl https://pastebin.hin-infra.ch --data-binary @-
+    ```
+
+You will get an URL that you can provide to support.
