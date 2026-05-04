@@ -74,6 +74,10 @@ extra:
     - icon: fontawesome/brands/docker
       link: https://hub.docker.com/repository/docker/healthinfonetag/
 
+extra_javascript:
+  - https://unpkg.com/tablesort@5.3.0/dist/tablesort.min.js
+  - javascripts/tablesort.js
+
 # Extensions
 markdown_extensions:
   - abbr
