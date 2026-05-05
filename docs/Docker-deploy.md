@@ -61,7 +61,7 @@ nano customer-config.sh
 | `SERVER_STATIC_IP` | This server's real static public IP. Used to derive WireGuard tunnel address and MXEngine callback URL. | `203.0.113.10` |
 | `CUSTOMER_NAME` | Customer/organization name (used for identification, logging, and as default certificate organization). | `Acme Corp` |
 | `DEPLOYMENT_NAME` | Unique deployment identifier (used in log labels and Promtail hostname). | `stargate-acme` |
-| `MAIL_DOMAINS` | Mail relay domains, comma-separated for multiple. MX and SPF records are looked up from DNS. | `example.com` or `example.com,example.org` |
+| `MAIL_DOMAINS` | Mail relay domains, comma-separated for multiple. Currently a transitional shim consumed by mxengine (see [OP#2531](https://plan.vereign.com/projects/hin/work_packages/2531/activity)); will be replaced by dashboard-managed config. The dashboard (`/postfix` page) is the authoritative source of domains for `postconf` from day one. | `example.com` or `example.com,example.org` |
 
 **Auto-derived settings — leave empty unless you need to override:**
 
@@ -80,20 +80,7 @@ nano customer-config.sh
 | `CERT_COUNTRIES` | Country codes for certificate subject (2-letter ISO) | `US` |
 | `CERT_CA_IDAGENT_DOMAIN` | CA domain for certificate issuance via WireGuard tunnel | `hintest.ch` |
 
-**WireGuard peer settings (pre-filled for HIN Test):**
-
-The template comes with HIN Test peer defaults. These work out of the box for the alpha/beta phase. Override only if connecting to a different peer.
-
-| Setting | Default (HIN Test) | Description |
-|---------|---------------------|-------------|
-| `WG_PEER_NAME` | `hin-test` | Human-readable peer name |
-| `WG_PEER_PUBLIC_KEY` | `ol2zlG40M7+Rn81V9RUFmkIQV2ILLmEJHZww7HfoLxA=` | Remote peer's WireGuard public key |
-| `WG_PEER_ENDPOINT` | `5.102.144.182:19818` | Remote peer's public endpoint (host:port) |
-| `WG_PEER_IP` | `5.102.144.182` | Remote peer's WireGuard tunnel IP |
-| `WG_PEER_PORT` | `9090` | HTTP communication port on the remote peer |
-| `WG_PEER_EXTERNAL_ID` | `hintest.ch` | External identifier for routing (typically the peer's domain) |
-
-> **Note:** `WG_PEER_IP` is the peer's *tunnel address* (used for routing inside WireGuard), while `WG_PEER_PORT` is the HTTP port the peer's IDAgent listens on for API calls over the tunnel.
+> **WireGuard peer setup** is performed at runtime via the dashboard (`/installation` page). Peer details are configured per-deployment after the stack is up — they are not part of `customer-config.sh`.
 
 **WireGuard local settings (typically left at defaults):**
 
@@ -149,86 +136,50 @@ The install script (`install.sh`) performs the following steps:
 5. **Initialize Vault** — The `vault-init` container initializes, unseals, and creates KV-v2 secret mounts. Optionally writes the WireGuard private key to Vault.
 6. **Save Vault keys** to `secrets/vault-keys.json` and update `.env` with the root token. The token is also saved to `customer-config.sh` for persistence across VM recreations.
 7. **Restart application services** to pick up the Vault token.
-8. **Run initial onboarding** (`onboard.sh --initial-setup`):
-   * Generate S/MIME signing key and CSR (saved to `secrets/signing-key.csr`)
-   * Set up WireGuard peer connection in the database
-   * If the WireGuard tunnel to the CA is not yet established, CSR submission may fail — this is expected on first install. Services still run; retry with `./scripts/onboard.sh --regenerate-cert` once the tunnel is up.
-9. **Save WireGuard private key** to `customer-config.sh` — extracted from Vault after IDAgent generates it.
-10. **Set up daily backup** cron job (runs at 2:00 AM).
+8. **Save WireGuard private key** to `customer-config.sh` — extracted from Vault after IDAgent generates it.
+9. **Set up daily backup** cron job (runs at 2:00 AM).
 
-## Step 4: Onboard Domains (Post-Install)
+After install completes, the stack is running but no mail domains, S/MIME certificate, or WireGuard peer are set up yet. Continue with [Step 4: Onboard via the dashboard](#step-4-onboard-via-the-dashboard).
 
-After initial installation, use `onboard.sh` to manage domains, certificates, and WireGuard peers:
+## Step 4: Onboard via the dashboard
 
-```bash
-# Edit customer-config.sh to add/change domains or peer settings
-nano customer-config.sh
+After installation, complete onboarding through the dashboard at `https://<SERVER_STATIC_IP>:3000`. The dashboard walks you through three pages in order:
 
-# Apply changes
-./scripts/onboard.sh
-```
+### `/installation` — WireGuard peer setup
 
-**What `onboard.sh` does:**
+Performs the nonce/HIN handshake to establish a WireGuard peer connection, and saves the resulting WireGuard configuration to the IDAgent service. Replaces the previous `idagent-init` flow that seeded the database from `WG_PEER_*` env vars.
 
-1. Loads and validates settings from `customer-config.sh`
-2. Auto-derives certificate fields (`CERT_DNS_NAMES`, `CERT_ORGANIZATION`, `CERT_COMMON_NAME`) the same way `install.sh` does
-3. Updates `.env` with current domain, certificate, and WireGuard settings
-4. Generates S/MIME key + CSR (skips if already exists, use `--regenerate-cert` to force)
-   * The CSR is submitted to the CA via the WireGuard tunnel (90-second timeout)
-   * If submission fails (tunnel not ready), a warning is printed and the script continues — services remain running
-5. Sets up or updates the WireGuard peer connection in the database (runs `idagent-init`)
-6. Restarts affected services (postfix-relay, mxengine, idagent)
+### `/onboarding` — S/MIME certificate
 
-**Exit codes:**
+Generates the S/MIME signing key and CSR via the smimekeys service and submits the CSR to the CA over the now-established WireGuard tunnel. Replaces the previous `onboard.sh --regenerate-cert` flow.
 
-* `0` — Everything succeeded
-* `1` — Fatal error (missing config, etc.)
-* `2` — Partial success (services running, but certificate issuance failed — retry later)
+### `/postfix` — Mail domains and Postfix configuration
 
-**Adding a new domain:**
+Submits hostname and the list of relay domains to the `postconf` service over its REST API (`POST /v1/config`). The daemon applies the configuration via `postconf -e` and reloads Postfix. Replaces the previous `MAIL_DOMAINS` env-var workflow.
 
-1. Edit `customer-config.sh` — add domain to `MAIL_DOMAINS` (comma-separated):
-
-   ```bash
-   MAIL_DOMAINS="example.com,example.org"
-   ```
-
-2. Run `./scripts/onboard.sh`
-3. The script updates Postfix routing, regenerates certificate SANs (if auto-derived), and restarts services
-
-**Regenerating certificates:**
-
-```bash
-./scripts/onboard.sh --regenerate-cert
-```
+> **Adding or changing domains** later: re-open the `/postfix` page in the dashboard, edit the domain list, and submit. The daemon applies the change at runtime — no script invocation, no `.env` edit, no service restart needed.
 
 ## Step 5: WireGuard Peer Registration
 
-After installation, the S/MIME certificate issuance will fail if your Stargate instance is not yet registered as a WireGuard peer on the HIN CA side. This is the most common issue during initial setup.
+The S/MIME CSR submission on `/onboarding` will fail if your Stargate instance is not yet registered as a WireGuard peer on the HIN CA side. This is the most common issue during initial setup.
 
 **What you need to provide to HIN:**
 
-1. **WireGuard public key** - extract from idagent logs:
+1. **WireGuard public key** — extract from idagent logs:
 
    ```bash
    docker compose logs idagent | grep "public key"
    ```
 
-2. **`DEPLOYMENT_NAME`** - from your `customer-config.sh`
-3. **`SERVER_STATIC_IP`** - the public IP of your Stargate server
-4. **`WG_INTERFACE_PORT`** - only if you changed it from the default `19818`
+2. **`DEPLOYMENT_NAME`** — from your `customer-config.sh`
+3. **`SERVER_STATIC_IP`** — the public IP of your Stargate server
+4. **`WG_INTERFACE_PORT`** — only if you changed it from the default `19818`
 
 Send these values to HIN so they can register your peer on the CA side.
 
 **After HIN confirms your peer is registered:**
 
-Restart the services and regenerate the certificate:
-
-```bash
-./scripts/onboard.sh --regenerate-cert
-```
-
-This restarts services (including idagent), which triggers a new WireGuard handshake. Since the CA now has your keys, the tunnel should establish and the certificate should be issued.
+Re-run the `/onboarding` page in the dashboard to regenerate the CSR and submit it through the now-up tunnel.
 
 **To verify the tunnel before requesting the certificate:**
 
@@ -287,20 +238,9 @@ By default, after the Stargate signs/encrypts an outbound mail it delivers direc
 
 The recommended pattern is to **send the signed mail back through your M365 / Exchange tenant** so that the final hop to the internet is Microsoft's well-reputed infrastructure. The Stargate still signs and policy-checks every message; only the last hop changes. This mirrors the original HIN MGW "Send to MX" connector pattern.
 
-#### Stargate side - per-domain relay
+#### Stargate side — per-domain relay
 
-In `customer-config.sh`, point each domain's outbound back at its M365 inbound endpoint:
-
-```bash
-DOMAIN_RELAY_MAP="example.ch:[example-ch.mail.protection.outlook.com]:25"
-```
-
-Apply:
-
-```bash
-./scripts/onboard.sh
-docker compose up -d postfix-relay
-```
+Configure per-domain relay through the dashboard's `/postfix` page. Each domain can be mapped to its own M365 / Exchange inbound endpoint; the dashboard sends the mapping to `postconf`'s REST API and Postfix is reconfigured at runtime.
 
 After mxengine signs the mail, Postfix will hand it back to your tenant on port 25 with TLS instead of delivering directly to the recipient's MX. See `Exchange-integration.md` for the full per-domain syntax.
 
@@ -386,8 +326,7 @@ docker compose down -v   # The -v flag removes volumes!
 
 | Script | Purpose |
 |--------|--------|
-| `install.sh` | First-time installation (Docker, Vault, then calls `onboard.sh`) |
-| `onboard.sh` | Domain onboarding (S/MIME key, WireGuard peer, mail domains, service restart) |
+| `install.sh` | First-time installation (Docker, Vault). Domain/cert/peer setup happens in the dashboard afterwards. |
 | `start.sh` | Start services and unseal Vault |
 | `stop.sh` | Stop containers (data preserved) |
 | `backup.sh` | Full backup (database, Vault keys, config, certificates) |
@@ -395,7 +334,6 @@ docker compose down -v   # The -v flag removes volumes!
 | `purge.sh` | Delete ALL data (requires confirmation) |
 | `health-check.sh` | Comprehensive health check of all services (exit 0 = healthy, 1 = failures) |
 | `init-vault.sh` | Vault initialization (used by `vault-init` container, not called directly) |
-| `init-idagent.sh` | WireGuard peer connection setup (used by `idagent-init` container, not called directly) |
 | `gather-app-versions.sh` | Collects app versions from `/liveness` endpoints for node-exporter (runs in `version-collector` container) |
 
 ## Configuration Files
@@ -404,6 +342,6 @@ docker compose down -v   # The -v flag removes volumes!
 |------|---------|
 | `customer-config.example` | Template for customer settings (copy to `customer-config.sh`) |
 | `customer-config.sh` | Customer-specific settings (created from template, fill in before install) |
-| `.env` | Generated environment file (created by `install.sh`, updated by `onboard.sh`) |
+| `.env` | Generated environment file (created by `install.sh`) |
 | `secrets/vault-keys.json` | Vault unseal keys and root token (back up securely!) |
 | `secrets/signing-key.csr` | Generated CSR for S/MIME certificate |

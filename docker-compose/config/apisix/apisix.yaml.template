@@ -19,6 +19,11 @@ upstreams:
       "smimekeys-client:8080": 1
     type: roundrobin
 
+  - id: "postconf"
+    nodes:
+      "postconf:8080": 1
+    type: roundrobin
+
 plugin_configs:
   - id: "oidc-bearer"
     plugins:
@@ -64,6 +69,13 @@ routes:
     plugins:
       proxy-rewrite:
         regex_uri: ["^/smimekeys/(.*)", "/$1"]
+
+  - id: "postconf-liveness"
+    uri: "/postfix/liveness"
+    upstream_id: "postconf"
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/postfix/(.*)", "/$1"]
 
   # ==================
   # Internal routes — IP-restricted, no auth
@@ -143,5 +155,13 @@ routes:
     plugins:
       proxy-rewrite:
         regex_uri: ["^/smimekeys/(.*)", "/$1"]
+
+  - id: "postconf-route"
+    uri: "/postfix/*"
+    upstream_id: "postconf"
+    plugin_config_id: "oidc-bearer"
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/postfix/(.*)", "/$1"]
 
 #END
