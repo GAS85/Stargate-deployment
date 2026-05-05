@@ -19,11 +19,6 @@ upstreams:
       "smimekeys-client:8080": 1
     type: roundrobin
 
-  - id: "customers"
-    nodes:
-      "customers:8080": 1
-    type: roundrobin
-
 plugin_configs:
   - id: "oidc-bearer"
     plugins:
@@ -70,13 +65,6 @@ routes:
       proxy-rewrite:
         regex_uri: ["^/smimekeys/(.*)", "/$1"]
 
-  - id: "customers-liveness"
-    uri: "/customers/liveness"
-    upstream_id: "customers"
-    plugins:
-      proxy-rewrite:
-        regex_uri: ["^/customers/(.*)", "/$1"]
-
   # ==================
   # Internal routes — IP-restricted, no auth
   # In Docker Compose all containers share stargate-network, so these are
@@ -121,53 +109,6 @@ routes:
           - "127.0.0.1"
           - "172.16.0.0/12"
 
-  - id: "customers-import"
-    uri: "/customers/v1/customers/import"
-    upstream_id: "customers"
-    priority: 110
-    plugins:
-      proxy-rewrite:
-        regex_uri: ["^/customers/(.*)", "/$1"]
-      ip-restriction:
-        allowlist:
-          - "127.0.0.1"
-          - "172.16.0.0/12"
-
-  - id: "customers-register"
-    uri: "/customers/v1/customers/register"
-    methods:
-      - "POST"
-    upstream_id: "customers"
-    priority: 110
-    plugins:
-      proxy-rewrite:
-        regex_uri: ["^/customers/(.*)", "/$1"]
-      ip-restriction:
-        allowlist:
-          - "127.0.0.1"
-          - "172.16.0.0/12"
-      limit-count:
-        count: 10
-        time_window: 60
-        rejected_code: 429
-        key_type: var
-        key: remote_addr
-
-  - id: "customers-list"
-    uri: "/customers/v1/customers"
-    methods:
-      - "GET"
-      - "PUT"
-    upstream_id: "customers"
-    priority: 100
-    plugins:
-      proxy-rewrite:
-        regex_uri: ["^/customers/(.*)", "/$1"]
-      ip-restriction:
-        allowlist:
-          - "127.0.0.1"
-          - "172.16.0.0/12"
-
   # ==================
   # Authenticated routes — Bearer token required via Keycloak OIDC
   # ==================
@@ -202,13 +143,5 @@ routes:
     plugins:
       proxy-rewrite:
         regex_uri: ["^/smimekeys/(.*)", "/$1"]
-
-  - id: "customers-route"
-    uri: "/customers/*"
-    upstream_id: "customers"
-    plugin_config_id: "oidc-bearer"
-    plugins:
-      proxy-rewrite:
-        regex_uri: ["^/customers/(.*)", "/$1"]
 
 #END

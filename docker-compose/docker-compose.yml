@@ -502,44 +502,6 @@ services:
     networks:
       - stargate-network
 
-  customers:
-    image: registry.vereign.io/svdh/customers:${CUSTOMERS_VERSION:-dev}
-    container_name: stargate-customers
-    depends_on:
-      postgres:
-        condition: service_healthy
-      idagent:
-        condition: service_started
-      smimekeys-client:
-        condition: service_started
-    environment:
-      # HTTP Server
-      HTTP_HOST: ""
-      HTTP_PORT: "8080"
-      HTTP_READ_TIMEOUT: "60s"
-      HTTP_WRITE_TIMEOUT: "10s"
-      HTTP_IDLE_TIMEOUT: "120s"
-
-      # Database
-      DB_URI: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/customers"
-      DB_LOG_QUERIES: "false"
-
-      # Metrics
-      METRICS_ADDR: ":2112"
-
-      # Logging
-      LOG_LEVEL: "info"
-
-      # Service dependencies
-      IDAGENT_ADDR: "http://idagent:8080"
-      SMIMEKEYS_ADDR: "http://smimekeys-client:8080"
-      LOCAL_DOMAINS: "localhost,${MAIL_DOMAINS:-${MAIL_DOMAIN}}"
-    ports:
-      - "8085:8080"
-      - "2117:2112"
-    networks:
-      - stargate-network
-
   apisix:
     image: apache/apisix:3.15.0-debian
     container_name: stargate-apisix
@@ -666,39 +628,26 @@ services:
     networks:
       - stargate-network
 
-  postfix-relay:
-    build:
-      context: ./config/postfix
-      dockerfile: Dockerfile
-    container_name: stargate-postfix-relay
+  postconf:
+    image: registry.vereign.io/svdh/postfix-domain-daemon:${POSTCONF_VERSION:-dev}
+    container_name: stargate-postconf
     restart: unless-stopped
     environment:
-      # Required: Mail domains to relay for, comma-separated (auto-configures from DNS)
-      MAIL_DOMAINS: "${MAIL_DOMAINS:-${MAIL_DOMAIN}}"
-      # Optional: Hostname for Postfix (default: mail.<first domain>)
-      MAIL_HOSTNAME: "${MAIL_HOSTNAME:-}"
+      # Required: smimekeys backend the daemon queries per recipient
+      SMIMEKEYS_ADDR: "http://smimekeys-client:8080"
+      # Required by boky/postfix base — sender domains are managed dynamically
+      # by the daemon at runtime, no static list at boot
+      ALLOW_EMPTY_SENDER_DOMAINS: "true"
       # MXEngine integration (Docker service name and port)
       MXENGINE_HOST: "${MXENGINE_HOST:-mxengine}"
       MXENGINE_PORT: "${MXENGINE_PORT:-1587}"
-      # Optional: Enable IPv6 (default: false, ipv4 only)
-      ENABLE_IPV6: "${POSTFIX_ENABLE_IPV6:-false}"
-      # Optional: DNS timeout in seconds (default: 2)
-      DNS_TIMEOUT: "${DNS_TIMEOUT:-2}"
-      # Optional: Specific DNS server to use
-      DNS_SERVER: "${DNS_SERVER:-}"
-      # Optional: Manual relay host (skip MX lookup for transport map)
-      RELAYHOST: "${RELAYHOST:-}"
-      # Optional: Per-domain relay mapping (overrides MX lookup for listed domains)
-      DOMAIN_RELAY_MAP: "${DOMAIN_RELAY_MAP:-}"
-      # Optional: Manual allowed networks (skip SPF lookup)
-      MYNETWORKS: "${POSTFIX_MYNETWORKS:-}"
-      # Server public IP (used to filter own MX records and prevent mail loops)
-      SERVER_STATIC_IP: "${SERVER_STATIC_IP:-}"
     volumes:
       - postfix_spool:/var/spool/postfix
     ports:
       - "25:25"
       - "10026:10026"
+    depends_on:
+      - smimekeys-client
     networks:
       - stargate-network
 
