@@ -160,7 +160,7 @@ services:
   # ===================
 
   smimekeys-client:
-    image: registry.vereign.io/svdh/smimekeys:${SMIMEKEYS_VERSION:-dev}
+    image: healthinfonetag/stargate-smimekeys:${SMIMEKEYS_VERSION:-dev}
     container_name: stargate-smimekeys-client
     depends_on:
       postgres:
@@ -217,7 +217,7 @@ services:
       - stargate-network
 
   policy:
-    image: registry.vereign.io/svdh/policy:${POLICY_VERSION:-dev}
+    image: healthinfonetag/stargate-policy:${POLICY_VERSION:-dev}
     container_name: stargate-policy
     depends_on:
       postgres:
@@ -253,7 +253,7 @@ services:
       - stargate-network
 
   idagent:
-    image: registry.vereign.io/svdh/idagent:${IDAGENT_VERSION:-dev}
+    image: healthinfonetag/stargate-idagent:${IDAGENT_VERSION:-dev}
     container_name: stargate-idagent
     depends_on:
       postgres:
@@ -323,7 +323,7 @@ services:
       - stargate-network
 
   mxengine:
-    image: registry.vereign.io/svdh/mxengine:${MXENGINE_VERSION:-dev}
+    image: healthinfonetag/stargate-mxengine:${MXENGINE_VERSION:-dev}
     container_name: stargate-mxengine
     depends_on:
       postgres:
@@ -519,7 +519,7 @@ services:
   # Policy sync service - syncs policies from Git repository to database
   # Automatically syncs policies when POLICY_SYNC_REPO_URL is configured
   policy-sync:
-    image: registry.vereign.io/svdh/policy-sync:${POLICY_SYNC_VERSION:-dev}
+    image: healthinfonetag/stargate-policy-sync:${POLICY_SYNC_VERSION:-dev}
     container_name: stargate-policy-sync
     restart: unless-stopped
     depends_on:
