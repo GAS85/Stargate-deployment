@@ -852,7 +852,7 @@ Run the start script which handles unsealing:
 Login to the registry:
 
 ```bash
-docker login registry.vereign.io
+docker login hub.docker.com
 ```
 
 ### Service won't start

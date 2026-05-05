@@ -72,7 +72,7 @@
 
 | Destination | Port | Purpose |
 |-------------|------|---------|
-| registry.vereign.io | 443 | Docker image registry |
+| hub.docker.com | 443 | Docker image registry |
 | mxengine-dev.k8s.vereign-cdn.com | 443 | Remote sealer service |
 | smimekeys-ca-dev.k8s.vereign-cdn.com | 443 | S/MIME CA service |
 | loki.infra.vereign-cdn.com | 443 | Log shipping (Promtail → Loki) |
