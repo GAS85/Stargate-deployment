@@ -3,7 +3,7 @@ services:
   # ===================
   # Infrastructure
   # ===================
-  
+
   postgres:
     image: postgres:18-alpine
     container_name: stargate-postgres
@@ -53,7 +53,11 @@ services:
       - "8200:8200"
     command: server
     healthcheck:
-      test: ["CMD-SHELL", "vault status -address=http://127.0.0.1:8200 || [ $? -eq 2 ]"]
+      test:
+        [
+          "CMD-SHELL",
+          "vault status -address=http://127.0.0.1:8200 || [ $? -eq 2 ]",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -231,11 +235,11 @@ services:
       HTTP_WRITE_TIMEOUT: "10s"
       HTTP_IDLE_TIMEOUT: "60s"
       METRICS_ADDR: ":2112"
-      
+
       # Database
       DB_URI: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/smimekeys_client"
       DB_LOG_QUERIES: "false"
-      
+
       # Vault
       PRIVATE_KEY_STORE: "vault"
       VAULT_ADDRESS: "http://vault:8200"
@@ -244,7 +248,7 @@ services:
       VAULT_KV2_MAX_VERSIONS: "2"
       VAULT_KV2_CAS_REQUIRED: "false"
       VAULT_KV2_DELETE_VERSION_AFTER: "0s"
-      
+
       # CA Configuration (external CA)
       CERT_CA_ROOT: "false"
       CERT_CA_ADDR: "https://smimekeys-ca-dev.k8s.vereign-cdn.com"
@@ -252,19 +256,19 @@ services:
       CERT_CA_PUBLIC_HTTP_ADDR: ""
       CERT_CA_IDAGENT_DOMAIN: "${CERT_CA_IDAGENT_DOMAIN:-}"
       CERT_CRL_REFRESH_PERIOD: "30m"
-      
+
       # IDAgent integration (for peer certificate sync)
       IDAGENT_ADDR: "http://idagent:8080"
-      
+
       # Sync intervals
       PEER_SYNC_INTERVAL: "30m"
       ROOT_SYNC_INTERVAL: "30m"
-      
+
       # LDAP (disabled - uncomment and set LDAP_ADDR to enable)
       # LDAP_ADDR: "ldap://ldap_server:389"
       # LDAP_USERNAME: "cn=admin,dc=seppmailserver,dc=ch"
       # LDAP_BASE_DN: "ou=publicHINKeys,dc=seppmailserver,dc=ch"
-      
+
       LOG_LEVEL: "debug"
     ports:
       - "8081:8080"
@@ -287,20 +291,20 @@ services:
       HTTP_IDLE_TIMEOUT: "120s"
       HTTP_READ_TIMEOUT: "60s"
       HTTP_WRITE_TIMEOUT: "60s"
-      
+
       # Database
       DB_URI: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/policy"
       DB_LOG_QUERIES: "false"
       DB_NOTIFIER_MAX_RETRY_ATTEMPTS: "10"
-      
+
       # Vault
       VAULT_ADDRESS: "http://vault:8200"
       VAULT_TOKEN: "${VAULT_TOKEN}"
       VAULT_MOUNT_PATH: "secret-policy"
-      
+
       # Metrics
       METRICS_ADDR: ":2112"
-      
+
       LOG_LEVEL: "INFO"
     ports:
       - "8082:8080"
@@ -326,10 +330,10 @@ services:
       HTTP_READ_TIMEOUT: "60s"
       HTTP_WRITE_TIMEOUT: "60s"
       METRICS_ADDR: ":2112"
-      
+
       # Database
       DB_URI: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/idagent"
-      
+
       # Vault
       VAULT_ADDRESS: "http://vault:8200"
       VAULT_TOKEN: "${VAULT_TOKEN}"
@@ -337,7 +341,7 @@ services:
       VAULT_KV2_MAX_VERSIONS: "10"
       VAULT_KV2_CAS_REQUIRED: "false"
       VAULT_KV2_DELETE_VERSION_AFTER: "0s"
-      
+
       # S3
       S3_HOSTNAME: "minio:9000"
       S3_ACCESS_KEY: "${MINIO_ROOT_USER:-minioadmin}"
@@ -345,7 +349,7 @@ services:
       S3_SECURE: "false"
       S3_BUCKET_NAME: "${S3_BUCKET_NAME:-stargate-bucket}"
       S3_MESSAGE_BUCKET: "${S3_BUCKET_NAME:-stargate-bucket}"
-      
+
       # External services
       SERVICE_PUBLIC_ADDR: "http://localhost:8083"
       ISSUER_SERVICE_ADDR: "https://vereign-issuer.vrgnservices.eu"
@@ -353,13 +357,13 @@ services:
       WEBHOOK_CALLBACK_ADDR: ""
       MXENGINE_ADDR: "http://mxengine:8080"
       SMIMEKEYS_ADDR: "http://smimekeys-client:8080"
-      
+
       # WireGuard
       WG_LOCAL_IP: "${WG_LOCAL_IP:-10.0.0.1}"
       WG_INTERFACE_PORT: "${WG_INTERFACE_PORT:-19818}"
       WG_TRANSPORT_MODE: "${WG_TRANSPORT_MODE:-tcp}"
       WG_DNS_SERVERS: "8.8.8.8,8.8.4.4,1.1.1.1"
-      
+
       # WireGuard TCP tuning
       WG_TCP_IDLE_TIMEOUT: "300s"
       WG_TCP_IO_TIMEOUT: "30s"
@@ -368,13 +372,13 @@ services:
       WG_TCP_DIAL_TIMEOUT: "30s"
       WG_TCP_RECV_CHANNEL_SIZE: "1024"
       WG_TCP_CHANNEL_SEND_TIMEOUT: "5s"
-      
+
       LOG_LEVEL: "debug"
     ports:
       - "8083:8080"
       - "2114:2112"
-      - "${WG_INTERFACE_PORT:-19818}:${WG_INTERFACE_PORT:-19818}/udp"  # WireGuard tunnel (UDP)
-      - "${WG_INTERFACE_PORT:-19818}:${WG_INTERFACE_PORT:-19818}/tcp"  # WireGuard tunnel (TCP)
+      - "${WG_INTERFACE_PORT:-19818}:${WG_INTERFACE_PORT:-19818}/udp" # WireGuard tunnel (UDP)
+      - "${WG_INTERFACE_PORT:-19818}:${WG_INTERFACE_PORT:-19818}/tcp" # WireGuard tunnel (TCP)
     networks:
       - stargate-network
 
@@ -399,7 +403,7 @@ services:
       INBOUND_HTTP_IDLE_TIMEOUT: "60s"
       INBOUND_HTTP_MAX_SIZE: "20971520"
       INBOUND_HTTP_PUBLIC_ADDRESS: "${MXENGINE_PUBLIC_ADDRESS:-http://localhost:8084}"
-      
+
       # SMTP
       INBOUND_SMTP_PUBLIC_HOSTNAME: "localhost"
       INBOUND_SMTP_HOST: ""
@@ -408,18 +412,18 @@ services:
       INBOUND_SMTP_MAX_SIZE: "20971520"
       INBOUND_SMTP_TLS: "false"
       INBOUND_SMTP_AUTH: "false"
-      
+
       # Database
       DB_URI: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/mxengine"
       DB_LOG_QUERIES: "false"
-      
+
       # S3
       S3_HOSTNAME: "minio:9000"
       S3_ACCESS_KEY: "${MINIO_ROOT_USER:-minioadmin}"
       S3_SECRET_KEY: "${MINIO_ROOT_PASSWORD:-minioadmin}"
       S3_SECURE: "false"
       S3_BUCKET_NAME: "${S3_BUCKET_NAME:-stargate-bucket}"
-      
+
       # Vault
       VAULT_ADDRESS: "http://vault:8200"
       VAULT_TOKEN: "${VAULT_TOKEN}"
@@ -428,11 +432,11 @@ services:
       #Smimekeys
       SMIME_ENABLED: "true"
       SMIMEKEYS_ADDR: "http://smimekeys-client:8080"
-      
+
       # Policy
       POLICY_ADDR: "http://policy:8080"
       POLICY_OUTBOUND: "outbound/delivery"
-      
+
       # Outbound (disabled for local)
       OUTBOUND_WORKERS: "15"
       OUTBOUND_QUEUE_POLL_INTERVAL: "1s"
@@ -453,17 +457,17 @@ services:
       # OUTBOUND_SMTP_USER: "seal@vereign-cdn.com"
       # OUTBOUND_SMTP_PASS: "SecureMessage"
       # OUTBOUND_SMTP_AUTH: "PLAIN"
-      
+
       # Pending message handling
       PENDING_WATCHER_INTERVAL: "20s"
       PENDING_MESSAGE_EXPIRATION: "1m"
-      
+
       # Archive
       ARCHIVE_INTERVAL: "30m"
       ARCHIVE_RETENTION_PERIOD: "87672h"
       ARCHIVE_BATCH_SIZE: "1000"
       WAIT_BEFORE_ARCHIVE: "2160h"
-      
+
       # Metrics
       METRICS_ADDR: ":2112"
     ports:
@@ -489,9 +493,9 @@ services:
       - ./config/apisix/config.yaml:/usr/local/apisix/conf/config.yaml:ro
       - ./config/apisix/generated/apisix.yaml:/usr/local/apisix/conf/apisix.yaml
     ports:
-      - "9080:9080"   # Gateway — main entry point for API traffic
-      - "9180:9180"   # Admin API (read-only in standalone mode)
-      - "9091:9091"   # Prometheus metrics
+      - "9080:9080" # Gateway — main entry point for API traffic
+      - "9180:9180" # Admin API (read-only in standalone mode)
+      - "9091:9091" # Prometheus metrics
     healthcheck:
       test: "bash -c \"{ printf >&3 'GET /v1/healthcheck  HTTP/1.0\r\nHost: localhost\r\n\r\n'; cat <&3; } 3<>/dev/tcp/localhost/9090 | head -1 | grep 200\" "
       interval: 15s
@@ -514,7 +518,7 @@ services:
       BASE_URL: "http://apisix:9080"
       NEXT_PUBLIC_APP_URL: "${DASHBOARD_PUBLIC_URL:-https://localhost:3000}"
       SHOW_DEV_PAGES: "${DASHBOARD_SHOW_DEV_PAGES:-false}"
-      IS_ROOT: "true"
+      IS_ROOT: "false"
 
       # Base URL used by the auth library to construct the OAuth redirect_uri.
       # Must match the URL the browser uses to reach the dashboard.
@@ -566,11 +570,11 @@ services:
       - /:/rootfs:ro
       - textfile_collector:/textfile_collector:ro
     command:
-      - '--path.procfs=/host/proc'
-      - '--path.sysfs=/host/sys'
-      - '--path.rootfs=/rootfs'
-      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
-      - '--collector.textfile.directory=/textfile_collector'
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/rootfs"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+      - "--collector.textfile.directory=/textfile_collector"
     ports:
       - "9100:9100"
     networks:
