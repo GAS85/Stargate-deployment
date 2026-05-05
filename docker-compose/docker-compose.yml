@@ -155,6 +155,37 @@ services:
     networks:
       - stargate-network
 
+  # Watchtower
+  # Will check for a newer images versions on monday at 17:00 and perform update of them
+  watchtower:
+    container_name: watchtower
+    restart: always
+    # Version 1.16.1
+    image: nickfedor/watchtower@sha256:62bec6c1a89e9882970130a311f0ac27faf11f26520b8755ca6a78802a1a6d8f
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - WATCHTOWER_SCHEDULE=0 0 17 * * MON
+      - WATCHTOWER_CLEANUP=false
+      - WATCHTOWER_INCLUDE_STOPPED=false
+      - WATCHTOWER_ROLLING_RESTART=false
+      - WATCHTOWER_USE_COMPOSE_DEPENDS_ON=true
+      - WATCHTOWER_TIMEOUT=90s
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "/watchtower", "--health-check"]
+      interval: 5m
+      timeout: 10s
+      retries: 2
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 200M
+
   # ===================
   # Applications
   # ===================
