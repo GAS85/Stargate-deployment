@@ -598,7 +598,7 @@ The `idagent-init` container:
 3. Get the public IP address for this machine
 4. Get the domain name
 5. The information from step 2, 3 and 4 should be provided to Vereign (<kalin.canov@vereign.com>)
-6. For any **other** connection you would like to establish, through the Wireguard tunnel, you will need to provide to the other party the information from step 2, 3 and 4, and also receive/store their info. To store new peer after you received the info you should run the following curl command
+6. For any **other** connection you would like to establish, through the WireGuard tunnel, you will need to provide to the other party the information from step 2, 3 and 4, and also receive/store their info. To store new peer after you received the info you should run the following curl command
 
 ```bash
 curl --location 'localhost:8083/v1/connections' \
@@ -642,7 +642,7 @@ docker logs stargate-idagent 2>&1 | grep -i "handshake\|peer.*added\|started lis
 docker logs stargate-idagent | grep -i wireguard
 ```
 
-### Wireguard Troubleshooting
+### WireGuard Troubleshooting
 
 **No WireGuard interface:**
 

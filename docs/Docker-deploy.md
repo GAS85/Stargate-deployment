@@ -4,7 +4,7 @@
 
 **Server Requirements:**
 
-Please refer to [Recomended Requirements](./index.md#recomended)
+Please refer to [Recommended Requirements](./index.md#recommended)
 
 * Docker will be installed automatically if missing
 * Ensure there is an internet connection on the machine where you are installing Stargate services

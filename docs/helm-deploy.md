@@ -3,4 +3,4 @@
 !!! Info
     Coming soon
 
-This file contains instructions for helm deploy of HIN MGW instans 
+This file contains instructions for helm deploy of HIN MGW instance.

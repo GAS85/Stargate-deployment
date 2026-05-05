@@ -40,7 +40,7 @@
 * **4 GB** RAM
 * **20 GB** storage
 
-#### Recomended
+#### Recommended
 
 * **4** CPU cores
 * **8 GB** RAM
