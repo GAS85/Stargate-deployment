@@ -32,6 +32,9 @@ DEPLOYMENT_NAME="stargate-example"
 # ==============================================================================
 # REQUIRED: Mail Configuration
 # ==============================================================================
+# MAIL_DOMAINS / MAIL_HOSTNAME are transitional shims read by mxengine.
+# postconf reads its domain config from the dashboard via REST.
+# TODO: remove once https://plan.vereign.com/projects/hin/work_packages/2531/activity is resolved.
 
 # Mail domains for the Postfix relay (comma-separated for multiple domains)
 # MX records for each domain determine where to relay mail

@@ -445,6 +445,9 @@ services:
       OUTBOUND_SMTP_PORT: "${OUTBOUND_SMTP_PORT:-10026}"
       OUTBOUND_SMIME_HOST: ""
       OUTBOUND_SMIME_PORT: ""
+      # TODO: remove the MAIL_DOMAINS shim once mxengine reads its local-domain
+      # list from the dashboard. Tracked in
+      # https://plan.vereign.com/projects/hin/work_packages/2531/activity
       OUTBOUND_SMTP_LOCAL_DOMAINS: "localhost,${MAIL_DOMAINS:-${MAIL_DOMAIN}}"
       OUTBOUND_IDAGENT_ADDR: "http://idagent:8080"
       # OUTBOUND_SMTP_USER: "seal@vereign-cdn.com"

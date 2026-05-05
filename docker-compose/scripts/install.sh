@@ -332,6 +332,7 @@ POSTCONF_VERSION="$POSTCONF_VERSION"
 # Mail Outbound Path
 # MAIL_DOMAINS / MAIL_HOSTNAME are transitional shims read by mxengine.
 # postconf reads its domain config from the dashboard via REST.
+# TODO: remove once https://plan.vereign.com/projects/hin/work_packages/2531/activity is resolved.
 MAIL_DOMAINS="$MAIL_DOMAINS"
 MAIL_HOSTNAME="$MAIL_HOSTNAME"
 SERVER_STATIC_IP="$SERVER_STATIC_IP"
