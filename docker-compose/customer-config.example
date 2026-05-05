@@ -126,24 +126,11 @@ DASHBOARD_VERSION="dev"
 # Sealer MX domain for outbound seal delivery
 OUTBOUND_SEALER_MX_DOMAIN="hintest.ch"
 
-# External SMTP host for outbound delivery (default: postfix-relay)
+# External SMTP host for outbound delivery (default: postconf)
 # Set if the customer uses an external Postfix server
 OUTBOUND_SMTP_HOST=""
 # External SMTP port for outbound delivery (default: 10026)
 OUTBOUND_SMTP_PORT=""
-
-POSTFIX_ENABLE_IPV6="false"
-RELAYHOST=""
-POSTFIX_MYNETWORKS=""
-DNS_SERVER=""
-DNS_TIMEOUT="2"
-
-# Per-domain relay mapping (optional, overrides MX lookup for listed domains)
-# Format: comma-separated domain:[relay_host]:port pairs
-# Domains not listed here fall back to RELAYHOST (if set) or MX lookup.
-# Example with multiple domains routed to different Exchange servers:
-#   DOMAIN_RELAY_MAP="domain1.ch:[exchange1.domain1.ch]:25,domain2.ch:[exchange2.domain2.ch]:25"
-DOMAIN_RELAY_MAP=""
 
 # ==============================================================================
 # OPTIONAL: Policy Sync Configuration
