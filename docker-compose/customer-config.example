@@ -202,39 +202,5 @@ WG_INTERFACE_PORT="19818"
 WG_TRANSPORT_MODE=""
 
 # ==============================================================================
-# REQUIRED: WireGuard Peer Configuration
-# ==============================================================================
-# Configuration for WireGuard tunnel connection to the HIN Test IDAgent.
-# This enables secure agent-to-agent communication for sealed message delivery.
-# All customers connect to the HIN Test environment during this phase.
-
-# Unique connection identifier (auto-generated UUID v7 if left empty)
-WG_PEER_CONNECTION_ID=""
-
-# Human-readable name for this connection
-WG_PEER_NAME="hin-test"
-
-# WireGuard public key of the HIN Test IDAgent
-WG_PEER_PUBLIC_KEY="ol2zlG40M7+Rn81V9RUFmkIQV2ILLmEJHZww7HfoLxA="
-
-# HIN Test IDAgent endpoint
-WG_PEER_ENDPOINT="5.102.144.182:19818"
-
-# WireGuard IP address of the HIN Test IDAgent
-WG_PEER_IP="5.102.144.182"
-
-# Port for tunnel communication with HIN Test IDAgent
-WG_PEER_PORT="9090"
-
-# Allowed IPs for routing (defaults to WG_PEER_IP/32)
-WG_PEER_ALLOWED_IPS="5.102.144.182/32"
-
-# External identifier for HIN Test
-WG_PEER_EXTERNAL_ID="hintest.ch"
-
-# Description of this connection
-WG_PEER_DESCRIPTION="Connection to HIN Test IDAgent"
-
-# ==============================================================================
 # END OF CONFIGURATION
 # ==============================================================================

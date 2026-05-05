@@ -265,10 +265,9 @@ load_customer_config() {
   fi
   CERT_ORGANIZATION="${CERT_ORGANIZATION:-$CUSTOMER_NAME}"
   CERT_COMMON_NAME="${CERT_COMMON_NAME:-$CUSTOMER_NAME Mail Signing}"
-  OUTBOUND_SMTP_HOST="${OUTBOUND_SMTP_HOST:-postfix-relay}"
+  OUTBOUND_SMTP_HOST="${OUTBOUND_SMTP_HOST:-postconf}"
   OUTBOUND_SMTP_PORT="${OUTBOUND_SMTP_PORT:-10026}"
-  POSTFIX_ENABLE_IPV6="${POSTFIX_ENABLE_IPV6:-false}"
-  DNS_TIMEOUT="${DNS_TIMEOUT:-2}"
+  POSTCONF_VERSION="${POSTCONF_VERSION:-latest}"
   
   LOKI_URL="${LOKI_URL:-https://loki.infra.vereign-cdn.com}"
 
@@ -284,24 +283,10 @@ load_customer_config() {
   WG_INTERFACE_PORT="${WG_INTERFACE_PORT:-19818}"
   WG_TRANSPORT_MODE="${WG_TRANSPORT_MODE:-tcp}"
   WG_PRIVATE_KEY="${WG_PRIVATE_KEY:-}"  # Optional - if empty, idagent will generate
-  
-  # WireGuard peer configuration (optional at install time, validated by onboard.sh)
-  WG_PEER_CONNECTION_ID="${WG_PEER_CONNECTION_ID:-$(generate_uuid7)}"
-  WG_PEER_NAME="${WG_PEER_NAME:-hin-test}"
-  WG_PEER_PUBLIC_KEY="${WG_PEER_PUBLIC_KEY:-ol2zlG40M7+Rn81V9RUFmkIQV2ILLmEJHZww7HfoLxA=}"
-  WG_PEER_ENDPOINT="${WG_PEER_ENDPOINT:-5.102.144.182:19818}"
-  WG_PEER_IP="${WG_PEER_IP:-5.102.144.182}"
-  WG_PEER_PORT="${WG_PEER_PORT:-9090}"
-  WG_PEER_ALLOWED_IPS="${WG_PEER_ALLOWED_IPS:-${WG_PEER_IP}/32}"
-  WG_PEER_EXTERNAL_ID="${WG_PEER_EXTERNAL_ID:-hintest.ch}"
-  WG_PEER_DESCRIPTION="${WG_PEER_DESCRIPTION:-Connection to HIN Test IDAgent}"
-  
+
   echo "Customer: $CUSTOMER_NAME"
   echo "Deployment: $DEPLOYMENT_NAME"
   echo "Mail Domains: $MAIL_DOMAINS"
-  if [ -n "$WG_PEER_ENDPOINT" ]; then
-    echo "WireGuard Peer: $WG_PEER_NAME ($WG_PEER_ENDPOINT)"
-  fi
   echo ""
 }
 
@@ -342,8 +327,11 @@ POLICY_VERSION="$POLICY_VERSION"
 IDAGENT_VERSION="$IDAGENT_VERSION"
 MXENGINE_VERSION="$MXENGINE_VERSION"
 DASHBOARD_VERSION="$DASHBOARD_VERSION"
+POSTCONF_VERSION="$POSTCONF_VERSION"
 
-# Postfix Mail Relay
+# Mail Outbound Path
+# MAIL_DOMAINS / MAIL_HOSTNAME are transitional shims read by mxengine.
+# postconf reads its domain config from the dashboard via REST.
 MAIL_DOMAINS="$MAIL_DOMAINS"
 MAIL_HOSTNAME="$MAIL_HOSTNAME"
 SERVER_STATIC_IP="$SERVER_STATIC_IP"
@@ -352,12 +340,6 @@ OUTBOUND_SEALER_MX_DOMAIN="$OUTBOUND_SEALER_MX_DOMAIN"
 CERT_CA_IDAGENT_DOMAIN="$CERT_CA_IDAGENT_DOMAIN"
 OUTBOUND_SMTP_HOST="$OUTBOUND_SMTP_HOST"
 OUTBOUND_SMTP_PORT="$OUTBOUND_SMTP_PORT"
-POSTFIX_ENABLE_IPV6="$POSTFIX_ENABLE_IPV6"
-DNS_TIMEOUT="$DNS_TIMEOUT"
-DNS_SERVER="${DNS_SERVER:-}"
-RELAYHOST="${RELAYHOST:-}"
-# Leave empty for auto-detection (Docker networks + SPF records)
-POSTFIX_MYNETWORKS="${POSTFIX_MYNETWORKS:-}"
 
 # Logging (Promtail -> Loki)
 LOKI_URL="$LOKI_URL"
@@ -390,18 +372,6 @@ WG_TRANSPORT_MODE="$WG_TRANSPORT_MODE"
 
 # WireGuard Private Key (optional - if set, written to Vault for idagent)
 WG_PRIVATE_KEY="${WG_PRIVATE_KEY:-}"
-
-# WireGuard Peer Configuration
-# Connection to remote IDAgent for sealed message delivery
-WG_PEER_CONNECTION_ID="$WG_PEER_CONNECTION_ID"
-WG_PEER_NAME="$WG_PEER_NAME"
-WG_PEER_PUBLIC_KEY="$WG_PEER_PUBLIC_KEY"
-WG_PEER_ENDPOINT="$WG_PEER_ENDPOINT"
-WG_PEER_IP="$WG_PEER_IP"
-WG_PEER_PORT="$WG_PEER_PORT"
-WG_PEER_ALLOWED_IPS="$WG_PEER_ALLOWED_IPS"
-WG_PEER_EXTERNAL_ID="$WG_PEER_EXTERNAL_ID"
-WG_PEER_DESCRIPTION="$WG_PEER_DESCRIPTION"
 EOF
 
   echo "Environment file created: $ENV_FILE"
@@ -634,12 +604,10 @@ if [ -f "$KEYS_FILE" ]; then
   
   # Wait for services to be ready
   sleep 5
-  
-  # Run onboarding (S/MIME key + CSR generation, .env domain updates)
-  echo ""
-  ONBOARD_EXIT=0
-  "$SCRIPT_DIR/onboard.sh" --initial-setup || ONBOARD_EXIT=$?
-  
+
+  # Onboarding (domains, S/MIME CSR, idagent peer config) is now performed
+  # via the dashboard at /installation, /onboarding, and /postfix.
+
   # Setup backup cron job
   setup_backup_cron
   
@@ -662,20 +630,9 @@ sleep 3
 docker compose ps
 
 echo ""
-if [ "${ONBOARD_EXIT:-0}" -eq 0 ]; then
-  echo "============================================"
-  echo "  Installation Complete!"
-  echo "============================================"
-else
-  echo "============================================"
-  echo "  Installation Complete (with warnings)"
-  echo "============================================"
-  echo ""
-  echo "  ⚠ Certificate issuance failed."
-  echo "    The WireGuard tunnel to the CA is not yet established."
-  echo "    Services are running — the certificate can be retried with:"
-  echo "      ./scripts/onboard.sh --regenerate-cert"
-fi
+echo "============================================"
+echo "  Installation Complete!"
+echo "============================================"
 echo ""
 echo "  Customer: $CUSTOMER_NAME"
 echo "  Deployment: $DEPLOYMENT_NAME"
@@ -757,8 +714,7 @@ echo "  DEPLOYMENT_NAME:      $DEPLOYMENT_NAME"
 echo "  SERVER_STATIC_IP:     $SERVER_STATIC_IP"
 echo "  WG_INTERFACE_PORT:    $WG_INTERFACE_PORT"
 echo ""
-echo "  After HIN confirms registration, run:"
-echo "    ./scripts/onboard.sh --regenerate-cert"
+echo "  After HIN confirms registration, regenerate the certificate from the dashboard."
 echo ""
 echo "  Recommended next steps:"
 echo "    - SPF / DKIM / DMARC for your sending domains"
