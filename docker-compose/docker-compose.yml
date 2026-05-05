@@ -125,36 +125,6 @@ services:
 
   # IDAgent connection initialization container
   # Creates WireGuard peer connection in database for tunnel communication
-  idagent-init:
-    image: postgres:18-alpine
-    container_name: stargate-idagent-init
-    depends_on:
-      postgres:
-        condition: service_healthy
-      idagent:
-        condition: service_started
-    environment:
-      POSTGRES_HOST: postgres
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      PGPASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      # WireGuard peer configuration
-      WG_PEER_CONNECTION_ID: ${WG_PEER_CONNECTION_ID:-}
-      WG_PEER_NAME: ${WG_PEER_NAME:-}
-      WG_PEER_PUBLIC_KEY: ${WG_PEER_PUBLIC_KEY:-}
-      WG_PEER_ENDPOINT: ${WG_PEER_ENDPOINT:-}
-      WG_PEER_IP: ${WG_PEER_IP:-}
-      WG_PEER_PORT: ${WG_PEER_PORT:-}
-      WG_PEER_ALLOWED_IPS: ${WG_PEER_ALLOWED_IPS:-}
-      WG_PEER_EXTERNAL_ID: ${WG_PEER_EXTERNAL_ID:-}
-      WG_PEER_DESCRIPTION: ${WG_PEER_DESCRIPTION:-}
-      WG_TRANSPORT_MODE: ${WG_TRANSPORT_MODE:-tcp}
-      WG_PEER_FORCE_UPDATE: ${WG_PEER_FORCE_UPDATE:-false}
-    volumes:
-      - ./scripts:/scripts:ro
-    entrypoint: /bin/sh /scripts/init-idagent.sh
-    networks:
-      - stargate-network
-
   keycloak:
     image: quay.io/keycloak/keycloak:26.5.3
     container_name: stargate-keycloak
