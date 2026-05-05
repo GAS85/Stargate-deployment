@@ -383,7 +383,7 @@ echo "============================================"
 echo ""
 
 echo "Starting PostgreSQL, Vault, MinIO, Postfix..."
-docker compose up -d postgres vault minio postfix-relay
+docker compose up -d postgres vault minio postconf
 
 echo "Waiting for PostgreSQL to be ready..."
 for i in {1..30}; do

@@ -43,7 +43,7 @@ EXPECTED_RUNNING=(
   stargate-policy
   stargate-idagent
   stargate-mxengine
-  stargate-postfix-relay
+  stargate-postconf
   stargate-promtail
   stargate-node-exporter
 )
@@ -197,7 +197,7 @@ echo ""
 # ------------------------------------------------------------------
 echo "--- Postfix ---"
 
-pf_status=$(docker exec stargate-postfix-relay postfix status 2>&1)
+pf_status=$(docker exec stargate-postconf postfix status 2>&1)
 if echo "$pf_status" | grep -q "is running"; then
   pass "Postfix running"
 else
@@ -205,7 +205,7 @@ else
 fi
 
 # Check port 25 is listening (use netstat since ss may not be available)
-port25=$(docker exec stargate-postfix-relay sh -c 'netstat -tlnp 2>/dev/null || ss -tlnp 2>/dev/null' | grep ":25 ")
+port25=$(docker exec stargate-postconf sh -c 'netstat -tlnp 2>/dev/null || ss -tlnp 2>/dev/null' | grep ":25 ")
 if [ -n "$port25" ]; then
   pass "Port 25 listening"
 else
@@ -213,7 +213,7 @@ else
 fi
 
 # Check reinjection port 10026
-port10026=$(docker exec stargate-postfix-relay sh -c 'netstat -tlnp 2>/dev/null || ss -tlnp 2>/dev/null' | grep ":10026 ")
+port10026=$(docker exec stargate-postconf sh -c 'netstat -tlnp 2>/dev/null || ss -tlnp 2>/dev/null' | grep ":10026 ")
 if [ -n "$port10026" ]; then
   pass "Port 10026 (reinjection) listening"
 else
@@ -221,7 +221,7 @@ else
 fi
 
 # Check mail queue
-queue=$(docker exec stargate-postfix-relay mailq 2>/dev/null)
+queue=$(docker exec stargate-postconf mailq 2>/dev/null)
 if echo "$queue" | grep -q "Mail queue is empty"; then
   pass "Mail queue empty"
 else
