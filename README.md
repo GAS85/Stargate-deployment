@@ -37,5 +37,5 @@ The beta phase will be announced separately. During beta, the system will still 
 Build and test docs locally:
 
 ```shell
-docker run --rm -it -p 8000:8000 --entrypoint /bin/sh -v ${PWD}:/docs squidfunk/mkdocs-material -c "pip install mkdocs-glightbox mkdocs-print-site-plugin && mkdocs serve --dev-addr=0.0.0.0:8000"
+docker run --rm -it -p 8000:8000 --entrypoint /bin/sh -v ${PWD}:/docs squidfunk/mkdocs-material -c "pip install mkdocs-glightbox mkdocs-print-site-plugin && mkdocs serve --dev-addr=0.0.0.0:8000 --livereload"
 ```
