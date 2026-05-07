@@ -432,6 +432,7 @@ services:
       #Smimekeys
       SMIME_ENABLED: "true"
       SMIMEKEYS_ADDR: "http://smimekeys-client:8080"
+      SMIME_DOMAIN_CACHE_EXPIRY: "3m"
 
       # Policy
       POLICY_ADDR: "http://policy:8080"
