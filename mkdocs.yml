@@ -44,11 +44,12 @@ theme:
     # - toc.integrate
   palette:
     primary: orange
+  logo: assets/hin_logo_full.png
 
   font:
     text: Roboto
     code: Roboto Mono
-  #favicon: assets/favicon.png
+  favicon: assets/hin_logo.png
   #icon:
   #  logo: logo
 
