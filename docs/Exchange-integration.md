@@ -343,7 +343,7 @@ New-TransportRule -Name "Relay outbound via Stargate" `
 
 ### Automatic Configuration (Default)
 
-By default, the Stargate Postfix container automatically discovers where to deliver processed mail by looking up MX records for each domain in `MAIL_DOMAINS`. It filters out its own hostname and uses the remaining MX entries as delivery targets.
+By default, the Stargate Postfix container automatically discovers where to deliver processed mail by looking up MX records for each domain configured via the dashboard's `/postfix` page. It filters out its own hostname and uses the remaining MX entries as delivery targets.
 
 This works when:
 

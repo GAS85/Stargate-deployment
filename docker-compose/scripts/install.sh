@@ -134,46 +134,6 @@ generate_uuid7() {
 }
 
 # ==============================================================================
-# MAIL_HOSTNAME validation
-# ==============================================================================
-
-# Reject obviously-bad MAIL_HOSTNAME values that produce a non-functional
-# deployment: empty, placeholder example.com, localhost, single-label, or
-# anything that does not look like a DNS FQDN.
-validate_mail_hostname() {
-  local h="$1"
-
-  if [ -z "$h" ]; then
-    echo "ERROR: MAIL_HOSTNAME is empty and could not be auto-derived."
-    echo "  Set MAIL_HOSTNAME explicitly in customer-config.sh, e.g.:"
-    echo "    MAIL_HOSTNAME=\"mail.yourdomain.ch\""
-    exit 1
-  fi
-
-  case "$h" in
-    *.example.com|*.example.org|*.example.net|example.com|example.org|example.net)
-      echo "ERROR: MAIL_HOSTNAME is set to a placeholder value: $h"
-      echo "  This is the template default. Set MAIL_HOSTNAME in customer-config.sh"
-      echo "  to the real public FQDN of this Stargate, e.g.:"
-      echo "    MAIL_HOSTNAME=\"mail.yourdomain.ch\""
-      exit 1
-      ;;
-    localhost|*.localdomain|*.local)
-      echo "ERROR: MAIL_HOSTNAME ($h) is not a public FQDN."
-      echo "  External servers and Exchange Online cannot route mail to this name."
-      echo "  Set MAIL_HOSTNAME in customer-config.sh to a real public FQDN."
-      exit 1
-      ;;
-  esac
-
-  if ! echo "$h" | grep -qE '^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)+$'; then
-    echo "ERROR: MAIL_HOSTNAME ($h) is not a valid FQDN."
-    echo "  Expected something like mail.yourdomain.ch."
-    exit 1
-  fi
-}
-
-# ==============================================================================
 # Customer Configuration Loading
 # ==============================================================================
 
@@ -201,16 +161,7 @@ load_customer_config() {
   
   [ -z "$CUSTOMER_NAME" ] && missing_required+=("CUSTOMER_NAME")
   [ -z "$DEPLOYMENT_NAME" ] && missing_required+=("DEPLOYMENT_NAME")
-  
-  # Multi-domain support: MAIL_DOMAINS takes precedence, fall back to MAIL_DOMAIN
-  if [ -n "$MAIL_DOMAINS" ]; then
-    MAIL_DOMAIN_PRIMARY=$(echo "$MAIL_DOMAINS" | cut -d',' -f1 | tr -d ' ')
-  elif [ -n "$MAIL_DOMAIN" ]; then
-    MAIL_DOMAINS="$MAIL_DOMAIN"
-    MAIL_DOMAIN_PRIMARY="$MAIL_DOMAIN"
-  fi
-  [ -z "$MAIL_DOMAINS" ] && missing_required+=("MAIL_DOMAINS")
-  
+
   if [ ${#missing_required[@]} -gt 0 ]; then
     echo "ERROR: Missing required configuration values:"
     for field in "${missing_required[@]}"; do
@@ -254,17 +205,9 @@ load_customer_config() {
   KEYCLOAK_PUBLIC_URL="${KEYCLOAK_PUBLIC_URL:-https://${SERVER_STATIC_IP}:8180}"
   DASHBOARD_PUBLIC_URL="${DASHBOARD_PUBLIC_URL:-https://${SERVER_STATIC_IP}:3000}"
 
-  MAIL_HOSTNAME="${MAIL_HOSTNAME:-mail.${MAIL_DOMAIN_PRIMARY}}"
-  validate_mail_hostname "$MAIL_HOSTNAME"
   OUTBOUND_SEALER_MX_DOMAIN="${OUTBOUND_SEALER_MX_DOMAIN:-hintest.ch}"
   CERT_CA_IDAGENT_DOMAIN="${CERT_CA_IDAGENT_DOMAIN:-hintest.ch}"
 
-  # Auto-derive certificate fields if not explicitly set
-  if [ -z "$CERT_DNS_NAMES" ]; then
-    CERT_DNS_NAMES="$MAIL_DOMAINS,$MAIL_HOSTNAME"
-  fi
-  CERT_ORGANIZATION="${CERT_ORGANIZATION:-$CUSTOMER_NAME}"
-  CERT_COMMON_NAME="${CERT_COMMON_NAME:-$CUSTOMER_NAME Mail Signing}"
   OUTBOUND_SMTP_HOST="${OUTBOUND_SMTP_HOST:-postconf}"
   OUTBOUND_SMTP_PORT="${OUTBOUND_SMTP_PORT:-10026}"
   POSTCONF_VERSION="${POSTCONF_VERSION:-latest}"
@@ -286,7 +229,6 @@ load_customer_config() {
 
   echo "Customer: $CUSTOMER_NAME"
   echo "Deployment: $DEPLOYMENT_NAME"
-  echo "Mail Domains: $MAIL_DOMAINS"
   echo ""
 }
 
@@ -330,11 +272,6 @@ DASHBOARD_VERSION="$DASHBOARD_VERSION"
 POSTCONF_VERSION="$POSTCONF_VERSION"
 
 # Mail Outbound Path
-# MAIL_DOMAINS / MAIL_HOSTNAME are transitional shims read by mxengine.
-# postconf reads its domain config from the dashboard via REST.
-# TODO: remove once https://plan.vereign.com/projects/hin/work_packages/2531/activity is resolved.
-MAIL_DOMAINS="$MAIL_DOMAINS"
-MAIL_HOSTNAME="$MAIL_HOSTNAME"
 SERVER_STATIC_IP="$SERVER_STATIC_IP"
 MXENGINE_PUBLIC_ADDRESS="$MXENGINE_PUBLIC_ADDRESS"
 OUTBOUND_SEALER_MX_DOMAIN="$OUTBOUND_SEALER_MX_DOMAIN"

@@ -54,7 +54,7 @@ vrgnservices.eu descriptive text "v=spf1 ip4:128.140.117.200 include:spf.protect
     * MX records pointing to your mail servers
     * SPF record defining allowed sending networks
 
-The script will set up the mail domain using the `MAIL_DOMAIN` environment variable. It installs all components, extracts the necessary mail relay settings from DNS, applies them in the configuration and starts them.
+The script installs all components and starts them. Mail domains and the Postfix hostname are then configured at runtime via the dashboard's `/postfix` page (the daemon extracts the necessary mail relay settings from DNS based on those domains).
 
 ## Set up Exchange
 

@@ -166,10 +166,7 @@ IDAGENT_VERSION=v0.0.6-branch
 MXENGINE_VERSION=v0.0.35
 POSTCONF_VERSION=v0.1.0
 
-## Mail Outbound Path (MAIL_DOMAINS / MAIL_HOSTNAME are transitional shims;
-## see https://plan.vereign.com/projects/hin/work_packages/2531/activity)
-MAIL_DOMAINS=example.com
-MAIL_HOSTNAME=mail.example.com
+## Mail Outbound Path
 MXENGINE_PUBLIC_ADDRESS=http://203.0.113.50:8084
 OUTBOUND_SEALER_MX_DOMAIN=hintest.ch
 
@@ -756,7 +753,7 @@ This is the most common issue after initial installation. The S/MIME certificate
 
 2. **Firewall blocking port 19818** - Ensure `19818/TCP` is open both inbound and outbound on the Stargate server.
 
-3. **Wrong hostname** - If `MAIL_HOSTNAME` is still set to the template default (`mail.example.com`), update it via the dashboard's `/postfix` page (or in `customer-config.sh` followed by `install.sh` re-run).
+3. **Wrong hostname** - If the Postfix hostname is still set to the template default (`mail.example.com`), update it via the dashboard's `/postfix` page.
 
 **After the issue is resolved:**
 

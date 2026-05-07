@@ -300,13 +300,6 @@ IDAGENT_VERSION="${IDAGENT_VERSION:-latest}"
 MXENGINE_VERSION="${MXENGINE_VERSION:-latest}"
 POSTCONF_VERSION="${POSTCONF_VERSION:-latest}"
 
-# Multi-domain support: MAIL_DOMAINS takes precedence, fall back to MAIL_DOMAIN
-if [ -z "$MAIL_DOMAINS" ] && [ -n "$MAIL_DOMAIN" ]; then
-  MAIL_DOMAINS="$MAIL_DOMAIN"
-fi
-MAIL_DOMAIN_PRIMARY=$(echo "$MAIL_DOMAINS" | cut -d',' -f1 | tr -d ' ')
-MAIL_HOSTNAME="${MAIL_HOSTNAME:-mail.${MAIL_DOMAIN_PRIMARY}}"
-
 LOKI_URL="${LOKI_URL:-https://loki.infra.vereign-cdn.com}"
 
 # WireGuard local configuration
@@ -348,13 +341,6 @@ IDAGENT_VERSION=$IDAGENT_VERSION
 MXENGINE_VERSION=$MXENGINE_VERSION
 
 POSTCONF_VERSION=$POSTCONF_VERSION
-
-# Mail Outbound Path
-# MAIL_DOMAINS / MAIL_HOSTNAME are transitional shims read by mxengine.
-# postconf reads its domain config from the dashboard via REST.
-# TODO: remove once https://plan.vereign.com/projects/hin/work_packages/2531/activity is resolved.
-MAIL_DOMAINS=$MAIL_DOMAINS
-MAIL_HOSTNAME=$MAIL_HOSTNAME
 
 # Logging
 LOKI_URL=$LOKI_URL

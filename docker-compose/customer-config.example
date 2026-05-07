@@ -30,28 +30,8 @@ CUSTOMER_NAME="Example Company Corp"
 DEPLOYMENT_NAME="stargate-example"
 
 # ==============================================================================
-# REQUIRED: Mail Configuration
+# OPTIONAL: MXEngine public address
 # ==============================================================================
-# MAIL_DOMAINS / MAIL_HOSTNAME are transitional shims read by mxengine.
-# postconf reads its domain config from the dashboard via REST.
-# TODO: remove once https://plan.vereign.com/projects/hin/work_packages/2531/activity is resolved.
-
-# Mail domains for the Postfix relay (comma-separated for multiple domains)
-# MX records for each domain determine where to relay mail
-# SPF records for each domain determine which networks are allowed to send
-MAIL_DOMAINS="example.com"
-
-# Public FQDN of this Stargate as an SMTP relay.
-# Used in the SMTP EHLO greeting, in the TLS certificate subject, and as a SAN
-# on the S/MIME signing certificate. External mail servers and (if you relay
-# back through M365) Exchange Online's inbound connector check this value, so
-# it must be a real, DNS-resolvable FQDN that you control - not a placeholder.
-#
-# If left empty, it auto-derives to mail.<first domain in MAIL_DOMAINS>.
-# Override when:
-#   - the auto-derived value does not actually exist in DNS, or
-#   - your Stargate uses a different public hostname (e.g. stargate01.<domain>).
-MAIL_HOSTNAME=""
 
 # MXEngine public address (for seal strategy callbacks)
 # Auto-derived from SERVER_STATIC_IP if left empty: http://<SERVER_STATIC_IP>:8084
@@ -61,22 +41,6 @@ MXENGINE_PUBLIC_ADDRESS=""
 # ==============================================================================
 # REQUIRED: S/MIME Certificate Configuration
 # ==============================================================================
-
-# DNS names for the certificate (comma-separated)
-# Auto-derived from MAIL_DOMAINS + MAIL_HOSTNAME if left empty.
-# Override only if you need different SANs on the certificate.
-CERT_DNS_NAMES=""
-
-# Organization name for the certificate subject
-# Defaults to CUSTOMER_NAME if left empty.
-CERT_ORGANIZATION=""
-
-# Common Name for the certificate subject
-# Defaults to "<CUSTOMER_NAME> Mail Signing" if left empty.
-CERT_COMMON_NAME=""
-
-# Countries for the certificate subject (comma-separated, 2-letter codes)
-CERT_COUNTRIES="US"
 
 # CA IDAgent domain for certificate issuance via WireGuard tunnel
 CERT_CA_IDAGENT_DOMAIN="hintest.ch"

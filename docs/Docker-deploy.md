@@ -59,25 +59,21 @@ nano customer-config.sh
 | Setting | Description | Example |
 |---------|-------------|---------|
 | `SERVER_STATIC_IP` | This server's real static public IP. Used to derive WireGuard tunnel address and MXEngine callback URL. | `203.0.113.10` |
-| `CUSTOMER_NAME` | Customer/organization name (used for identification, logging, and as default certificate organization). | `Acme Corp` |
+| `CUSTOMER_NAME` | Customer/organization name (used for identification and logging). | `Acme Corp` |
 | `DEPLOYMENT_NAME` | Unique deployment identifier (used in log labels and Promtail hostname). | `stargate-acme` |
-| `MAIL_DOMAINS` | Mail relay domains, comma-separated for multiple. Currently a transitional shim consumed by mxengine (see [OP#2531](https://plan.vereign.com/projects/hin/work_packages/2531/activity)); will be replaced by dashboard-managed config. The dashboard (`/postfix` page) is the authoritative source of domains for `postconf` from day one. | `example.com` or `example.com,example.org` |
+
+Mail domains and the Postfix hostname are configured at runtime via the dashboard's `/postfix` page; they are not part of `customer-config.sh`.
 
 **Auto-derived settings — leave empty unless you need to override:**
 
 | Setting | Derived from | Default |
 |---------|-------------|---------|
 | `MXENGINE_PUBLIC_ADDRESS` | `SERVER_STATIC_IP` | `http://<SERVER_STATIC_IP>:8084` |
-| `CERT_DNS_NAMES` | `MAIL_DOMAINS` + `MAIL_HOSTNAME` | `example.com,mail.example.com` |
-| `CERT_ORGANIZATION` | `CUSTOMER_NAME` | `Acme Corp` |
-| `CERT_COMMON_NAME` | `CUSTOMER_NAME` | `Acme Corp Mail Signing` |
-| `MAIL_HOSTNAME` | First domain in `MAIL_DOMAINS` | `mail.example.com` |
 
 **S/MIME certificate settings:**
 
 | Setting | Description | Default |
 |---------|-------------|---------|
-| `CERT_COUNTRIES` | Country codes for certificate subject (2-letter ISO) | `US` |
 | `CERT_CA_IDAGENT_DOMAIN` | CA domain for certificate issuance via WireGuard tunnel | `hintest.ch` |
 
 > **WireGuard peer setup** is performed at runtime via the dashboard (`/installation` page). Peer details are configured per-deployment after the stack is up — they are not part of `customer-config.sh`.
@@ -130,7 +126,7 @@ chmod +x scripts/*.sh
 The install script (`install.sh`) performs the following steps:
 
 1. **Check dependencies** — Detects Docker, Docker Compose, and `jq`. If missing, installs them automatically (supports Ubuntu/Debian, RHEL/AlmaLinux/Rocky).
-2. **Load and validate** `customer-config.sh` — Checks required fields (`SERVER_STATIC_IP`, `CUSTOMER_NAME`, `DEPLOYMENT_NAME`, `MAIL_DOMAINS`). Auto-derives optional fields (certificate names, MXEngine URL, etc.).
+2. **Load and validate** `customer-config.sh` — Checks required fields (`SERVER_STATIC_IP`, `CUSTOMER_NAME`, `DEPLOYMENT_NAME`). Auto-derives optional fields (MXEngine URL, etc.).
 3. **Generate `.env`** from customer config — Auto-generates passwords if not set.
 4. **Start all services** via Docker Compose (infrastructure + applications).
 5. **Initialize Vault** — The `vault-init` container initializes, unseals, and creates KV-v2 secret mounts. Optionally writes the WireGuard private key to Vault.
@@ -155,7 +151,7 @@ Generates the S/MIME signing key and CSR via the smimekeys service and submits t
 
 ### `/postfix` — Mail domains and Postfix configuration
 
-Submits hostname and the list of relay domains to the `postconf` service over its REST API (`POST /v1/config`). The daemon applies the configuration via `postconf -e` and reloads Postfix. Replaces the previous `MAIL_DOMAINS` env-var workflow.
+Submits hostname and the list of relay domains to the `postconf` service over its REST API (`POST /v1/config`). The daemon applies the configuration via `postconf -e` and reloads Postfix.
 
 > **Adding or changing domains** later: re-open the `/postfix` page in the dashboard, edit the domain list, and submit. The daemon applies the change at runtime — no script invocation, no `.env` edit, no service restart needed.
 
