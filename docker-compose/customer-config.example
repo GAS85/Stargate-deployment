@@ -93,7 +93,7 @@ DASHBOARD_VERSION="dev"
 # Sealer MX domain for outbound seal delivery
 OUTBOUND_SEALER_MX_DOMAIN="hintest.ch"
 
-# External SMTP host for outbound delivery (default: postconf)
+# External SMTP host for outbound delivery (default: postfixconf)
 # Set if the customer uses an external Postfix server
 OUTBOUND_SMTP_HOST=""
 # External SMTP port for outbound delivery (default: 10026)

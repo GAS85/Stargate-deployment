@@ -151,7 +151,7 @@ Generates the S/MIME signing key and CSR via the smimekeys service and submits t
 
 ### `/postfix` — Mail domains and Postfix configuration
 
-Submits hostname and the list of relay domains to the `postconf` service over its REST API (`POST /v1/config`). The daemon applies the configuration via `postconf -e` and reloads Postfix.
+Submits hostname and the list of relay domains to the `postfixconf` service over its REST API (`POST /v1/config`). The daemon applies the configuration via `postconf -e` and reloads Postfix.
 
 > **Adding or changing domains** later: re-open the `/postfix` page in the dashboard, edit the domain list, and submit. The daemon applies the change at runtime — no script invocation, no `.env` edit, no service restart needed.
 
@@ -236,7 +236,7 @@ The recommended pattern is to **send the signed mail back through your M365 / Ex
 
 #### Stargate side — per-domain relay
 
-Configure per-domain relay through the dashboard's `/postfix` page. Each domain can be mapped to its own M365 / Exchange inbound endpoint; the dashboard sends the mapping to `postconf`'s REST API and Postfix is reconfigured at runtime.
+Configure per-domain relay through the dashboard's `/postfix` page. Each domain can be mapped to its own M365 / Exchange inbound endpoint; the dashboard sends the mapping to `postfixconf`'s REST API and Postfix is reconfigured at runtime.
 
 After mxengine signs the mail, Postfix will hand it back to your tenant on port 25 with TLS instead of delivering directly to the recipient's MX. See `Exchange-integration.md` for the full per-domain syntax.
 

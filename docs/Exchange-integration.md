@@ -352,7 +352,7 @@ This works when:
 
 ### Manual Override via the dashboard
 
-If you want all outbound mail from Stargate to go to a single Exchange endpoint (e.g. Exchange Online Protection), set the relay host through the dashboard's `/postfix` page (e.g. `[smtp.office365.com]`). The dashboard sends the value to `postconf`'s REST API and the daemon applies it as a global `relayhost`.
+If you want all outbound mail from Stargate to go to a single Exchange endpoint (e.g. Exchange Online Protection), set the relay host through the dashboard's `/postfix` page (e.g. `[smtp.office365.com]`). The dashboard sends the value to `postfixconf`'s REST API and the daemon applies it as a global `relayhost`.
 
 > **Note**: A single relay host sends all mail through one server and does not support per-domain routing. For multiple domains routing through different Exchange servers, use the per-domain relay map on the same dashboard page (configures `sender_dependent_relayhost_maps` under the hood) — see [Multi-Domain Setup](#multi-domain-setup) below.
 
@@ -376,16 +376,16 @@ After setup, verify the Postfix configuration:
 
 ```bash
 # Check relay configuration
-docker exec stargate-postconf postconf | grep -E 'relayhost|mynetworks|relay_domains|content_filter'
+docker exec stargate-postfixconf postconf | grep -E 'relayhost|mynetworks|relay_domains|content_filter'
 
 # Check transport maps
-docker exec stargate-postconf postconf transport_maps
+docker exec stargate-postfixconf postconf transport_maps
 
 # Check mail queue (should be empty when everything is working)
-docker exec stargate-postconf mailq
+docker exec stargate-postfixconf mailq
 
 # Send a test email and check logs
-docker logs stargate-postconf --tail 50
+docker logs stargate-postfixconf --tail 50
 ```
 
 ---
@@ -408,7 +408,7 @@ docker logs stargate-postconf --tail 50
 
 - Check port 25 is open on the Stargate server's firewall
 - Verify SPF record includes the Stargate IP
-- Check Stargate Postfix logs: `docker logs stargate-postconf`
+- Check Stargate Postfix logs: `docker logs stargate-postfixconf`
 
 ### Exchange Online rejecting mail from Stargate
 

@@ -298,7 +298,7 @@ SMIMEKEYS_VERSION="${SMIMEKEYS_VERSION:-latest}"
 POLICY_VERSION="${POLICY_VERSION:-latest}"
 IDAGENT_VERSION="${IDAGENT_VERSION:-latest}"
 MXENGINE_VERSION="${MXENGINE_VERSION:-latest}"
-POSTCONF_VERSION="${POSTCONF_VERSION:-latest}"
+POSTFIXCONF_VERSION="${POSTFIXCONF_VERSION:-latest}"
 
 LOKI_URL="${LOKI_URL:-https://loki.infra.vereign-cdn.com}"
 
@@ -340,7 +340,7 @@ POLICY_VERSION=$POLICY_VERSION
 IDAGENT_VERSION=$IDAGENT_VERSION
 MXENGINE_VERSION=$MXENGINE_VERSION
 
-POSTCONF_VERSION=$POSTCONF_VERSION
+POSTFIXCONF_VERSION=$POSTFIXCONF_VERSION
 
 # Logging
 LOKI_URL=$LOKI_URL
@@ -373,7 +373,7 @@ echo "============================================"
 echo ""
 
 echo "Starting PostgreSQL, Vault, MinIO, Postfix..."
-docker compose up -d postgres vault minio postconf
+docker compose up -d postgres vault minio postfixconf
 
 echo "Waiting for PostgreSQL to be ready..."
 for i in {1..30}; do

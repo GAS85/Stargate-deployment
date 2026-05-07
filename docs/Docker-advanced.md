@@ -164,7 +164,7 @@ SMIMEKEYS_VERSION=v0.0.5
 POLICY_VERSION=v0.0.5
 IDAGENT_VERSION=v0.0.6-branch
 MXENGINE_VERSION=v0.0.35
-POSTCONF_VERSION=v0.1.0
+POSTFIXCONF_VERSION=v0.1.0
 
 ## Mail Outbound Path
 MXENGINE_PUBLIC_ADDRESS=http://203.0.113.50:8084
@@ -299,9 +299,9 @@ curl -s http://localhost:9080/targets
 
 **Note:** The VM's public IP must be whitelisted in Loki's ingress configuration.
 
-## Postconf (Postfix + domain daemon)
+## Postfixconf (Postfix + domain daemon)
 
-The `postconf` container bundles Postfix and the `postfix-domain-daemon` service in a single container. The daemon owns Postfix configuration at runtime: the dashboard sends domains, hostname, and per-domain relay maps to the daemon's REST API (`POST /v1/config`), which applies them via `postconf -e` and reloads Postfix.
+The `postfixconf` container bundles Postfix and the `postfix-domain-daemon` service in a single container. The daemon owns Postfix configuration at runtime: the dashboard sends domains, hostname, and per-domain relay maps to the daemon's REST API (`POST /v1/config`), which applies them via `postconf -e` and reloads Postfix.
 
 ### Mail Flow Architecture
 
@@ -310,7 +310,7 @@ External Mail Server
          │
          ▼ (port 25)
 ┌─────────────────────────────────────────────────────┐
-│ postconf (stargate-postconf)                        │
+│ postfixconf (stargate-postfixconf)                     │
 │                                                     │
 │  Port 25 (main listener)                            │
 │    │                                                │
@@ -333,13 +333,13 @@ External Mail Server
 │  Sign/encrypt/process mail                          │
 │    │                                                │
 │    ▼                                                │
-│  Deliver back to postconf for relay                 │
+│  Deliver back to postfixconf for relay              │
 │    │                                                │
 └────┼────────────────────────────────────────────────┘
      │
      ▼ (port 10026)
 ┌─────────────────────────────────────────────────────┐
-│ postconf (stargate-postconf)                        │
+│ postfixconf (stargate-postfixconf)                     │
 │                                                     │
 │  Port 10026 (reinjection listener)                  │
 │    │                                                │
@@ -356,7 +356,7 @@ Destination Mail Server (via MX lookup)
 
 ### Configuration
 
-All Postfix configuration that varies per deployment (mail domains, hostname, relay host, per-domain relay maps, allowed networks) is set through the **dashboard's `/postfix` page** at runtime. The dashboard POSTs the configuration to `postconf`'s REST API and the daemon applies it to `main.cf` and reloads Postfix without restarting the container.
+All Postfix configuration that varies per deployment (mail domains, hostname, relay host, per-domain relay maps, allowed networks) is set through the **dashboard's `/postfix` page** at runtime. The dashboard POSTs the configuration to `postfixconf`'s REST API and the daemon applies it to `main.cf` and reloads Postfix without restarting the container.
 
 There is no per-domain config in `customer-config.sh` or `.env` — operators add or change domains through the UI. The only env var the container reads at startup is `SMIMEKEYS_ADDR` (the daemon's smimekeys backend) plus standard infra (`MXENGINE_HOST`, `MXENGINE_PORT`).
 
@@ -392,8 +392,8 @@ For relay-back through M365 / Exchange Online, configure per-domain relay target
 | Port | Purpose |
 |------|---------|
 | 25 | Main SMTP listener (external connections) |
-| 10026 | Reinjection port (mxengine → postconf, internal only) |
-| 1587 | MXEngine SMTP input (postconf → mxengine, internal only) |
+| 10026 | Reinjection port (mxengine → postfixconf, internal only) |
+| 1587 | MXEngine SMTP input (postfixconf → mxengine, internal only) |
 | 8080 | Daemon REST API — `POST /v1/config`, `/liveness`, `/readiness` (internal only) |
 | 10030 | Daemon policy protocol, consulted by Postfix per recipient (internal only) |
 
@@ -403,57 +403,57 @@ For relay-back through M365 / Exchange Online, configure per-domain relay target
 
 ```bash
 ## Check Postfix status
-docker exec stargate-postconf postfix status
+docker exec stargate-postfixconf postfix status
 
 ## View main configuration
-docker exec stargate-postconf postconf | grep -E 'relayhost|mynetworks|relay_domains|content_filter'
+docker exec stargate-postfixconf postconf | grep -E 'relayhost|mynetworks|relay_domains|content_filter'
 
 ## View transport maps
-docker exec stargate-postconf postconf transport_maps
-docker exec stargate-postconf postmap -q '*' hash:/etc/postfix/transport
+docker exec stargate-postfixconf postconf transport_maps
+docker exec stargate-postfixconf postmap -q '*' hash:/etc/postfix/transport
 
 ## Check master.cf (port 10026 listener)
-docker exec stargate-postconf grep -A5 "10026" /etc/postfix/master.cf
+docker exec stargate-postfixconf grep -A5 "10026" /etc/postfix/master.cf
 
 ## Check logs
-docker logs stargate-postconf
+docker logs stargate-postfixconf
 
 ## Test connection to port 25
 telnet localhost 25
 
 ## Test internal port 10026 (from mxengine container)
-docker exec stargate-mxengine nc -zv postconf 10026
+docker exec stargate-mxengine nc -zv postfixconf 10026
 ```
 
-### Updating the postconf image
+### Updating the postfixconf image
 
-The postconf container is pulled from the registry. To update to a new tag:
+The postfixconf container is pulled from the registry. To update to a new tag:
 
 ```bash
-sed -i 's/POSTCONF_VERSION=.*/POSTCONF_VERSION=<new-tag>/' .env
-docker compose pull postconf
-docker compose up -d postconf
+sed -i 's/POSTFIXCONF_VERSION=.*/POSTFIXCONF_VERSION=<new-tag>/' .env
+docker compose pull postfixconf
+docker compose up -d postfixconf
 ```
 
 ### Troubleshooting
 
 **Mail not being processed by mxengine**:
 
-* Check content_filter is set: `docker exec stargate-postconf postconf content_filter`
+* Check content_filter is set: `docker exec stargate-postfixconf postconf content_filter`
 * Should show: `content_filter = smtp:[mxengine]:1587`
-* Verify mxengine is reachable: `docker exec stargate-postconf nc -zv mxengine 1587`
+* Verify mxengine is reachable: `docker exec stargate-postfixconf nc -zv mxengine 1587`
 
 **Mail stuck after mxengine processing**:
 
-* Check mxengine outbound config: OUTBOUND_SMTP_HOST=postconf, OUTBOUND_SMTP_PORT=10026
-* Verify port 10026 listener: `docker exec stargate-postconf ss -tlnp | grep 10026`
+* Check mxengine outbound config: OUTBOUND_SMTP_HOST=postfixconf, OUTBOUND_SMTP_PORT=10026
+* Verify port 10026 listener: `docker exec stargate-postfixconf ss -tlnp | grep 10026`
 * Check mynetworks on port 10026 includes Docker network (172.x.x.x/16)
 
 **Greylisting errors (450 4.7.1)**:
 
 * This is normal! The destination server is temporarily rejecting mail
 * Postfix automatically retries after ~5 minutes
-* Check queue: `docker exec stargate-postconf mailq`
+* Check queue: `docker exec stargate-postfixconf mailq`
 
 **Microsoft blocking IP (S3140)**:
 
