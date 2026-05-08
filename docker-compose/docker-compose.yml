@@ -216,7 +216,7 @@ services:
       - stargate-network
 
   nats:
-    image: nats:2.10
+    image: nats:2.14
     container_name: stargate-nats
     restart: unless-stopped
     command:
@@ -556,6 +556,7 @@ services:
       NODE_ENV: production
       # Allow self-signed TLS cert on the Keycloak nginx proxy
       NODE_TLS_REJECT_UNAUTHORIZED: "0"
+
       ROOT_URL: "https://apisix.k8s.vereign-cdn.com"
       ROOT_DOMAIN: "vereign-cdn.com"
       NATS_URL: "nats://nats:4222"
