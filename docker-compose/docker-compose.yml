@@ -49,8 +49,8 @@ services:
     volumes:
       - vault_data:/vault/data
       - ./config/vault:/vault/config:ro
-    ports:
-      - "8200:8200"
+    # ports:
+    # - "8200:8200"
     command: server
     healthcheck:
       test:
@@ -75,7 +75,7 @@ services:
       - minio_data:/data
     ports:
       - "9000:9000"
-      - "9001:9001"
+      # - "9001:9001"
     command: server /data --console-address ":9001"
     healthcheck:
       test: ["CMD", "mc", "ready", "local"]
@@ -469,7 +469,6 @@ services:
       METRICS_ADDR: ":2112"
     ports:
       - "8084:8080"
-      - "1587:1587"
       - "2116:2112"
     tmpfs:
       - /tmp:size=100M
