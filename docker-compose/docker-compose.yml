@@ -603,7 +603,7 @@ services:
       - stargate-network
 
   postfixconf:
-    image: registry.vereign.io/svdh/postfix-domain-daemon:${POSTFIXCONF_VERSION:-dev}
+    image: registry.vereign.io/svdh/postfixconf:${POSTFIXCONF_VERSION:-dev}
     container_name: stargate-postfixconf
     restart: unless-stopped
     environment:

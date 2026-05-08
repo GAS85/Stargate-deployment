@@ -17,14 +17,14 @@
 #   - WireGuard local IP (unique tunnel address)
 #   - MXEngine public address (seal callbacks)
 # Must be a real routable static IP (not a private/NAT address).
-SERVER_STATIC_IP="YOUR_SERVER_STATIC_IP"
+SERVER_STATIC_IP="49.12.193.236"
 
 # ==============================================================================
 # REQUIRED: Customer Identification
 # ==============================================================================
 
 # Customer/Organization name (used for identification and logging)
-CUSTOMER_NAME="Example Company Corp"
+CUSTOMER_NAME="vereign alpha"
 
 # Deployment name (used for log labels and identification)
 DEPLOYMENT_NAME="stargate-example"
@@ -43,7 +43,7 @@ MXENGINE_PUBLIC_ADDRESS=""
 # ==============================================================================
 
 # CA IDAgent domain for certificate issuance via WireGuard tunnel
-CERT_CA_IDAGENT_DOMAIN="hintest.ch"
+CERT_CA_IDAGENT_DOMAIN="vereign-cdn.com"
 
 # ==============================================================================
 # AUTO-GENERATED: Vault Configuration
@@ -78,12 +78,11 @@ S3_BUCKET_NAME="stargate-bucket"
 # Use "dev" for the latest development builds,
 # or specify exact versions like "v0.0.3"
 
-SMIMEKEYS_VERSION="v0.0.7"
-POLICY_VERSION="v0.0.5"
-IDAGENT_VERSION="v0.0.8"
-MXENGINE_VERSION="v0.0.36"
+SMIMEKEYS_VERSION="dev"
+POLICY_VERSION="dev"
+IDAGENT_VERSION="dev"
+MXENGINE_VERSION="dev"
 POLICY_SYNC_VERSION="dev"
-CUSTOMERS_VERSION="dev"
 DASHBOARD_VERSION="dev"
 
 # ==============================================================================
@@ -91,7 +90,7 @@ DASHBOARD_VERSION="dev"
 # ==============================================================================
 
 # Sealer MX domain for outbound seal delivery
-OUTBOUND_SEALER_MX_DOMAIN="hintest.ch"
+OUTBOUND_SEALER_MX_DOMAIN="vereign-cdn.com"
 
 # External SMTP host for outbound delivery (default: postfixconf)
 # Set if the customer uses an external Postfix server
