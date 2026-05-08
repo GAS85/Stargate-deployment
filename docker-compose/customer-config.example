@@ -84,6 +84,7 @@ IDAGENT_VERSION="dev"
 MXENGINE_VERSION="dev"
 POLICY_SYNC_VERSION="dev"
 DASHBOARD_VERSION="dev"
+POSTFIXCONF_VERSION="dev"
 
 # ==============================================================================
 # OPTIONAL: Advanced Mail Configuration
