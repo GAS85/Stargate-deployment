@@ -334,6 +334,7 @@ services:
   idagent:
     image: registry.vereign.io/svdh/idagent:${IDAGENT_VERSION:-dev}
     container_name: stargate-idagent
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
