@@ -215,6 +215,25 @@ services:
     networks:
       - stargate-network
 
+  nats:
+    image: nats:2.10
+    container_name: stargate-nats
+    restart: unless-stopped
+    command:
+      - "-m"
+      - "8222"
+      - "--config"
+      - "/etc/nats/nats.conf"
+    volumes:
+      - ./config/nats:/etc/nats:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8222/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - stargate-network
+
   # ===================
   # Applications
   # ===================
@@ -357,6 +376,9 @@ services:
       WEBHOOK_CALLBACK_ADDR: ""
       MXENGINE_ADDR: "http://mxengine:8080"
       SMIMEKEYS_ADDR: "http://smimekeys-client:8080"
+
+      # NATS
+      NATS_ADDR: "nats://nats:4222"
 
       # WireGuard
       WG_LOCAL_IP: "${WG_LOCAL_IP:-10.0.0.1}"
@@ -534,6 +556,10 @@ services:
       NODE_ENV: production
       # Allow self-signed TLS cert on the Keycloak nginx proxy
       NODE_TLS_REJECT_UNAUTHORIZED: "0"
+      ROOT_URL: "https://apisix.k8s.vereign-cdn.com"
+      ROOT_DOMAIN: "vereign-cdn.com"
+      NATS_URL: "nats://nats:4222"
+
     networks:
       - stargate-network
 

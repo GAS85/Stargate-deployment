@@ -93,9 +93,11 @@ routes:
       proxy-rewrite:
         regex_uri: ["^/idagent/(.*)", "/$1"]
       ip-restriction:
-        allowlist:
+        whitelist:
           - "127.0.0.1"
           - "172.16.0.0/12"
+          - "172.17.0.0/12"
+          - "172.18.0.0/12"
 
   - id: "idagent-wg-public-key"
     uri: "/idagent/v1/wg/public-key"
@@ -105,9 +107,11 @@ routes:
       proxy-rewrite:
         regex_uri: ["^/idagent/(.*)", "/$1"]
       ip-restriction:
-        allowlist:
+        whitelist:
           - "127.0.0.1"
           - "172.16.0.0/12"
+          - "172.17.0.0/12"
+          - "172.18.0.0/12"
 
   - id: "idagent-message"
     uri: "/idagent/v1/message"
@@ -117,10 +121,11 @@ routes:
       proxy-rewrite:
         regex_uri: ["^/idagent/(.*)", "/$1"]
       ip-restriction:
-        allowlist:
+        whitelist:
           - "127.0.0.1"
           - "172.16.0.0/12"
-
+          - "172.17.0.0/12"
+          - "172.18.0.0/12"
   # ==================
   # Authenticated routes — Bearer token required via Keycloak OIDC
   # ==================
