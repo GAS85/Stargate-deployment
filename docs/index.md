@@ -67,3 +67,4 @@
 
 * Server must be able to resolve DNS (MX, SPF, A records)
 * Used for mail routing and SPF-based network allowlisting
+* See the [DNS Setup Guide](DNS-setup.md) for all required DNS records

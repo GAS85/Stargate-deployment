@@ -8,16 +8,15 @@ In this example we will use a VM with IP address `128.140.117.200` and hostname 
 
 ## Set up DNS records
 
-* "A" record, pointing to the IP address:`A mail 128.140.117.200`  
-* "MX" record with higher priority(lower number) than other existing MX record(s):
+See the [DNS Setup Guide](../DNS-setup.md) for complete instructions on all required records (A, MX, SPF, PTR, DMARC, DKIM).
 
-This record already exists and sets the mail server to Office 365:`MX @ 20 vrgnservices-eu.mail.protection.outlook.com.`
+Quick example for domain `vrgnservices.eu` with Stargate IP `128.140.117.200`:
 
-This is the new record to be added:`MX @ 15 mail.vrgnservices.eu.`.
+* **A record**: `mail.vrgnservices.eu` → `128.140.117.200`
+* **MX record**: `MX @ 15 mail.vrgnservices.eu.` (higher priority than the existing Exchange MX at 20)
+* **SPF record**: `v=spf1 ip4:128.140.117.200 include:spf.protection.outlook.com -all`
 
-Edit the SPF record to add the IP address of the stargate relay server, change from `TXT @ "v=spf1 include:spf.protection.outlook.com -all"` to `TXT @ "v=spf1 ip4:128.140.117.200 include:spf.protection.outlook.com -all"`
-
-Verify the records:
+Verify:
 
 ```shell
 # host mail.vrgnservices.eu

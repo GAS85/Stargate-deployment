@@ -41,6 +41,7 @@
 
 * Server must be able to resolve DNS (MX, SPF, A records)
 * Used for mail routing and SPF-based network allowlisting
+* See the [DNS Setup Guide](DNS-setup.md) for all required DNS records
 
 ## Step 1: Configure Customer Settings
 
@@ -195,38 +196,15 @@ Once the certificate is issued and mail is flowing, two configuration items are 
 
 ### 6.1 SPF / DKIM / DMARC for sender domains
 
-The Stargate sends notification mails (and S/MIME-encrypted mails) from its own public IP on behalf of your users. Recipients (Outlook, Gmail, Proofpoint, etc.) authenticate the sender by checking SPF, DKIM and DMARC against the `From:` domain. If the Stargate IP is not authorized for the sender's domain, recipients will show a yellow "we can't verify this email" banner and may flag the message as suspicious.
+The Stargate sends mail from its own public IP on behalf of your users. Without proper DNS authentication records, recipients will see "we can't verify this sender" warnings and may reject the mail.
 
-For **each domain** you route through the Stargate, publish the following DNS records:
+For complete instructions on configuring SPF, DKIM, DMARC, and PTR records, see the [DNS Setup Guide](DNS-setup.md#recommended-records).
 
-**SPF** - authorize the Stargate IP. If your mailboxes also live in M365, keep the Microsoft `include`:
+At minimum, for each domain you route through the Stargate:
 
-```shell
-example.ch.  TXT  "v=spf1 ip4:<STARGATE_PUBLIC_IP> include:spf.protection.outlook.com -all"
-```
-
-If you do not use M365 / Google Workspace, the minimal record is:
-
-```shell
-example.ch.  TXT  "v=spf1 ip4:<STARGATE_PUBLIC_IP> -all"
-```
-
-**DMARC** - publish at least a monitoring policy. This alone is enough to clear Outlook's "can't verify" banner once SPF passes:
-
-```shell
-_dmarc.example.ch.  TXT  "v=DMARC1; p=none; rua=mailto:postmaster@example.ch"
-```
-
-Once you have confirmed alignment in the reports, you can tighten to `p=quarantine` and eventually `p=reject`.
-
-**DKIM** - if `example.ch` is an accepted domain in your M365 or Google Workspace tenant, enable DKIM signing in the admin centre and publish the two `selector1._domainkey` / `selector2._domainkey` CNAMEs as instructed there. Publishing the CNAMEs is not enough on its own - DKIM signing must be toggled on in the tenant.
-
-**Verifying:** send a test mail to a Gmail or Outlook account, open the message source / "View original", and look for the `Authentication-Results:` header. You want to see `spf=pass`, `dkim=pass` and `dmarc=pass`.
-
-Useful tools:
-
-* SPF / DNS lookup count: <https://mxtoolbox.com/spf.aspx> (the total `include:` chain must stay under 10 lookups)
-* DMARC: <https://mxtoolbox.com/dmarc.aspx>
+- **SPF**: add `ip4:<STARGATE_IP>` to the domain's TXT record
+- **DMARC**: publish `v=DMARC1; p=none` at `_dmarc.<YOUR_DOMAIN>`
+- **PTR**: set reverse DNS for the Stargate IP to match `MAIL_HOSTNAME`
 
 ### 6.2 Relay outbound mail back through your mail platform (recommended for M365 / Exchange Online)
 

@@ -476,6 +476,12 @@ save_wireguard_key_to_config() {
 # Main Installation
 # ============================================
 
+# Allow other scripts to source this file for its functions without
+# executing the installer. Usage: STARGATE_SOURCE_ONLY=1 source install.sh
+if [ "${STARGATE_SOURCE_ONLY:-}" = "1" ]; then
+  return 0 2>/dev/null || exit 0
+fi
+
 # Check dependencies first
 check_dependencies
 
