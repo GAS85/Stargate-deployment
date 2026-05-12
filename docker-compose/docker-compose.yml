@@ -120,6 +120,8 @@ services:
       VAULT_ROOT_TOKEN: ${VAULT_TOKEN:-}
       # WireGuard private key (optional - if set, will be written to Vault for idagent)
       WG_PRIVATE_KEY: ${WG_PRIVATE_KEY:-}
+      # IRISAgent WireGuard private key (optional - if set, will be written to Vault for irisagent)
+      WG_IRIS_PRIVATE_KEY: ${WG_IRIS_PRIVATE_KEY:-}
     volumes:
       - ./scripts:/scripts:ro
       - ./secrets:/secrets
@@ -279,6 +281,10 @@ services:
       # IDAgent integration (for peer certificate sync)
       IDAGENT_ADDR: "http://idagent:8080"
 
+      # IRISAgent integration
+      CERT_CA_IRISAGENT_DOMAIN: "${CERT_CA_IRISAGENT_DOMAIN:-}"
+      IRISAGENT_ADDR: "http://irisagent:8080"
+
       # Sync intervals
       PEER_SYNC_INTERVAL: "30m"
       ROOT_SYNC_INTERVAL: "30m"
@@ -405,6 +411,70 @@ services:
     networks:
       - stargate-network
 
+  irisagent:
+    image: registry.vereign.io/svdh/irisagent:${IRISAGENT_VERSION:-dev}
+    container_name: stargate-irisagent
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      vault-init:
+        condition: service_completed_successfully
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      # HTTP Server
+      HTTP_HOST: ""
+      HTTP_PORT: "8080"
+      HTTP_IDLE_TIMEOUT: "180s"
+      HTTP_READ_TIMEOUT: "60s"
+      HTTP_WRITE_TIMEOUT: "60s"
+      METRICS_ADDR: ":2112"
+
+      # Database
+      DB_URI: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/irisagent"
+
+      # Vault
+      VAULT_ADDRESS: "http://vault:8200"
+      VAULT_TOKEN: "${VAULT_TOKEN}"
+      VAULT_MOUNT_PATH: "secret-irisagent"
+      VAULT_KV2_MAX_VERSIONS: "2"
+      VAULT_KV2_CAS_REQUIRED: "false"
+      VAULT_KV2_DELETE_VERSION_AFTER: "0s"
+
+      # S3
+      S3_HOSTNAME: "minio:9000"
+      S3_ACCESS_KEY: "${MINIO_ROOT_USER:-minioadmin}"
+      S3_SECRET_KEY: "${MINIO_ROOT_PASSWORD:-minioadmin}"
+      S3_SECURE: "false"
+      S3_BUCKET_NAME: "${S3_BUCKET_NAME:-stargate-bucket}"
+      S3_MESSAGE_BUCKET: "${S3_BUCKET_NAME:-stargate-bucket}"
+
+      # External services
+      SERVICE_PUBLIC_ADDR: "http://localhost:8085"
+      ISSUER_SERVICE_ADDR: "https://vereign-issuer.vrgnservices.eu"
+      VERIFIER_SERVICE_ADDR: "https://vereign-verifier.vrgnservices.eu:4433"
+      WEBHOOK_CALLBACK_ADDR: ""
+      MXENGINE_ADDR: "http://mxengine:8080"
+      SMIMEKEYS_ADDR: "http://smimekeys-client:8080"
+
+      # NATS
+      NATS_ADDR: "nats://nats:4222"
+
+      # WireGuard
+      WG_LOCAL_IP: "${WG_IRIS_LOCAL_IP:-10.0.0.1}"
+      WG_INTERFACE_PORT: "${WG_IRIS_INTERFACE_PORT:-19819}"
+      WG_LISTEN_PORT: "9090"
+      WG_TRANSPORT_MODE: "${WG_IRIS_TRANSPORT_MODE:-tcp}"
+
+      LOG_LEVEL: "debug"
+    ports:
+      - "8085:8080"
+      - "2117:2112"
+      - "${WG_IRIS_INTERFACE_PORT:-19819}:${WG_IRIS_INTERFACE_PORT:-19819}/tcp" # WireGuard tunnel (TCP)
+    networks:
+      - stargate-network
+
   mxengine:
     image: registry.vereign.io/svdh/mxengine:${MXENGINE_VERSION:-dev}
     container_name: stargate-mxengine
@@ -474,6 +544,7 @@ services:
       OUTBOUND_SMIME_HOST: ""
       OUTBOUND_SMIME_PORT: ""
       OUTBOUND_IDAGENT_ADDR: "http://idagent:8080"
+      OUTBOUND_IRISAGENT_ADDR: "http://irisagent:8080"
       # OUTBOUND_SMTP_USER: "seal@vereign-cdn.com"
       # OUTBOUND_SMTP_PASS: "SecureMessage"
       # OUTBOUND_SMTP_AUTH: "PLAIN"
