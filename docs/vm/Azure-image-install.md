@@ -55,9 +55,9 @@ Deploy Stargate on Azure
 ## Log in and initialize the stargate instance
 
 - Log in to the VM with the user that you chose during VM creation and the public IP address of the new VM:
-- To obtain the `hinadmin` password, send an email to <aroel.vandenbroele@hin.ch> with the subject: **"Password required for VM installation."**
+- To obtain the `hinadmin` password, send an email to <support@hin.ch> with the subject: **"Password required for VM installation."**
 
-[Click here to send an Email](mailto:aroel.vandenbroele@hin.ch?subject=Password%20required%20for%20VM%20installation.&body=Hello%20dear%20Mr%20Vanden%20Broele,%0A%0AI%20would%20like%20to%20receive%20the%20password%20for%20a%20VM%20installation.){ .md-button style="position:relative;left:50%;transform:translate(-50%,0%);" }
+[Click here to send an Email](mailto:support@hin.ch?subject=Password%20required%20for%20VM%20installation.&body=Hello%20dear%20Support,%0A%0AI%20would%20like%20to%20receive%20the%20password%20for%20a%20VM%20installation.%0A%0APLEASE%20PROVIDE%20YOUR%20CUSTOMER%20INFO%20HERE){ .md-button style="position:relative;left:50%;transform:translate(-50%,0%);" }
 
 ```shell
 ssh hinadmin@11.22.33.44 
@@ -77,3 +77,9 @@ cd ~/stargate-deployment/docker-compose/
 ```shell
 ./scripts/install.sh
 ```
+
+!!! tip "Support"
+
+    For any questions or issues related to the deployment and operation of the Stargate appliance, please contact the Stargate Product Owner, David Grabovac, at david.grabovac@hin.ch.
+
+    Please include relevant information such as the customer name, appliance version, and screenshots/[logs](../Docker-advanced.md#provide-logs-to-support) where applicable, to help us process your request efficiently."
