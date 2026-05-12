@@ -451,10 +451,6 @@ services:
       S3_MESSAGE_BUCKET: "${S3_BUCKET_NAME:-stargate-bucket}"
 
       # External services
-      SERVICE_PUBLIC_ADDR: "http://localhost:8085"
-      ISSUER_SERVICE_ADDR: "https://vereign-issuer.vrgnservices.eu"
-      VERIFIER_SERVICE_ADDR: "https://vereign-verifier.vrgnservices.eu:4433"
-      WEBHOOK_CALLBACK_ADDR: ""
       MXENGINE_ADDR: "http://mxengine:8080"
       SMIMEKEYS_ADDR: "http://smimekeys-client:8080"
 
