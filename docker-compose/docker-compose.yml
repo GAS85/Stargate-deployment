@@ -547,7 +547,7 @@ services:
 
       # Keycloak OIDC
       KEYCLOAK_URL: "${KEYCLOAK_PUBLIC_URL:-https://localhost:8180}"
-      KEYCLOAK_REALM: master
+      KEYCLOAK_REALM: stargate
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_DASHBOARD_CLIENT_ID:-dashboard}
       KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_DASHBOARD_CLIENT_SECRET:-changeme}
 

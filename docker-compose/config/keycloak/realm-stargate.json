@@ -1,6 +1,6 @@
 {
   "id": "stargate",
-  "realm": "master",
+  "realm": "stargate",
   "displayName": "Stargate",
   "enabled": true,
   "sslRequired": "none",
@@ -68,6 +68,23 @@
       },
       "redirectUris": ["${DASHBOARD_PUBLIC_URL}/*"],
       "webOrigins": ["${DASHBOARD_PUBLIC_URL}"]
+    }
+  ],
+  "users": [
+    {
+      "username": "sg-admin",
+      "enabled": true,
+      "email": "sg.admin@hin.ch",
+      "emailVerified": true,
+      "requiredActions": ["UPDATE_PASSWORD"],
+      "realmRoles": ["app-admin"],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "QuickL0gin!",
+          "temporary": true
+        }
+      ]
     }
   ]
 }
