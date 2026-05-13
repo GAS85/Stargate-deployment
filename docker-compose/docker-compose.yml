@@ -635,6 +635,7 @@ services:
       # MXEngine integration (Docker service name and port)
       MXENGINE_HOST: "${MXENGINE_HOST:-mxengine}"
       MXENGINE_PORT: "${MXENGINE_PORT:-1587}"
+      DASHBOARD_CONFIG_URL: "http://dashboard:3000/api/internal/installation-config?service=postfix"
     volumes:
       - postfix_spool:/var/spool/postfix
     ports:
