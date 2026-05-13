@@ -54,7 +54,7 @@ install_docker() {
 		    $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
 		    sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 	  sudo $PKGMGR update -y
-  else 	
+  else
 	  sudo $PKGMGR update -y
 	  sudo $PKGMGR remove -y docker docker-client docker-client-latest docker-common docker-latest docker-latest-logrotate docker-logrotate docker-engine podman runc
 	  sudo rpm --import https://download.docker.com/linux/rhel/gpg
@@ -71,19 +71,19 @@ install_docker() {
 
 check_dependencies() {
   local missing=()
-  
+
   if ! command -v docker &> /dev/null; then
     missing+=("docker")
   fi
-  
+
   if ! docker compose version &> /dev/null 2>&1; then
     missing+=("docker-compose-plugin")
   fi
-  
+
   if ! command -v jq &> /dev/null; then
     missing+=("jq")
   fi
-  
+
   if [ ${#missing[@]} -gt 0 ]; then
     echo "Missing dependencies: ${missing[*]}"
     echo ""
@@ -142,7 +142,7 @@ load_customer_config() {
   echo "  Loading Customer Configuration"
   echo "============================================"
   echo ""
-  
+
   if [ ! -f "$CONFIG_FILE" ]; then
     echo "ERROR: Customer configuration file not found!"
     echo ""
@@ -152,13 +152,13 @@ load_customer_config() {
     echo "Then run this script again."
     exit 1
   fi
-  
+
   # Source the config file
   source "$CONFIG_FILE"
-  
+
   # Validate required fields
   local missing_required=()
-  
+
   [ -z "$CUSTOMER_NAME" ] && missing_required+=("CUSTOMER_NAME")
   [ -z "$DEPLOYMENT_NAME" ] && missing_required+=("DEPLOYMENT_NAME")
 
@@ -172,20 +172,20 @@ load_customer_config() {
     echo "  $CONFIG_FILE"
     exit 1
   fi
-  
+
   # Set defaults for optional fields
   POSTGRES_USER="${POSTGRES_USER:-postgres}"
   POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-$(generate_password)}"
   MINIO_ROOT_USER="${MINIO_ROOT_USER:-minioadmin}"
   MINIO_ROOT_PASSWORD="${MINIO_ROOT_PASSWORD:-$(generate_password)}"
   S3_BUCKET_NAME="${S3_BUCKET_NAME:-stargate-bucket}"
-  
+
   SMIMEKEYS_VERSION="${SMIMEKEYS_VERSION:-latest}"
   POLICY_VERSION="${POLICY_VERSION:-latest}"
   IDAGENT_VERSION="${IDAGENT_VERSION:-latest}"
   MXENGINE_VERSION="${MXENGINE_VERSION:-latest}"
   DASHBOARD_VERSION="${DASHBOARD_VERSION:-latest}"
-  
+
   # Derive WG_LOCAL_IP and MXENGINE_PUBLIC_ADDRESS from SERVER_STATIC_IP
   SERVER_STATIC_IP="${SERVER_STATIC_IP:-}"
   if [ -z "$SERVER_STATIC_IP" ] && [ -n "$WG_LOCAL_IP" ] && [ "$WG_LOCAL_IP" != "10.0.0.1" ]; then
@@ -211,7 +211,7 @@ load_customer_config() {
   OUTBOUND_SMTP_HOST="${OUTBOUND_SMTP_HOST:-postfixconf}"
   OUTBOUND_SMTP_PORT="${OUTBOUND_SMTP_PORT:-10026}"
   POSTFIXCONF_VERSION="${POSTFIXCONF_VERSION:-latest}"
-  
+
   LOKI_URL="${LOKI_URL:-https://loki.infra.vereign-cdn.com}"
 
   # Keycloak / APISIX / Dashboard
@@ -241,7 +241,7 @@ generate_env_file() {
   echo "  Generating Environment File"
   echo "============================================"
   echo ""
-  
+
   cat > "$ENV_FILE" << EOF
 # ==============================================================================
 # Stargate Environment Configuration
@@ -266,7 +266,7 @@ S3_BUCKET_NAME="$S3_BUCKET_NAME"
 # Application Versions
 SMIMEKEYS_VERSION="$SMIMEKEYS_VERSION"
 POLICY_VERSION="$POLICY_VERSION"
-IDAGENT_VERSION="$IDAGENT_VERSION"
+IRISAGENT_VERSION="$IDAGENT_VERSION"
 MXENGINE_VERSION="$MXENGINE_VERSION"
 DASHBOARD_VERSION="$DASHBOARD_VERSION"
 POSTFIXCONF_VERSION="$POSTFIXCONF_VERSION"
@@ -275,7 +275,7 @@ POSTFIXCONF_VERSION="$POSTFIXCONF_VERSION"
 SERVER_STATIC_IP="$SERVER_STATIC_IP"
 MXENGINE_PUBLIC_ADDRESS="$MXENGINE_PUBLIC_ADDRESS"
 OUTBOUND_SEALER_MX_DOMAIN="$OUTBOUND_SEALER_MX_DOMAIN"
-CERT_CA_IDAGENT_DOMAIN="$CERT_CA_IDAGENT_DOMAIN"
+CERT_CA_IRISAGENT_DOMAIN="$CERT_CA_IRISAGENT_DOMAIN"
 OUTBOUND_SMTP_HOST="$OUTBOUND_SMTP_HOST"
 OUTBOUND_SMTP_PORT="$OUTBOUND_SMTP_PORT"
 
@@ -377,10 +377,10 @@ generate_keycloak_realm() {
 setup_backup_cron() {
   echo ""
   echo "Setting up daily backup cron job..."
-  
+
   BACKUP_SCRIPT="$SCRIPT_DIR/backup.sh"
   CRON_JOB="0 2 * * * $BACKUP_SCRIPT >> $PROJECT_DIR/backups/cron.log 2>&1"
-  
+
   # Check if cron job already exists
   if crontab -l 2>/dev/null | grep -q "$BACKUP_SCRIPT"; then
     echo "Backup cron job already exists."
@@ -389,7 +389,7 @@ setup_backup_cron() {
     (crontab -l 2>/dev/null; echo "$CRON_JOB") | crontab -
     echo "Daily backup scheduled at 2:00 AM"
   fi
-  
+
   # Create backups directory
   mkdir -p "$PROJECT_DIR/backups"
 }
@@ -397,13 +397,13 @@ setup_backup_cron() {
 # Function to save Vault token to customer-config.sh for persistence
 save_vault_token_to_config() {
   local token="$1"
-  
+
   echo ""
   echo "============================================"
   echo "  Saving Vault Token to Config"
   echo "============================================"
   echo ""
-  
+
   # Check if VAULT_TOKEN is empty or missing in customer-config.sh
   if grep -q '^VAULT_TOKEN=""' "$CONFIG_FILE" || grep -q '^VAULT_TOKEN=$' "$CONFIG_FILE" || ! grep -q '^VAULT_TOKEN=' "$CONFIG_FILE"; then
     # Update or add the token
@@ -432,25 +432,25 @@ save_wireguard_key_to_config() {
   echo "  Saving WireGuard Key to Config"
   echo "============================================"
   echo ""
-  
+
   # Wait for idagent to generate the key (it needs a moment after start)
   echo "Waiting for IDAgent to initialize WireGuard key..."
   sleep 5
-  
+
   # Extract the WireGuard private key from Vault
   WG_KEY=$(docker exec -e VAULT_TOKEN="$ROOT_TOKEN" stargate-vault \
     vault kv get -address=http://127.0.0.1:8200 -field=wg_private_key secret-idagent/wg_private_key 2>/dev/null || echo "")
-  
+
   if [ -z "$WG_KEY" ]; then
     echo "WARNING: Could not extract WireGuard key from Vault."
     echo "IDAgent may not have started yet. You can extract it later with:"
     echo "  docker exec stargate-vault vault kv get -address=http://127.0.0.1:8200 secret-idagent/wg_private_key"
     return 1
   fi
-  
+
   # Get the public key from idagent logs
   WG_PUBKEY=$(docker logs stargate-idagent 2>&1 | grep "wireguard public key:" | head -1 | sed 's/.*wireguard public key: //' | tr -d '[:space:]')
-  
+
   # Check if WG_PRIVATE_KEY is already set in customer-config.sh
   if grep -q '^WG_PRIVATE_KEY=""' "$CONFIG_FILE" || grep -q "^WG_PRIVATE_KEY=\$" "$CONFIG_FILE" || ! grep -q '^WG_PRIVATE_KEY=' "$CONFIG_FILE"; then
     # Update or add the key
@@ -526,7 +526,7 @@ kill $LOG_PID 2>/dev/null || true
 if [ -f "$KEYS_FILE" ]; then
   ROOT_TOKEN=$(jq -r '.root_token' "$KEYS_FILE")
   update_env_token "$ROOT_TOKEN"
-  
+
   echo ""
   echo "============================================"
   echo "  Vault initialized successfully!"
@@ -537,15 +537,15 @@ if [ -f "$KEYS_FILE" ]; then
   echo "Keys saved to: $KEYS_FILE"
   echo "IMPORTANT: Back up this file securely!"
   echo ""
-  
+
   # Save Vault token to customer-config.sh for persistence across VM recreations
   save_vault_token_to_config "$ROOT_TOKEN"
-  
+
   # Restart application services to pick up the new VAULT_TOKEN
   echo "Restarting application services with Vault token..."
   docker compose up -d --force-recreate smimekeys-client policy idagent mxengine
   echo "Application services restarted."
-  
+
   # Wait for services to be ready
   sleep 5
 
@@ -554,7 +554,7 @@ if [ -f "$KEYS_FILE" ]; then
 
   # Setup backup cron job
   setup_backup_cron
-  
+
   # Save WireGuard key to customer-config.sh for persistence
   save_wireguard_key_to_config
 
