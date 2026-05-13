@@ -383,7 +383,7 @@ services:
 
       # WireGuard
       WG_LOCAL_IP: "${WG_IRIS_LOCAL_IP:-10.0.0.1}"
-      WG_INTERFACE_PORT: "${WG_IRIS_INTERFACE_PORT:-19819}"
+      WG_INTERFACE_PORT: "${WG_IRIS_INTERFACE_PORT:-19818}"
       WG_TRANSPORT_MODE: "${WG_IRIS_TRANSPORT_MODE:-tcp}"
 
       # Dashboard config fetch
@@ -393,7 +393,7 @@ services:
     ports:
       - "8085:8080"
       - "2117:2112"
-      - "${WG_IRIS_INTERFACE_PORT:-19819}:${WG_IRIS_INTERFACE_PORT:-19819}/tcp" # WireGuard tunnel (TCP)
+      - "${WG_IRIS_INTERFACE_PORT:-19818}:${WG_IRIS_INTERFACE_PORT:-19818}/tcp" # WireGuard tunnel (TCP)
     networks:
       - stargate-network
 
