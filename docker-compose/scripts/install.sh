@@ -541,9 +541,14 @@ if [ -f "$KEYS_FILE" ]; then
   # Save Vault token to customer-config.sh for persistence across VM recreations
   save_vault_token_to_config "$ROOT_TOKEN"
 
-  # Restart application services to pick up the new VAULT_TOKEN
+  # Restart application services to pick up the new VAULT_TOKEN.
+  # No service list and no --force-recreate: docker compose's default
+  # RecreateDiverged policy re-creates only containers whose effective config
+  # has changed (i.e. those whose ${VAULT_TOKEN} interpolation result differs
+  # from what was baked in at the initial `docker compose up`), leaving the
+  # stateful infra services (postgres, vault, minio) untouched.
   echo "Restarting application services with Vault token..."
-  docker compose up -d --force-recreate smimekeys-client policy idagent mxengine
+  docker compose up -d
   echo "Application services restarted."
 
   # Wait for services to be ready
