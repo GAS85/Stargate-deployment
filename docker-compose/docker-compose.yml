@@ -275,14 +275,10 @@ services:
       CERT_CA_ADDR: "https://smimekeys-ca-dev.k8s.vereign-cdn.com"
       CERT_CA_EXPIRY: "8760h"
       CERT_CA_PUBLIC_HTTP_ADDR: ""
-      CERT_CA_IDAGENT_DOMAIN: "${CERT_CA_IDAGENT_DOMAIN:-}"
+      CERT_CA_IRISAGENT_DOMAIN: "${CERT_CA_IRISAGENT_DOMAIN:-}"
       CERT_CRL_REFRESH_PERIOD: "30m"
 
-      # IDAgent integration (for peer certificate sync)
-      IDAGENT_ADDR: "http://idagent:8080"
-
       # IRISAgent integration
-      CERT_CA_IRISAGENT_DOMAIN: "${CERT_CA_IRISAGENT_DOMAIN:-}"
       IRISAGENT_ADDR: "http://irisagent:8080"
 
       # Sync intervals
@@ -334,80 +330,6 @@ services:
     ports:
       - "8082:8080"
       - "2115:2112"
-    networks:
-      - stargate-network
-
-  idagent:
-    image: registry.vereign.io/svdh/idagent:${IDAGENT_VERSION:-dev}
-    container_name: stargate-idagent
-    restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
-      vault-init:
-        condition: service_completed_successfully
-      minio-init:
-        condition: service_completed_successfully
-    environment:
-      # HTTP Server
-      HTTP_HOST: ""
-      HTTP_PORT: "8080"
-      HTTP_IDLE_TIMEOUT: "180s"
-      HTTP_READ_TIMEOUT: "60s"
-      HTTP_WRITE_TIMEOUT: "60s"
-      METRICS_ADDR: ":2112"
-
-      # Database
-      DB_URI: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/idagent"
-
-      # Vault
-      VAULT_ADDRESS: "http://vault:8200"
-      VAULT_TOKEN: "${VAULT_TOKEN}"
-      VAULT_MOUNT_PATH: "secret-idagent"
-      VAULT_KV2_MAX_VERSIONS: "10"
-      VAULT_KV2_CAS_REQUIRED: "false"
-      VAULT_KV2_DELETE_VERSION_AFTER: "0s"
-
-      # S3
-      S3_HOSTNAME: "minio:9000"
-      S3_ACCESS_KEY: "${MINIO_ROOT_USER:-minioadmin}"
-      S3_SECRET_KEY: "${MINIO_ROOT_PASSWORD:-minioadmin}"
-      S3_SECURE: "false"
-      S3_BUCKET_NAME: "${S3_BUCKET_NAME:-stargate-bucket}"
-      S3_MESSAGE_BUCKET: "${S3_BUCKET_NAME:-stargate-bucket}"
-
-      # External services
-      SERVICE_PUBLIC_ADDR: "http://localhost:8083"
-      ISSUER_SERVICE_ADDR: "https://vereign-issuer.vrgnservices.eu"
-      VERIFIER_SERVICE_ADDR: "https://vereign-verifier.vrgnservices.eu:4433"
-      WEBHOOK_CALLBACK_ADDR: ""
-      MXENGINE_ADDR: "http://mxengine:8080"
-      SMIMEKEYS_ADDR: "http://smimekeys-client:8080"
-
-      # NATS
-      NATS_ADDR: "nats://nats:4222"
-
-      # WireGuard
-      WG_LOCAL_IP: "${WG_LOCAL_IP:-10.0.0.1}"
-      WG_INTERFACE_PORT: "${WG_INTERFACE_PORT:-19818}"
-      WG_TRANSPORT_MODE: "${WG_TRANSPORT_MODE:-tcp}"
-      WG_DNS_SERVERS: "8.8.8.8,8.8.4.4,1.1.1.1"
-
-      # WireGuard TCP tuning
-      WG_TCP_IDLE_TIMEOUT: "300s"
-      WG_TCP_IO_TIMEOUT: "30s"
-      WG_TCP_POLLING_TIMEOUT: "5s"
-      WG_TCP_KEEPALIVE_PERIOD: "30s"
-      WG_TCP_DIAL_TIMEOUT: "30s"
-      WG_TCP_RECV_CHANNEL_SIZE: "1024"
-      WG_TCP_CHANNEL_SEND_TIMEOUT: "5s"
-
-      LOG_LEVEL: "debug"
-    ports:
-      - "8083:8080"
-      - "2114:2112"
-      - "${WG_INTERFACE_PORT:-19818}:${WG_INTERFACE_PORT:-19818}/udp" # WireGuard tunnel (UDP)
-      - "${WG_INTERFACE_PORT:-19818}:${WG_INTERFACE_PORT:-19818}/tcp" # WireGuard tunnel (TCP)
     networks:
       - stargate-network
 
@@ -539,7 +461,6 @@ services:
       OUTBOUND_SMTP_PORT: "${OUTBOUND_SMTP_PORT:-10026}"
       OUTBOUND_SMIME_HOST: ""
       OUTBOUND_SMIME_PORT: ""
-      OUTBOUND_IDAGENT_ADDR: "http://idagent:8080"
       OUTBOUND_IRISAGENT_ADDR: "http://irisagent:8080"
       # OUTBOUND_SMTP_USER: "seal@vereign-cdn.com"
       # OUTBOUND_SMTP_PASS: "SecureMessage"
@@ -680,7 +601,7 @@ services:
     depends_on:
       - smimekeys-client
       - policy
-      - idagent
+      - irisagent
       - mxengine
     volumes:
       - ./scripts/gather-app-versions.sh:/scripts/gather-app-versions.sh:ro
