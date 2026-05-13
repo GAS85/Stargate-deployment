@@ -42,8 +42,8 @@ MXENGINE_PUBLIC_ADDRESS=""
 # REQUIRED: S/MIME Certificate Configuration
 # ==============================================================================
 
-# CA IDAgent domain for certificate issuance via WireGuard tunnel
-CERT_CA_IDAGENT_DOMAIN="vereign-cdn.com"
+# CA IRIS AGENT domain for certificate issuance via WireGuard tunnel
+CERT_CA_IRISAGENT_DOMAIN="vereign-cdn.com"
 
 # ==============================================================================
 # AUTO-GENERATED: Vault Configuration
@@ -80,7 +80,6 @@ S3_BUCKET_NAME="stargate-bucket"
 
 SMIMEKEYS_VERSION="dev"
 POLICY_VERSION="dev"
-IDAGENT_VERSION="dev"
 IRISAGENT_VERSION="dev"
 MXENGINE_VERSION="dev"
 POLICY_SYNC_VERSION="dev"
@@ -148,7 +147,7 @@ DASHBOARD_SHOW_DEV_PAGES="false"
 # ==============================================================================
 # REQUIRED: WireGuard Configuration
 # ==============================================================================
-# Local WireGuard settings for this IDAgent instance.
+# Local WireGuard settings for this IRIS AGENT instance.
 # Contact Vereign to get your assigned WireGuard IP address.
 
 # WireGuard private key (optional - auto-generated if empty, then saved back here)
