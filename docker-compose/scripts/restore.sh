@@ -461,14 +461,19 @@ else
   echo "  Vault is not initialized (fresh VM)"
   echo "  Running Vault initialization..."
   
-  # Run vault-init to initialize Vault
-  docker compose up vault-init
-  
-  # Wait for vault-init to complete
-  while docker compose ps vault-init 2>/dev/null | grep -q "running"; do
-    sleep 2
-  done
-  
+  # Run vault-init to initialize Vault.
+  # Use detached + `docker wait` so we capture the init container's exit
+  # code; `docker compose ps | grep running` never matches (status reads
+  # "Up ..." for live containers and the row disappears once they exit).
+  docker compose up -d vault-init
+
+  VAULT_INIT_EXIT=$(docker wait stargate-vault-init 2>/dev/null) || VAULT_INIT_EXIT=1
+  if [ "$VAULT_INIT_EXIT" != "0" ]; then
+    echo "  ✗ vault-init exited with code $VAULT_INIT_EXIT"
+    echo "    Check logs: docker compose logs vault-init"
+    exit 1
+  fi
+
   # Check if new keys were generated
   if [ -f "$SECRETS_DIR/vault-keys.json" ]; then
     NEW_TOKEN=$(jq -r '.root_token' "$SECRETS_DIR/vault-keys.json")

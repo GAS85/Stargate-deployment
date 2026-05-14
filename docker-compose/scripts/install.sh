@@ -512,16 +512,28 @@ echo ""
 echo "Waiting for Vault initialization..."
 docker compose up -d vault-init
 
-# Wait for vault-init to complete
+# Wait for vault-init to complete.
+# `docker wait` blocks until the named container exits and prints its exit
+# code on stdout. The previous implementation polled
+# `docker compose ps vault-init | grep -q "running"`, but `docker compose ps`
+# without `-a` hides exited containers and uses "Up ..." (not "running") for
+# active ones, so the loop matched nothing and exited immediately — the
+# script then raced past the freshly-written vault-keys.json and failed.
 echo "Waiting for vault-init container to finish..."
 docker compose logs -f vault-init 2>/dev/null &
 LOG_PID=$!
 
-while docker compose ps vault-init 2>/dev/null | grep -q "running"; do
-  sleep 2
-done
+VAULT_INIT_EXIT=$(docker wait stargate-vault-init 2>/dev/null) || VAULT_INIT_EXIT=1
 
 kill $LOG_PID 2>/dev/null || true
+wait $LOG_PID 2>/dev/null || true
+
+if [ "$VAULT_INIT_EXIT" != "0" ]; then
+  echo ""
+  echo "ERROR: vault-init exited with code $VAULT_INIT_EXIT"
+  echo "Check logs: docker compose logs vault-init"
+  exit 1
+fi
 
 # Check if keys were generated
 if [ -f "$KEYS_FILE" ]; then
