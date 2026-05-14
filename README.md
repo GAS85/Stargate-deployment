@@ -28,7 +28,7 @@ The beta phase will be announced separately. During beta, the system will still 
 * **smimekeys-client** - S/MIME keys client service (port 8081)
 
 * **policy** - Policy service (port 8082)
-* **idagent** - ID Agent service (port 8083, WireGuard: 19818/tcp+udp)
+* **irisagent** - IRIS Agent service (port 8083, WireGuard: 19818/tcp)
 * **mxengine** - MX Engine service (port 8084, SMTP: 1587)
 * **policy-sync** - Syncs OPA/Rego policies from Git repository to database (runs continuously)
 

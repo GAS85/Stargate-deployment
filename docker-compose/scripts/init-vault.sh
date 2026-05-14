@@ -111,7 +111,6 @@ else
   
   vault secrets enable -address=http://vault:8200 -path=secret-smimekeys-client kv-v2 || echo "secret-smimekeys-client already exists"
   vault secrets enable -address=http://vault:8200 -path=secret-policy kv-v2 || echo "secret-policy already exists"
-  vault secrets enable -address=http://vault:8200 -path=secret-idagent kv-v2 || echo "secret-idagent already exists"
   vault secrets enable -address=http://vault:8200 -path=secret-irisagent kv-v2 || echo "secret-irisagent already exists"
   vault secrets enable -address=http://vault:8200 -path=secret-mxengine kv-v2 || echo "secret-mxengine already exists"
   
@@ -120,19 +119,10 @@ else
   # Write WireGuard private key to Vault if provided
   if [ -n "$WG_PRIVATE_KEY" ]; then
     echo "Writing pre-configured WireGuard private key to Vault..."
-    vault kv put -address=http://vault:8200 secret-idagent/wg_private_key wg_private_key="$WG_PRIVATE_KEY"
+    vault kv put -address=http://vault:8200 secret-irisagent/wg_private_key wg_private_key="$WG_PRIVATE_KEY"
     echo "WireGuard private key written to Vault!"
   else
-    echo "No WG_PRIVATE_KEY provided - idagent will generate a new key on first start."
-  fi
-
-  # Write IRISAgent WireGuard private key to Vault if provided
-  if [ -n "$WG_IRIS_PRIVATE_KEY" ]; then
-    echo "Writing pre-configured IRISAgent WireGuard private key to Vault..."
-    vault kv put -address=http://vault:8200 secret-irisagent/wg_private_key wg_private_key="$WG_IRIS_PRIVATE_KEY"
-    echo "IRISAgent WireGuard private key written to Vault!"
-  else
-    echo "No WG_IRIS_PRIVATE_KEY provided - irisagent will generate a new key on first start."
+    echo "No WG_PRIVATE_KEY provided - irisagent will generate a new key on first start."
   fi
   
   # Save root token to .env file hint

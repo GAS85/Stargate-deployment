@@ -3,7 +3,7 @@
 * **smimekeys-client** - S/MIME keys client service (port 8081)
 
 * **policy** - Policy service (port 8082)
-* **idagent** - ID Agent service (port 8083, WireGuard: 19818/tcp+udp)
+* **irisagent** - IRIS Agent service (port 8083, WireGuard: 19818/tcp+udp)
 * **mxengine** - MX Engine service (port 8084, SMTP: 1587)
 * **policy-sync** - Syncs OPA/Rego policies from Git repository to database (runs continuously)
 
@@ -18,8 +18,6 @@
 ## Init Containers
 
 * **vault-init** - Initializes and unseals Vault on first run
-
-* **idagent-init** - Creates WireGuard peer connection in idagent database
 
 ## Monitoring
 

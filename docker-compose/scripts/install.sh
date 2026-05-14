@@ -180,11 +180,11 @@ load_customer_config() {
   MINIO_ROOT_PASSWORD="${MINIO_ROOT_PASSWORD:-$(generate_password)}"
   S3_BUCKET_NAME="${S3_BUCKET_NAME:-stargate-bucket}"
 
-  SMIMEKEYS_VERSION="${SMIMEKEYS_VERSION:-latest}"
-  POLICY_VERSION="${POLICY_VERSION:-latest}"
-  IDAGENT_VERSION="${IDAGENT_VERSION:-latest}"
-  MXENGINE_VERSION="${MXENGINE_VERSION:-latest}"
-  DASHBOARD_VERSION="${DASHBOARD_VERSION:-latest}"
+  SMIMEKEYS_VERSION="${SMIMEKEYS_VERSION:-dev}"
+  POLICY_VERSION="${POLICY_VERSION:-dev}"
+  IRISAGENT_VERSION="${IRISAGENT_VERSION:-dev}"
+  MXENGINE_VERSION="${MXENGINE_VERSION:-dev}"
+  DASHBOARD_VERSION="${DASHBOARD_VERSION:-dev}"
 
   # Derive WG_LOCAL_IP and MXENGINE_PUBLIC_ADDRESS from SERVER_STATIC_IP
   SERVER_STATIC_IP="${SERVER_STATIC_IP:-}"
@@ -206,7 +206,7 @@ load_customer_config() {
   DASHBOARD_PUBLIC_URL="${DASHBOARD_PUBLIC_URL:-https://${SERVER_STATIC_IP}:3000}"
 
   OUTBOUND_SEALER_MX_DOMAIN="${OUTBOUND_SEALER_MX_DOMAIN:-hintest.ch}"
-  CERT_CA_IDAGENT_DOMAIN="${CERT_CA_IDAGENT_DOMAIN:-hintest.ch}"
+  CERT_CA_IRISAGENT_DOMAIN="${CERT_CA_IRISAGENT_DOMAIN:-hintest.ch}"
 
   OUTBOUND_SMTP_HOST="${OUTBOUND_SMTP_HOST:-postfixconf}"
   OUTBOUND_SMTP_PORT="${OUTBOUND_SMTP_PORT:-10026}"
@@ -225,7 +225,7 @@ load_customer_config() {
   # WireGuard local configuration
   WG_INTERFACE_PORT="${WG_INTERFACE_PORT:-19818}"
   WG_TRANSPORT_MODE="${WG_TRANSPORT_MODE:-tcp}"
-  WG_PRIVATE_KEY="${WG_PRIVATE_KEY:-}"  # Optional - if empty, idagent will generate
+  WG_PRIVATE_KEY="${WG_PRIVATE_KEY:-}"  # Optional - if empty, irisagent will generate
 
   echo "Customer: $CUSTOMER_NAME"
   echo "Deployment: $DEPLOYMENT_NAME"
@@ -308,7 +308,7 @@ WG_LOCAL_IP="$WG_LOCAL_IP"
 WG_INTERFACE_PORT="$WG_INTERFACE_PORT"
 WG_TRANSPORT_MODE="$WG_TRANSPORT_MODE"
 
-# WireGuard Private Key (optional - if set, written to Vault for idagent)
+# WireGuard Private Key (optional - if set, written to Vault for irisagent)
 WG_PRIVATE_KEY="${WG_PRIVATE_KEY:-}"
 EOF
 
@@ -433,23 +433,23 @@ save_wireguard_key_to_config() {
   echo "============================================"
   echo ""
 
-  # Wait for idagent to generate the key (it needs a moment after start)
-  echo "Waiting for IDAgent to initialize WireGuard key..."
+  # Wait for irisagent to generate the key (it needs a moment after start)
+  echo "Waiting for IRISAgent to initialize WireGuard key..."
   sleep 5
 
   # Extract the WireGuard private key from Vault
   WG_KEY=$(docker exec -e VAULT_TOKEN="$ROOT_TOKEN" stargate-vault \
-    vault kv get -address=http://127.0.0.1:8200 -field=wg_private_key secret-idagent/wg_private_key 2>/dev/null || echo "")
+    vault kv get -address=http://127.0.0.1:8200 -field=wg_private_key secret-irisagent/wg_private_key 2>/dev/null || echo "")
 
   if [ -z "$WG_KEY" ]; then
     echo "WARNING: Could not extract WireGuard key from Vault."
-    echo "IDAgent may not have started yet. You can extract it later with:"
-    echo "  docker exec stargate-vault vault kv get -address=http://127.0.0.1:8200 secret-idagent/wg_private_key"
+    echo "IRISAgent may not have started yet. You can extract it later with:"
+    echo "  docker exec stargate-vault vault kv get -address=http://127.0.0.1:8200 secret-irisagent/wg_private_key"
     return 1
   fi
 
-  # Get the public key from idagent logs
-  WG_PUBKEY=$(docker logs stargate-idagent 2>&1 | grep "wireguard public key:" | head -1 | sed 's/.*wireguard public key: //' | tr -d '[:space:]')
+  # Get the public key from irisagent logs
+  WG_PUBKEY=$(docker logs stargate-irisagent 2>&1 | grep "wireguard public key:" | head -1 | sed 's/.*wireguard public key: //' | tr -d '[:space:]')
 
   # Check if WG_PRIVATE_KEY is already set in customer-config.sh
   if grep -q '^WG_PRIVATE_KEY=""' "$CONFIG_FILE" || grep -q "^WG_PRIVATE_KEY=\$" "$CONFIG_FILE" || ! grep -q '^WG_PRIVATE_KEY=' "$CONFIG_FILE"; then
@@ -551,7 +551,7 @@ if [ -f "$KEYS_FILE" ]; then
   # Wait for services to be ready
   sleep 5
 
-  # Onboarding (domains, S/MIME CSR, idagent peer config) is now performed
+  # Onboarding (domains, S/MIME CSR, irisagent peer config) is now performed
   # via the dashboard at /installation, /onboarding, and /postfix.
 
   # Setup backup cron job
@@ -598,7 +598,7 @@ echo "  Service URLs:"
 echo "  -------------"
 echo "  smimekeys-client:  http://localhost:8081"
 echo "  policy:            http://localhost:8082"
-echo "  idagent:           http://localhost:8083"
+echo "  irisagent:         http://localhost:8083"
 echo "  mxengine:          http://localhost:8084"
 echo "  mxengine SMTP:     localhost:1587"
 echo ""
@@ -642,7 +642,7 @@ echo ""
 # Without this registration the WG tunnel cannot be established and S/MIME
 # certificate issuance will keep failing.
 
-WG_PUBKEY_FOR_HIN="$(docker compose logs idagent 2>/dev/null \
+WG_PUBKEY_FOR_HIN="$(docker compose logs irisagent 2>/dev/null \
   | grep -m1 'wireguard public key:' \
   | sed 's/.*wireguard public key: //' \
   | tr -d '[:space:]')"
@@ -655,7 +655,7 @@ echo "  Send the following values to HIN (aroel.vandenbroele@hin.ch)"
 echo "  so they can register this Stargate as a WireGuard peer."
 echo "  Until the peer is registered, S/MIME cert issuance will fail."
 echo ""
-echo "  WireGuard Public Key: ${WG_PUBKEY_FOR_HIN:-<not yet available - run: docker compose logs idagent | grep \"wireguard public key\">}"
+echo "  WireGuard Public Key: ${WG_PUBKEY_FOR_HIN:-<not yet available - run: docker compose logs irisagent | grep \"wireguard public key\">}"
 echo "  DEPLOYMENT_NAME:      $DEPLOYMENT_NAME"
 echo "  SERVER_STATIC_IP:     $SERVER_STATIC_IP"
 echo "  WG_INTERFACE_PORT:    $WG_INTERFACE_PORT"

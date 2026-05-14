@@ -294,11 +294,11 @@ MINIO_ROOT_USER="${MINIO_ROOT_USER:-minioadmin}"
 MINIO_ROOT_PASSWORD="${MINIO_ROOT_PASSWORD:-minioadmin}"
 S3_BUCKET_NAME="${S3_BUCKET_NAME:-stargate-bucket}"
 
-SMIMEKEYS_VERSION="${SMIMEKEYS_VERSION:-latest}"
-POLICY_VERSION="${POLICY_VERSION:-latest}"
-IDAGENT_VERSION="${IDAGENT_VERSION:-latest}"
-MXENGINE_VERSION="${MXENGINE_VERSION:-latest}"
-POSTFIXCONF_VERSION="${POSTFIXCONF_VERSION:-latest}"
+SMIMEKEYS_VERSION="${SMIMEKEYS_VERSION:-dev}"
+POLICY_VERSION="${POLICY_VERSION:-dev}"
+IRISAGENT_VERSION="${IRISAGENT_VERSION:-dev}"
+MXENGINE_VERSION="${MXENGINE_VERSION:-dev}"
+POSTFIXCONF_VERSION="${POSTFIXCONF_VERSION:-dev}"
 
 LOKI_URL="${LOKI_URL:-https://loki.infra.vereign-cdn.com}"
 
@@ -337,7 +337,7 @@ S3_BUCKET_NAME=$S3_BUCKET_NAME
 # Application Versions
 SMIMEKEYS_VERSION=$SMIMEKEYS_VERSION
 POLICY_VERSION=$POLICY_VERSION
-IDAGENT_VERSION=$IDAGENT_VERSION
+IRISAGENT_VERSION=$IRISAGENT_VERSION
 MXENGINE_VERSION=$MXENGINE_VERSION
 
 POSTFIXCONF_VERSION=$POSTFIXCONF_VERSION
@@ -407,7 +407,7 @@ echo ""
 
 # Verify databases exist
 echo "Verifying databases..."
-for DB in smimekeys_client policy idagent mxengine; do
+for DB in smimekeys_client policy irisagent mxengine; do
   if docker exec stargate-postgres psql -U "$POSTGRES_USER" -lqt | cut -d \| -f 1 | grep -qw "$DB"; then
     echo "  ✓ $DB exists"
   else
@@ -578,7 +578,7 @@ docker compose ps
 echo ""
 
 # Check service health
-SERVICES=("smimekeys-client:8081" "policy:8082" "idagent:8083" "mxengine:8084")
+SERVICES=("smimekeys-client:8081" "policy:8082" "irisagent:8083" "mxengine:8084")
 echo "Service health checks:"
 for svc in "${SERVICES[@]}"; do
   NAME="${svc%%:*}"
@@ -626,7 +626,7 @@ echo "  Service URLs:"
 echo "  -------------"
 echo "  smimekeys-client:  http://localhost:8081"
 echo "  policy:            http://localhost:8082"
-echo "  idagent:           http://localhost:8083"
+echo "  irisagent:         http://localhost:8083"
 echo "  mxengine:          http://localhost:8084"
 echo ""
 echo "  If services show errors, wait a minute and check:"

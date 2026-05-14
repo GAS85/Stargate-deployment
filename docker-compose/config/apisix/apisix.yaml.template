@@ -9,11 +9,6 @@ upstreams:
       "policy:8080": 1
     type: roundrobin
 
-  - id: "idagent"
-    nodes:
-      "idagent:8080": 1
-    type: roundrobin
-
   - id: "smimekeys"
     nodes:
       "smimekeys-client:8080": 1
@@ -61,13 +56,6 @@ routes:
       proxy-rewrite:
         regex_uri: ["^/policy/(.*)", "/$1"]
 
-  - id: "idagent-liveness"
-    uri: "/idagent/liveness"
-    upstream_id: "idagent"
-    plugins:
-      proxy-rewrite:
-        regex_uri: ["^/idagent/(.*)", "/$1"]
-
   - id: "smimekeys-liveness"
     uri: "/smimekeys/liveness"
     upstream_id: "smimekeys"
@@ -95,48 +83,6 @@ routes:
   # reachable by any container. Restriction mirrors the k8s cluster-internal
   # model; tighten by removing APISIX host-port exposure if needed.
   # ==================
-  - id: "idagent-connections"
-    uris:
-      - "/idagent/v1/connections"
-      - "/idagent/v1/connections/*"
-    upstream_id: "idagent"
-    priority: 100
-    plugins:
-      proxy-rewrite:
-        regex_uri: ["^/idagent/(.*)", "/$1"]
-      ip-restriction:
-        whitelist:
-          - "127.0.0.1"
-          - "172.16.0.0/12"
-
-  - id: "idagent-wg-public-key"
-    uri: "/idagent/v1/wg/public-key"
-    upstream_id: "idagent"
-    priority: 100
-    plugins:
-      proxy-rewrite:
-        regex_uri: ["^/idagent/(.*)", "/$1"]
-      ip-restriction:
-        whitelist:
-          - "127.0.0.1"
-          - "172.16.0.0/12"
-          - "172.17.0.0/12"
-          - "172.18.0.0/12"
-
-  - id: "idagent-message"
-    uri: "/idagent/v1/message"
-    upstream_id: "idagent"
-    priority: 100
-    plugins:
-      proxy-rewrite:
-        regex_uri: ["^/idagent/(.*)", "/$1"]
-      ip-restriction:
-        whitelist:
-          - "127.0.0.1"
-          - "172.16.0.0/12"
-          - "172.17.0.0/12"
-          - "172.18.0.0/12"
-
   - id: "irisagent-connections"
     uris:
       - "/irisagent/v1/connections"
@@ -207,14 +153,6 @@ routes:
     plugins:
       proxy-rewrite:
         regex_uri: ["^/policy/(.*)", "/$1"]
-
-  - id: "idagent-route"
-    uri: "/idagent/*"
-    upstream_id: "idagent"
-    plugin_config_id: "oidc-bearer"
-    plugins:
-      proxy-rewrite:
-        regex_uri: ["^/idagent/(.*)", "/$1"]
 
   - id: "smimekeys-route"
     uri: "/smimekeys/*"

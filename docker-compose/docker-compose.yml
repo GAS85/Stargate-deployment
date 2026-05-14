@@ -120,8 +120,6 @@ services:
       VAULT_ROOT_TOKEN: ${VAULT_TOKEN:-}
       # WireGuard private key (optional - if set, will be written to Vault for irisagent)
       WG_PRIVATE_KEY: ${WG_PRIVATE_KEY:-}
-      # IRISAgent WireGuard private key (optional - if set, will be written to Vault for irisagent)
-      WG_IRIS_PRIVATE_KEY: ${WG_IRIS_PRIVATE_KEY:-}
     volumes:
       - ./scripts:/scripts:ro
       - ./secrets:/secrets
@@ -382,18 +380,18 @@ services:
       NATS_ADDR: "nats://nats:4222"
 
       # WireGuard
-      WG_LOCAL_IP: "${WG_IRIS_LOCAL_IP:-10.0.0.1}"
-      WG_INTERFACE_PORT: "${WG_IRIS_INTERFACE_PORT:-19818}"
-      WG_TRANSPORT_MODE: "${WG_IRIS_TRANSPORT_MODE:-tcp}"
+      WG_LOCAL_IP: "${WG_LOCAL_IP}"
+      WG_INTERFACE_PORT: "${WG_INTERFACE_PORT:-19818}"
+      WG_TRANSPORT_MODE: "${WG_TRANSPORT_MODE:-tcp}"
 
       # Dashboard config fetch
       REMOTE_CONFIG_URL: "http://dashboard:3000/api/internal/installation-config?service=irisagent"
 
       LOG_LEVEL: "debug"
     ports:
-      - "8085:8080"
-      - "2117:2112"
-      - "${WG_IRIS_INTERFACE_PORT:-19818}:${WG_IRIS_INTERFACE_PORT:-19818}/tcp" # WireGuard tunnel (TCP)
+      - "8083:8080"
+      - "2114:2112"
+      - "${WG_INTERFACE_PORT:-19818}:${WG_INTERFACE_PORT:-19818}/tcp" # WireGuard tunnel (TCP)
     networks:
       - stargate-network
 
