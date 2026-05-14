@@ -248,6 +248,8 @@ services:
         condition: service_healthy
       vault-init:
         condition: service_completed_successfully
+      irisagent:
+        condition: service_started
     environment:
       # HTTP Server
       HTTP_HOST: ""
@@ -340,8 +342,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      vault:
-        condition: service_healthy
       vault-init:
         condition: service_completed_successfully
       minio-init:
@@ -407,6 +407,8 @@ services:
         condition: service_completed_successfully
       minio-init:
         condition: service_completed_successfully
+      irisagent:
+        condition: service_started
     environment:
       # HTTP Server
       LOG_LEVEL: "info"

@@ -502,14 +502,15 @@ generate_keycloak_tls_cert
 # Generate Keycloak realm JSON with actual client secrets substituted in
 generate_keycloak_realm
 
-# Start all services
+# Start infrastructure services first (Vault needs to initialize before
+# application services can use the token).
 echo ""
-echo "Starting all services..."
-docker compose up -d
+echo "Starting infrastructure services..."
+docker compose up -d postgres vault vault-data-fixer minio minio-init
 
 echo ""
 echo "Waiting for Vault initialization..."
-sleep 10
+docker compose up -d vault-init
 
 # Wait for vault-init to complete
 echo "Waiting for vault-init container to finish..."
@@ -541,15 +542,11 @@ if [ -f "$KEYS_FILE" ]; then
   # Save Vault token to customer-config.sh for persistence across VM recreations
   save_vault_token_to_config "$ROOT_TOKEN"
 
-  # Restart application services to pick up the new VAULT_TOKEN.
-  # No service list and no --force-recreate: docker compose's default
-  # RecreateDiverged policy re-creates only containers whose effective config
-  # has changed (i.e. those whose ${VAULT_TOKEN} interpolation result differs
-  # from what was baked in at the initial `docker compose up`), leaving the
-  # stateful infra services (postgres, vault, minio) untouched.
-  echo "Restarting application services with Vault token..."
+  # Now start all services - VAULT_TOKEN is set in .env so application
+  # services will have the correct token from the start.
+  echo "Starting all services..."
   docker compose up -d
-  echo "Application services restarted."
+  echo "All services started."
 
   # Wait for services to be ready
   sleep 5

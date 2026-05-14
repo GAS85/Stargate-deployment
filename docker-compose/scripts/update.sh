@@ -57,10 +57,20 @@ if [ -f "$ENV_FILE" ]; then
   EXISTING_VAULT_TOKEN=$(grep '^VAULT_TOKEN=' "$ENV_FILE" | cut -d= -f2- | tr -d '"' || true)
 fi
 
+# Fall back to vault-keys.json if .env has no token
+KEYS_FILE="$PROJECT_DIR/secrets/vault-keys.json"
+if [ -z "$EXISTING_VAULT_TOKEN" ] && [ -f "$KEYS_FILE" ]; then
+  EXISTING_VAULT_TOKEN=$(jq -r '.root_token' "$KEYS_FILE" 2>/dev/null || true)
+  if [ -n "$EXISTING_VAULT_TOKEN" ]; then
+    echo "Recovered VAULT_TOKEN from vault-keys.json"
+    echo ""
+  fi
+fi
+
 if [ -z "$EXISTING_VAULT_TOKEN" ]; then
-  echo "WARNING: No VAULT_TOKEN found in current .env."
-  echo "  Vault-dependent services will not work until init-vault.sh is run."
-  echo ""
+  echo "ERROR: No VAULT_TOKEN found in .env or vault-keys.json."
+  echo "  Run init-vault.sh first, or re-run install.sh."
+  exit 1
 fi
 
 # Load customer config (validates required fields, derives defaults)
