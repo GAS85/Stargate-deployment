@@ -4,13 +4,13 @@ Deploy Stargate on Proxmox
 
 ## Get the image file URL
 
-- Please refer to [VM-images-list.md](VM-images-list.md) for a list of images with URLs.
+- Please refer to [VM images list](VM-images-list.md?h=qcow2) for a list of images with URLs.
 - Copy URL to clipboard, for example `https://images.hin.ch/vm-images/AlmaLinux-10.stargate-202603021402.x86_64.qcow2`
 
 ## Import the image file in Proxmox
 
 - In Proxmox WebUI, navigate to the Storage menu and click Import
-- Click Download from URL, paste the copied URL ang click "Query URL".
+- Click **Download from URL**, paste the copied URL ang click "Query URL".
 - Click Download and wait for "TASK OK" to appear at the end of the output log.
 - Close the Task Viewer Download window.
 
@@ -35,11 +35,13 @@ Deploy Stargate on Proxmox
 ## Log in and initialize the stargate instance
 
 - Log in to the VM console with the `hinadmin` user in order to configure and install the stargate components.
-- To obtain the `hinadmin` password, send an email to <aroel.vandenbroele@hin.ch> with the subject: **"Password required for VM installation."**
+- To obtain the `hinadmin` password, send an email to <support@hin.ch> with the subject: **"Password required for VM installation."**
+
+[Click here to send an Email](mailto:support@hin.ch?subject=Password%20required%20for%20VM%20installation.&body=Hello%20dear%20Support,%0A%0AI%20would%20like%20to%20receive%20the%20password%20for%20a%20VM%20installation.%0A%0APLEASE%20PROVIDE%20YOUR%20CUSTOMER%20INFO%20HERE){ .md-button style="position:relative;left:50%;transform:translate(-50%,0%);" }
 
 ```shell
 sudo su -
-cd stargate-deployment/docker-compose/
+cd ~/stargate-deployment/docker-compose/
 ```
 
 - Use vi/nano to edit `customer-config.sh`
@@ -47,5 +49,11 @@ cd stargate-deployment/docker-compose/
 - Run the install script:
 
 ```shell
-[root@stargate docker-compose]# ./scripts/install.sh
+./scripts/install.sh
 ```
+
+!!! tip "Support"
+
+    For any questions or issues related to the deployment and operation of the Stargate appliance, please contact the Stargate Product Owner, David Grabovac, at david.grabovac@hin.ch.
+
+    Please include relevant information such as the customer name, appliance version, and screenshots/[logs](../Docker-advanced.md#provide-logs-to-support) where applicable, to help us process your request efficiently."

@@ -28,7 +28,7 @@ jobs:
             -v ${{ github.workspace }}:/docs \
             --entrypoint sh \
             squidfunk/mkdocs-material \
-            -c "pip install mkdocs-glightbox && mkdocs build --clean"
+            -c "pip install mkdocs-glightbox mkdocs-print-site-plugin && mkdocs build --clean"
 
 
       - name: Adjust permissions

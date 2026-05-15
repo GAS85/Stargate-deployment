@@ -7,6 +7,7 @@ site_description: >-
 # Repository
 repo_name: Health-Info-Net-AG/Stargate-deployment
 repo_url: https://github.com/Health-Info-Net-AG/Stargate-deployment
+edit_uri: edit/main/docs/
 
 # Copyright
 copyright: Copyright HIN AG 2026
@@ -43,11 +44,12 @@ theme:
     # - toc.integrate
   palette:
     primary: orange
+  logo: assets/hin_logo_full.png
 
   font:
     text: Roboto
     code: Roboto Mono
-  #favicon: assets/favicon.png
+  favicon: assets/hin_logo.png
   #icon:
   #  logo: logo
 
@@ -61,7 +63,7 @@ plugins:
   - git-revision-date-localized:
       enable_creation_date: true
   - glightbox
-
+  - print-site
 
 # Additional configuration
 extra:
@@ -72,7 +74,11 @@ extra:
     - icon: fontawesome/brands/github
       link: https://github.com/Health-Info-Net-AG/
     - icon: fontawesome/brands/docker
-      link: https://hub.docker.com/repository/docker/healthinfonetag/
+      link: https://hub.docker.com/r/healthinfonetag/
+
+extra_javascript:
+  - https://unpkg.com/tablesort@5.3.0/dist/tablesort.min.js
+  - javascripts/tablesort.js
 
 # Extensions
 markdown_extensions:
@@ -134,7 +140,7 @@ nav:
   - Getting started with Stargate:
       - Applications overview: Applications.md
       - Exchange Integration: Exchange-integration.md
-      - Mail relay setup: Mail-relay-setup/index.md
+      - Mail relay setup: Mail-relay-setup
   - Container deployment:
       - Install with Docker: Docker-deploy.md
       - Docker Advanced configuration: Docker-advanced.md

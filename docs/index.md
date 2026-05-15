@@ -6,44 +6,61 @@
 
     Interfaces, configuration, and behaviour may change between releases.
 
-    A web-based admin UI dashboard is in the works - until it ships, all configuration and operations are performed over the terminal using the scripts in this repository.
+    A web-based admin UI dashboard is currently under development. Until it is released, all configuration and operations are performed over the terminal using the scripts in this repository.
 
 ![Logo](https://www.hin.ch/files/png1/hero/stargate_visual.png)
+
+[What is Stargate?](https://www.hin.ch/de/services/hin-mail/hin-gateway.cfm){ .md-button style="position:relative;left:50%;transform:translate(-50%,0%);" }
 
 ## Quick Start
 
 ### Installation options
 
-* [Docker installation](./Docker-deploy.md)
-* [HELM charts](./helm-deploy.md)
-* VM image installation
+* Container installation:
+    * [Docker installation](./Docker-deploy.md)
+    * [HELM charts](./helm-deploy.md)
+* VM image installation:
     * [Azure VM image installation](vm/Azure-image-install.md)
     * [Windows 11 pro (Hyper-V) image installation](vm/Windows11pro-image-install.md)
     * [VMware image installation](vm/VMware-image-install.md)
     * [Proxmox image installation](vm/Proxmox-image-install.md)
 
+!!! tip "🖨️"
+    You can get this documentation printed or saved as pdf, please visit our [Print page view](print_page).
+
 ### Exchange Integration
 
-* [Exchange-integration.md](Exchange-integration.md) - Configure Microsoft Exchange (Online and On-Premises) connectors and transport rules to route mail through Stargate
+* [Exchange integration](Exchange-integration.md) - Configure Microsoft Exchange (Online and On-Premises) connectors and transport rules to route mail through Stargate
 
-### Prerequisites
+### Server Requirements
 
-**Server Requirements:**
+#### Minimum
 
-* 4 CPU cores (recommended minimum)
-* 8 GB RAM (recommended minimum)
-* 30 GB storage (recommended minimum)
-* Docker will be installed automatically if missing
-* Ensure there is an internet connection on the machine where you are installing Stargate services
-* Ensure traffic is properly configured to reach Stargate instance
+* **2** CPU cores
+* **4 GB** RAM
+* **20 GB** storage
 
-**Supported Linux Distributions:**
+#### Recommended
 
-* RHEL 8, 9 and 10 compatible distributions such as Alma Linux, Rocky Linux, Centos Stream
-* Ubuntu 22 and 24
-* Debian 11, 12 and 13
+* **4** CPU cores
+* **8 GB** RAM
+* **30 GB** storage
 
-**Inbound Network Access (firewall must allow):**
+#### Common Requirements
+
+* **Root access**: Must be run as root or with `sudo`
+* Supported distributions:
+    * RHEL 8, 9 and 10 compatible distributions such as Alma Linux, Rocky Linux, Centos Stream
+    * Ubuntu 22 and 24
+    * Debian 11, 12 and 13
+* **Real IPv4 address**
+* **Valid DNS records**. Your domain must have:
+    * MX records pointing to your mail servers
+    * SPF record defining allowed sending networks
+    * Server must be able to resolve DNS (MX, SPF, A records)
+    * Used for mail routing and SPF-based network allowlisting
+
+#### Inbound Network Access (firewall must allow)
 
 | Port | Protocol | Purpose |
 |------|----------|---------|
@@ -51,11 +68,11 @@
 | 8084 | TCP | HTTP - seal callback from remote sealer service |
 | 19818 | TCP+UDP | WireGuard - encrypted tunnel for agent-to-agent communication |
 
-**Outbound Network Access (server must reach):**
+#### Outbound Network Access (server must reach)
 
 | Destination | Port | Purpose |
 |-------------|------|---------|
-| registry.vereign.io | 443 | Docker image registry |
+| hub.docker.com | 443 | Docker image registry |
 | mxengine-dev.k8s.vereign-cdn.com | 443 | Remote sealer service |
 | smimekeys-ca-dev.k8s.vereign-cdn.com | 443 | S/MIME CA service |
 | loki.infra.vereign-cdn.com | 443 | Log shipping (Promtail → Loki) |
@@ -63,7 +80,12 @@
 | vereign-verifier.vrgnservices.eu | 4433 | Verifier service |
 | Destination mail servers | 25 | Outbound mail delivery (via MX lookup) |
 
-**DNS Access:**
+## Contact us
 
-* Server must be able to resolve DNS (MX, SPF, A records)
-* Used for mail routing and SPF-based network allowlisting
+[Contact us per mail](mailto:david.grabovac@hin.ch?subject=Stargate%20Support%20Question&body=Hello%20dear%20Mr%20Grabovac,%0A%0AI%20have%20a%20Question%20regarding%20Stargate%20and%20would%20like%20to%20ask%20you%20for%20support.%20DO%20NOT%20FORGET%20TO%20ADD%20YOUR%20QUESTION){ .md-button style="position:relative;left:50%;transform:translate(-50%,0%);" }
+
+!!! tip "Support"
+
+    For any questions or issues related to the deployment and operation of the Stargate appliance, please contact the Stargate Product Owner, David Grabovac, at david.grabovac@hin.ch.
+
+    Please include relevant information such as the customer name, appliance version, and screenshots/[logs](../Docker-advanced.md#provide-logs-to-support) where applicable, to help us process your request efficiently."
