@@ -550,8 +550,9 @@ services:
       # Allow self-signed TLS cert on the Keycloak nginx proxy
       NODE_TLS_REJECT_UNAUTHORIZED: "0"
 
-      ROOT_URL: "https://apisix.k8s.vereign-cdn.com"
-      ROOT_DOMAIN: "vereign-cdn.com"
+      # Root instance URL and domain (used for cross-instance API calls)
+      ROOT_URL: "${DASHBOARD_ROOT_URL:-https://apisix.k8s.vereign-cdn.com}"
+      ROOT_DOMAIN: "${DASHBOARD_ROOT_DOMAIN:-vereign-cdn.com}"
       NATS_URL: "nats://nats:4222"
 
     networks:

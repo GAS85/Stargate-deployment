@@ -12,3 +12,4 @@ docs/dashboard-installation-guide.md
 # Claude Code local overrides (secrets, personal prefs)
 support/.claude/settings.local.json
 /support/
+docker-compose/customer-config-alpha-new
