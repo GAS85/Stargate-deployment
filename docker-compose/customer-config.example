@@ -13,11 +13,11 @@
 # ==============================================================================
 
 # Static public IP address of this VM/server.
-# This is the single network identity for the deployment — used to derive:
+# This is the single network identity for the deployment - used to derive:
 #   - WireGuard local IP (unique tunnel address)
 #   - MXEngine public address (seal callbacks)
 # Must be a real routable static IP (not a private/NAT address).
-SERVER_STATIC_IP="49.12.193.236"
+SERVER_STATIC_IP=""
 
 # ==============================================================================
 # REQUIRED: Customer Identification

@@ -216,7 +216,7 @@ services:
       - stargate-network
 
   nats:
-    image: nats:2.14
+    image: nats:2.14-alpine
     container_name: stargate-nats
     restart: unless-stopped
     command:
