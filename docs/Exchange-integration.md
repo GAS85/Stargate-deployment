@@ -39,96 +39,19 @@ Before configuring Exchange, ensure:
 - [ ] You have the **mail hostname** of the Stargate server (referred to as `<MAIL_HOSTNAME>`, e.g. `mail.example.com`)
 - [ ] You know your **mail domain** (referred to as `<YOUR_DOMAIN>`, e.g. `example.com`)
 - [ ] You have **Exchange admin** access (Exchange Admin Center or on-premises Exchange Management Shell)
+- [ ] DNS records are configured per the [DNS Setup Guide](DNS-setup.md) (A, MX, SPF at minimum)
 
 ---
 
 ## Part 1: DNS Setup
 
-### A Record
+See the [DNS Setup Guide](DNS-setup.md) for complete instructions on configuring A, MX, SPF, PTR, DMARC, and DKIM records.
 
-Create an A record pointing your mail hostname to the Stargate server:
+At minimum, before proceeding with the Exchange configuration below, you need:
 
-```plain
-A <MAIL_HOSTNAME> <STARGATE_IP>
-```
-
-Example:
-
-```plain
-A mail 128.140.117.200
-```
-
-### MX Record
-
-Add an MX record with **higher priority** (lower number) than the existing Exchange Online MX record. This ensures inbound mail hits Stargate first:
-
-Existing Exchange Online MX record:
-
-```plain
-MX @ 20 <YOUR_DOMAIN>.mail.protection.outlook.com.
-```
-
-New Stargate MX record (higher priority):
-
-```plain
-MX @ 15 <MAIL_HOSTNAME>.
-```
-
-Example:
-
-```plain
-MX @ 15 mail.vrgnservices.eu.
-MX @ 20 vrgnservices-eu.mail.protection.outlook.com.
-```
-
-!!! tip
-    The lower MX number means higher priority. Stargate at priority 15 will receive mail before Exchange Online at priority 20.
-
-### SPF Record
-
-Add the Stargate server IP to your SPF record so mail relayed through it passes SPF checks:
-
-Before:
-
-```plain
-TXT @ "v=spf1 include:spf.protection.outlook.com -all"
-```
-
-After:
-
-```plain
-TXT @ "v=spf1 ip4:<STARGATE_IP> include:spf.protection.outlook.com -all"
-```
-
-### Verify DNS Records
-
-```bash
-# Verify A record
-host <MAIL_HOSTNAME>
-# Expected: <MAIL_HOSTNAME> has address <STARGATE_IP>
-
-# Verify MX records
-host -t mx <YOUR_DOMAIN>
-# Expected: Both Stargate and Exchange MX records listed
-
-# Verify SPF record
-host -t txt <YOUR_DOMAIN> | grep v=spf1
-# Expected: SPF record includes ip4:<STARGATE_IP>
-```
-
-Example output:
-
-```shell
-# host mail.vrgnservices.eu
-mail.vrgnservices.eu has address 128.140.117.200
-
-# host -t mx vrgnservices.eu
-vrgnservices.eu mail is handled by 20 vrgnservices-eu.mail.protection.outlook.com.
-vrgnservices.eu mail is handled by 15 mail.vrgnservices.eu.
-
-# host -t txt vrgnservices.eu | grep v=spf1
-vrgnservices.eu descriptive text "v=spf1 ip4:128.140.117.200 include:spf.protection.outlook.com -all"
-```
+- **A record**: `<MAIL_HOSTNAME>` pointing to `<STARGATE_IP>`
+- **MX record**: `<YOUR_DOMAIN>` with Stargate at higher priority (lower number) than Exchange
+- **SPF record**: `ip4:<STARGATE_IP>` added to your domain's TXT record
 
 ---
 
@@ -351,23 +274,19 @@ New-TransportRule -Name "Relay outbound via Stargate" `
 
 ### Automatic Configuration (Default)
 
-By default, the Stargate Postfix container automatically discovers where to deliver processed mail by looking up MX records for each domain in `MAIL_DOMAINS`. It filters out its own hostname and uses the remaining MX entries as delivery targets.
+By default, the Stargate Postfix container automatically discovers where to deliver processed mail by looking up MX records for each domain configured via the dashboard's `/postfix` page. It filters out its own hostname and uses the remaining MX entries as delivery targets.
 
 This works when:
 
 - Your domain has MX records pointing to both Stargate and Exchange
 - Stargate has a higher-priority (lower number) MX record than Exchange
 
-### Manual Override with RELAYHOST
+### Manual Override via the dashboard
 
-If you want all outbound mail from Stargate to go to a single Exchange endpoint (e.g. Exchange Online Protection), set in `customer-config.sh`:
-
-```bash
-RELAYHOST=[smtp.office365.com]
-```
+If you want all outbound mail from Stargate to go to a single Exchange endpoint (e.g. Exchange Online Protection), set the relay host through the dashboard's `/postfix` page (e.g. `[smtp.office365.com]`). The dashboard sends the value to `postfixconf`'s REST API and the daemon applies it as a global `relayhost`.
 
 !!! note
-    `RELAYHOST` sends all mail to a single host. It does not support per-domain routing. If you have multiple domains pointing to different Exchange servers, use the MX-based approach instead.
+    A single relay host sends all mail through one server and does not support per-domain routing. For multiple domains routing through different Exchange servers, use the per-domain relay map on the same dashboard page (configures `sender_dependent_relayhost_maps` under the hood) - see [Multi-Domain Setup](#multi-domain-setup) below.
 
 ### Multi-Domain Setup
 
@@ -389,16 +308,16 @@ After setup, verify the Postfix configuration:
 
 ```bash
 # Check relay configuration
-docker exec stargate-postfix-relay postconf | grep -E 'relayhost|mynetworks|relay_domains|content_filter'
+docker exec stargate-postfixconf postconf | grep -E 'relayhost|mynetworks|relay_domains|content_filter'
 
 # Check transport maps
-docker exec stargate-postfix-relay postconf transport_maps
+docker exec stargate-postfixconf postconf transport_maps
 
 # Check mail queue (should be empty when everything is working)
-docker exec stargate-postfix-relay mailq
+docker exec stargate-postfixconf mailq
 
 # Send a test email and check logs
-docker logs stargate-postfix-relay --tail 50
+docker logs stargate-postfixconf --tail 50
 ```
 
 ---
@@ -421,7 +340,7 @@ docker logs stargate-postfix-relay --tail 50
 
 - Check port 25 is open on the Stargate server's firewall
 - Verify SPF record includes the Stargate IP
-- Check Stargate Postfix logs: `docker logs stargate-postfix-relay`
+- Check Stargate Postfix logs: `docker logs stargate-postfixconf`
 
 ### Exchange Online rejecting mail from Stargate
 
@@ -460,3 +379,5 @@ The outbound connector validation requires:
 | MX (Stargate) | `@ IN MX 15 mail.<YOUR_DOMAIN>.` | Inbound mail hits Stargate first |
 | MX (Exchange) | `@ IN MX 20 <DOMAIN>.mail.protection.outlook.com.` | Fallback / delivery target |
 | SPF | `ip4:<STARGATE_IP>` added to existing TXT record | Authorize Stargate to send mail |
+
+For the full DNS setup (including PTR, DMARC, DKIM, and multi-domain), see the [DNS Setup Guide](DNS-setup.md).

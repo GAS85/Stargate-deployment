@@ -1,0 +1,181 @@
+upstreams:
+  - id: "mxengine"
+    nodes:
+      "mxengine:8080": 1
+    type: roundrobin
+
+  - id: "policy"
+    nodes:
+      "policy:8080": 1
+    type: roundrobin
+
+  - id: "smimekeys"
+    nodes:
+      "smimekeys-client:8080": 1
+    type: roundrobin
+
+  - id: "postfixconf"
+    nodes:
+      "postfixconf:8080": 1
+    type: roundrobin
+
+  - id: "irisagent"
+    nodes:
+      "irisagent:8080": 1
+    type: roundrobin
+
+plugin_configs:
+  - id: "oidc-bearer"
+    plugins:
+      openid-connect:
+        client_id: apisix
+        client_secret: ${KEYCLOAK_APISIX_CLIENT_SECRET}
+        discovery: http://keycloak:8080/realms/stargate/.well-known/openid-configuration
+        bearer_only: true
+        realm: stargate
+        introspection_endpoint: http://keycloak:8080/realms/stargate/protocol/openid-connect/token/introspect
+        introspection_endpoint_auth_method: client_secret_post
+        set_access_token_header: true
+        access_token_in_authorization_header: true
+
+routes:
+  # ==================
+  # Liveness routes — no auth, direct pass-through
+  # ==================
+  - id: "mxengine-liveness"
+    uri: "/mxengine/liveness"
+    upstream_id: "mxengine"
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/mxengine/(.*)", "/$1"]
+
+  - id: "policy-liveness"
+    uri: "/policy/liveness"
+    upstream_id: "policy"
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/policy/(.*)", "/$1"]
+
+  - id: "smimekeys-liveness"
+    uri: "/smimekeys/liveness"
+    upstream_id: "smimekeys"
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/smimekeys/(.*)", "/$1"]
+
+  - id: "postfixconf-liveness"
+    uri: "/postfix/liveness"
+    upstream_id: "postfixconf"
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/postfix/(.*)", "/$1"]
+
+  - id: "irisagent-liveness"
+    uri: "/irisagent/liveness"
+    upstream_id: "irisagent"
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/irisagent/(.*)", "/$1"]
+
+  # ==================
+  # Internal routes — IP-restricted, no auth
+  # In Docker Compose all containers share stargate-network, so these are
+  # reachable by any container. Restriction mirrors the k8s cluster-internal
+  # model; tighten by removing APISIX host-port exposure if needed.
+  # ==================
+  - id: "irisagent-connections"
+    uris:
+      - "/irisagent/v1/connections"
+      - "/irisagent/v1/connections/*"
+    upstream_id: "irisagent"
+    priority: 100
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/irisagent/(.*)", "/$1"]
+      ip-restriction:
+        whitelist:
+          - "127.0.0.1"
+          - "172.16.0.0/12"
+
+  - id: "irisagent-peers"
+    uris:
+      - "/irisagent/v1/peers"
+      - "/irisagent/v1/peers/*"
+    upstream_id: "irisagent"
+    priority: 100
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/irisagent/(.*)", "/$1"]
+      ip-restriction:
+        whitelist:
+          - "127.0.0.1"
+          - "172.16.0.0/12"
+
+  - id: "irisagent-wg-public-key"
+    uri: "/irisagent/v1/wg/public-key"
+    upstream_id: "irisagent"
+    priority: 100
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/irisagent/(.*)", "/$1"]
+      ip-restriction:
+        whitelist:
+          - "127.0.0.1"
+          - "172.16.0.0/12"
+
+  - id: "irisagent-message"
+    uri: "/irisagent/v1/message"
+    upstream_id: "irisagent"
+    priority: 100
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/irisagent/(.*)", "/$1"]
+      ip-restriction:
+        whitelist:
+          - "127.0.0.1"
+          - "172.16.0.0/12"
+
+  # ==================
+  # Authenticated routes — Bearer token required via Keycloak OIDC
+  # ==================
+  - id: "mxengine-route"
+    uri: "/mxengine/*"
+    upstream_id: "mxengine"
+    plugin_config_id: "oidc-bearer"
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/mxengine/(.*)", "/$1"]
+
+  - id: "policy-route"
+    uri: "/policy/*"
+    upstream_id: "policy"
+    plugin_config_id: "oidc-bearer"
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/policy/(.*)", "/$1"]
+
+  - id: "smimekeys-route"
+    uri: "/smimekeys/*"
+    upstream_id: "smimekeys"
+    plugin_config_id: "oidc-bearer"
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/smimekeys/(.*)", "/$1"]
+
+  - id: "postfixconf-route"
+    uri: "/postfix/*"
+    upstream_id: "postfixconf"
+    plugin_config_id: "oidc-bearer"
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/postfix/(.*)", "/$1"]
+
+  - id: "irisagent-route"
+    uri: "/irisagent/*"
+    upstream_id: "irisagent"
+    plugin_config_id: "oidc-bearer"
+    plugins:
+      proxy-rewrite:
+        regex_uri: ["^/irisagent/(.*)", "/$1"]
+
+#END

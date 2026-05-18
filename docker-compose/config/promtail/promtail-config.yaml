@@ -23,12 +23,12 @@ scrape_configs:
             values:
               - stargate-smimekeys-client
               - stargate-policy
-              - stargate-idagent
+              - stargate-irisagent
               - stargate-mxengine
     relabel_configs:
       # Keep only our app containers
       - source_labels: ['__meta_docker_container_name']
-        regex: '/(stargate-smimekeys-client|stargate-policy|stargate-idagent|stargate-mxengine)'
+        regex: '/(stargate-smimekeys-client|stargate-policy|stargate-irisagent|stargate-mxengine)'
         action: keep
       # Extract container name as label
       - source_labels: ['__meta_docker_container_name']

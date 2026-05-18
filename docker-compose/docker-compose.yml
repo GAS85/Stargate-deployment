@@ -3,7 +3,7 @@ services:
   # ===================
   # Infrastructure
   # ===================
-  
+
   postgres:
     image: postgres:18-alpine
     container_name: stargate-postgres
@@ -53,7 +53,11 @@ services:
       - "8200:8200"
     command: server
     healthcheck:
-      test: ["CMD-SHELL", "vault status -address=http://127.0.0.1:8200 || [ $? -eq 2 ]"]
+      test:
+        [
+          "CMD-SHELL",
+          "vault status -address=http://127.0.0.1:8200 || [ $? -eq 2 ]",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -114,7 +118,7 @@ services:
       VAULT_ADDR: "http://vault:8200"
       # Predefined root token for reproducible deployments (used only during first init)
       VAULT_ROOT_TOKEN: ${VAULT_TOKEN:-}
-      # WireGuard private key (optional - if set, will be written to Vault for idagent)
+      # WireGuard private key (optional - if set, will be written to Vault for irisagent)
       WG_PRIVATE_KEY: ${WG_PRIVATE_KEY:-}
     volumes:
       - ./scripts:/scripts:ro
@@ -123,35 +127,110 @@ services:
     networks:
       - stargate-network
 
-  # IDAgent connection initialization container
+  # IRISAGENT connection initialization container
   # Creates WireGuard peer connection in database for tunnel communication
-  idagent-init:
-    image: postgres:18-alpine
-    container_name: stargate-idagent-init
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.5.3
+    container_name: stargate-keycloak
+    # Intentionally depends only on the local postgres — no external DB or identity providers
     depends_on:
       postgres:
         condition: service_healthy
-      idagent:
-        condition: service_started
     environment:
-      POSTGRES_HOST: postgres
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      PGPASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      # WireGuard peer configuration
-      WG_PEER_CONNECTION_ID: ${WG_PEER_CONNECTION_ID:-}
-      WG_PEER_NAME: ${WG_PEER_NAME:-}
-      WG_PEER_PUBLIC_KEY: ${WG_PEER_PUBLIC_KEY:-}
-      WG_PEER_ENDPOINT: ${WG_PEER_ENDPOINT:-}
-      WG_PEER_IP: ${WG_PEER_IP:-}
-      WG_PEER_PORT: ${WG_PEER_PORT:-}
-      WG_PEER_ALLOWED_IPS: ${WG_PEER_ALLOWED_IPS:-}
-      WG_PEER_EXTERNAL_ID: ${WG_PEER_EXTERNAL_ID:-}
-      WG_PEER_DESCRIPTION: ${WG_PEER_DESCRIPTION:-}
-      WG_TRANSPORT_MODE: ${WG_TRANSPORT_MODE:-tcp}
-      WG_PEER_FORCE_UPDATE: ${WG_PEER_FORCE_UPDATE:-false}
+      KC_DB: postgres
+      KC_DB_URL: "jdbc:postgresql://postgres:5432/keycloak"
+      KC_DB_USERNAME: ${POSTGRES_USER:-postgres}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+      KC_HOSTNAME: "${KEYCLOAK_PUBLIC_URL:-https://localhost:8180}"
+      KC_HOSTNAME_STRICT: "false"
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USER:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+    command:
+      - start
+      - --import-realm
+    volumes:
+      - ./config/keycloak/generated:/opt/keycloak/data/import:ro
+    healthcheck:
+      test: "{ printf >&3 'GET /realms/master/.well-known/openid-configuration HTTP/1.0\r\nHost: localhost\r\n\r\n'; cat <&3; } 3<>/dev/tcp/localhost/8080 | head -1 | grep 200"
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    networks:
+      - stargate-network
+
+  # Forces the Keycloak admin to change their password on first login.
+  # Idempotent: if the admin already changed their password (auth with the
+  # configured value fails), the script exits cleanly without touching anything.
+  keycloak-init:
+    image: alpine:latest
+    container_name: stargate-keycloak-init
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    environment:
+      KEYCLOAK_ADMIN_USER: ${KEYCLOAK_ADMIN_USER:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
     volumes:
       - ./scripts:/scripts:ro
-    entrypoint: /bin/sh /scripts/init-idagent.sh
+    entrypoint: /bin/sh -c "apk add --no-cache curl jq > /dev/null && /scripts/init-keycloak.sh"
+    networks:
+      - stargate-network
+
+  # Nginx reverse proxy in front of Keycloak.
+  # Forwards X-Forwarded-* headers so Keycloak knows its public URL/port,
+  # which is required for correct OIDC issuer URLs and cookie behaviour.
+  keycloak-proxy:
+    image: nginx:alpine
+    container_name: stargate-keycloak-proxy
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    volumes:
+      - ./config/nginx/keycloak.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./config/nginx/ssl:/etc/nginx/ssl:ro
+    ports:
+      - "8180:8080"
+    networks:
+      - stargate-network
+
+  # Generates /config/apisix/generated/apisix.yaml from the template by
+  # substituting KEYCLOAK_APISIX_CLIENT_SECRET with envsubst.
+  apisix-init:
+    image: alpine:latest
+    container_name: stargate-apisix-init
+    volumes:
+      - ./config/apisix/apisix.yaml.template:/templates/apisix.yaml.template:ro
+      - ./config/apisix/generated:/output
+    environment:
+      KEYCLOAK_APISIX_CLIENT_SECRET: ${KEYCLOAK_APISIX_CLIENT_SECRET:-changeme}
+    command: >
+      sh -c "apk add --no-cache gettext &&
+             envsubst '$$KEYCLOAK_APISIX_CLIENT_SECRET' < /templates/apisix.yaml.template > /output/apisix.yaml &&
+             echo 'APISIX config generated'"
+    networks:
+      - stargate-network
+
+  nats:
+    image: nats:2.14-alpine
+    container_name: stargate-nats
+    restart: unless-stopped
+    command:
+      - "-m"
+      - "8222"
+      - "--config"
+      - "/etc/nats/nats.conf"
+    volumes:
+      - ./config/nats:/etc/nats:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8222/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
     networks:
       - stargate-network
 
@@ -167,6 +246,8 @@ services:
         condition: service_healthy
       vault-init:
         condition: service_completed_successfully
+      irisagent:
+        condition: service_started
     environment:
       # HTTP Server
       HTTP_HOST: ""
@@ -175,11 +256,11 @@ services:
       HTTP_WRITE_TIMEOUT: "10s"
       HTTP_IDLE_TIMEOUT: "60s"
       METRICS_ADDR: ":2112"
-      
+
       # Database
       DB_URI: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/smimekeys_client"
       DB_LOG_QUERIES: "false"
-      
+
       # Vault
       PRIVATE_KEY_STORE: "vault"
       VAULT_ADDRESS: "http://vault:8200"
@@ -188,27 +269,27 @@ services:
       VAULT_KV2_MAX_VERSIONS: "2"
       VAULT_KV2_CAS_REQUIRED: "false"
       VAULT_KV2_DELETE_VERSION_AFTER: "0s"
-      
+
       # CA Configuration (external CA)
       CERT_CA_ROOT: "false"
       CERT_CA_ADDR: "https://smimekeys-ca-dev.k8s.vereign-cdn.com"
       CERT_CA_EXPIRY: "8760h"
       CERT_CA_PUBLIC_HTTP_ADDR: ""
-      CERT_CA_IDAGENT_DOMAIN: "${CERT_CA_IDAGENT_DOMAIN:-}"
+      CERT_CA_IRISAGENT_DOMAIN: "${CERT_CA_IRISAGENT_DOMAIN:-}"
       CERT_CRL_REFRESH_PERIOD: "30m"
-      
-      # IDAgent integration (for peer certificate sync)
-      IDAGENT_ADDR: "http://idagent:8080"
-      
+
+      # IRISAgent integration
+      IRISAGENT_ADDR: "http://irisagent:8080"
+
       # Sync intervals
       PEER_SYNC_INTERVAL: "30m"
       ROOT_SYNC_INTERVAL: "30m"
-      
+
       # LDAP (disabled - uncomment and set LDAP_ADDR to enable)
       # LDAP_ADDR: "ldap://ldap_server:389"
       # LDAP_USERNAME: "cn=admin,dc=seppmailserver,dc=ch"
       # LDAP_BASE_DN: "ou=publicHINKeys,dc=seppmailserver,dc=ch"
-      
+
       LOG_LEVEL: "debug"
     ports:
       - "8081:8080"
@@ -231,20 +312,20 @@ services:
       HTTP_IDLE_TIMEOUT: "120s"
       HTTP_READ_TIMEOUT: "60s"
       HTTP_WRITE_TIMEOUT: "60s"
-      
+
       # Database
       DB_URI: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/policy"
       DB_LOG_QUERIES: "false"
       DB_NOTIFIER_MAX_RETRY_ATTEMPTS: "10"
-      
+
       # Vault
       VAULT_ADDRESS: "http://vault:8200"
       VAULT_TOKEN: "${VAULT_TOKEN}"
       VAULT_MOUNT_PATH: "secret-policy"
-      
+
       # Metrics
       METRICS_ADDR: ":2112"
-      
+
       LOG_LEVEL: "INFO"
     ports:
       - "8082:8080"
@@ -252,9 +333,10 @@ services:
     networks:
       - stargate-network
 
-  idagent:
-    image: registry.vereign.io/svdh/idagent:${IDAGENT_VERSION:-dev}
-    container_name: stargate-idagent
+  irisagent:
+    image: registry.vereign.io/svdh/irisagent:${IRISAGENT_VERSION:-dev}
+    container_name: stargate-irisagent
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
@@ -270,18 +352,18 @@ services:
       HTTP_READ_TIMEOUT: "60s"
       HTTP_WRITE_TIMEOUT: "60s"
       METRICS_ADDR: ":2112"
-      
+
       # Database
-      DB_URI: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/idagent"
-      
+      DB_URI: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/irisagent"
+
       # Vault
       VAULT_ADDRESS: "http://vault:8200"
       VAULT_TOKEN: "${VAULT_TOKEN}"
-      VAULT_MOUNT_PATH: "secret-idagent"
-      VAULT_KV2_MAX_VERSIONS: "10"
+      VAULT_MOUNT_PATH: "secret-irisagent"
+      VAULT_KV2_MAX_VERSIONS: "2"
       VAULT_KV2_CAS_REQUIRED: "false"
       VAULT_KV2_DELETE_VERSION_AFTER: "0s"
-      
+
       # S3
       S3_HOSTNAME: "minio:9000"
       S3_ACCESS_KEY: "${MINIO_ROOT_USER:-minioadmin}"
@@ -289,36 +371,27 @@ services:
       S3_SECURE: "false"
       S3_BUCKET_NAME: "${S3_BUCKET_NAME:-stargate-bucket}"
       S3_MESSAGE_BUCKET: "${S3_BUCKET_NAME:-stargate-bucket}"
-      
+
       # External services
-      SERVICE_PUBLIC_ADDR: "http://localhost:8083"
-      ISSUER_SERVICE_ADDR: "https://vereign-issuer.vrgnservices.eu"
-      VERIFIER_SERVICE_ADDR: "https://vereign-verifier.vrgnservices.eu:4433"
-      WEBHOOK_CALLBACK_ADDR: ""
       MXENGINE_ADDR: "http://mxengine:8080"
       SMIMEKEYS_ADDR: "http://smimekeys-client:8080"
-      
+
+      # NATS
+      NATS_ADDR: "nats://nats:4222"
+
       # WireGuard
-      WG_LOCAL_IP: "${WG_LOCAL_IP:-10.0.0.1}"
+      WG_LOCAL_IP: "${WG_LOCAL_IP}"
       WG_INTERFACE_PORT: "${WG_INTERFACE_PORT:-19818}"
       WG_TRANSPORT_MODE: "${WG_TRANSPORT_MODE:-tcp}"
-      WG_DNS_SERVERS: "8.8.8.8,8.8.4.4,1.1.1.1"
-      
-      # WireGuard TCP tuning
-      WG_TCP_IDLE_TIMEOUT: "300s"
-      WG_TCP_IO_TIMEOUT: "30s"
-      WG_TCP_POLLING_TIMEOUT: "5s"
-      WG_TCP_KEEPALIVE_PERIOD: "30s"
-      WG_TCP_DIAL_TIMEOUT: "30s"
-      WG_TCP_RECV_CHANNEL_SIZE: "1024"
-      WG_TCP_CHANNEL_SEND_TIMEOUT: "5s"
-      
+
+      # Dashboard config fetch
+      REMOTE_CONFIG_URL: "http://dashboard:3000/api/internal/installation-config?service=irisagent"
+
       LOG_LEVEL: "debug"
     ports:
       - "8083:8080"
       - "2114:2112"
-      - "${WG_INTERFACE_PORT:-19818}:${WG_INTERFACE_PORT:-19818}/udp"  # WireGuard tunnel (UDP)
-      - "${WG_INTERFACE_PORT:-19818}:${WG_INTERFACE_PORT:-19818}/tcp"  # WireGuard tunnel (TCP)
+      - "${WG_INTERFACE_PORT:-19818}:${WG_INTERFACE_PORT:-19818}/tcp" # WireGuard tunnel (TCP)
     networks:
       - stargate-network
 
@@ -332,6 +405,8 @@ services:
         condition: service_completed_successfully
       minio-init:
         condition: service_completed_successfully
+      irisagent:
+        condition: service_started
     environment:
       # HTTP Server
       LOG_LEVEL: "info"
@@ -343,7 +418,7 @@ services:
       INBOUND_HTTP_IDLE_TIMEOUT: "60s"
       INBOUND_HTTP_MAX_SIZE: "20971520"
       INBOUND_HTTP_PUBLIC_ADDRESS: "${MXENGINE_PUBLIC_ADDRESS:-http://localhost:8084}"
-      
+
       # SMTP
       INBOUND_SMTP_PUBLIC_HOSTNAME: "localhost"
       INBOUND_SMTP_HOST: ""
@@ -352,18 +427,18 @@ services:
       INBOUND_SMTP_MAX_SIZE: "20971520"
       INBOUND_SMTP_TLS: "false"
       INBOUND_SMTP_AUTH: "false"
-      
+
       # Database
       DB_URI: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/mxengine"
       DB_LOG_QUERIES: "false"
-      
+
       # S3
       S3_HOSTNAME: "minio:9000"
       S3_ACCESS_KEY: "${MINIO_ROOT_USER:-minioadmin}"
       S3_SECRET_KEY: "${MINIO_ROOT_PASSWORD:-minioadmin}"
       S3_SECURE: "false"
       S3_BUCKET_NAME: "${S3_BUCKET_NAME:-stargate-bucket}"
-      
+
       # Vault
       VAULT_ADDRESS: "http://vault:8200"
       VAULT_TOKEN: "${VAULT_TOKEN}"
@@ -372,11 +447,12 @@ services:
       #Smimekeys
       SMIME_ENABLED: "true"
       SMIMEKEYS_ADDR: "http://smimekeys-client:8080"
-      
+      SMIME_DOMAIN_CACHE_EXPIRY: "3m"
+
       # Policy
       POLICY_ADDR: "http://policy:8080"
       POLICY_OUTBOUND: "outbound/delivery"
-      
+
       # Outbound (disabled for local)
       OUTBOUND_WORKERS: "15"
       OUTBOUND_QUEUE_POLL_INTERVAL: "1s"
@@ -385,26 +461,25 @@ services:
       SEALER: "false"
       OUTBOUND_SEALER_MX_DOMAIN: "${OUTBOUND_SEALER_MX_DOMAIN}"
       OUTBOUND_SEAL_ADDR: ""
-      OUTBOUND_SMTP_HOST: "${OUTBOUND_SMTP_HOST:-postfix-relay}"
+      OUTBOUND_SMTP_HOST: "${OUTBOUND_SMTP_HOST:-postfixconf}"
       OUTBOUND_SMTP_PORT: "${OUTBOUND_SMTP_PORT:-10026}"
       OUTBOUND_SMIME_HOST: ""
       OUTBOUND_SMIME_PORT: ""
-      OUTBOUND_SMTP_LOCAL_DOMAINS: "localhost,${MAIL_DOMAINS:-${MAIL_DOMAIN}}"
-      OUTBOUND_IDAGENT_ADDR: "http://idagent:8080"
+      OUTBOUND_IRISAGENT_ADDR: "http://irisagent:8080"
       # OUTBOUND_SMTP_USER: "seal@vereign-cdn.com"
       # OUTBOUND_SMTP_PASS: "SecureMessage"
       # OUTBOUND_SMTP_AUTH: "PLAIN"
-      
+
       # Pending message handling
       PENDING_WATCHER_INTERVAL: "20s"
       PENDING_MESSAGE_EXPIRATION: "1m"
-      
+
       # Archive
       ARCHIVE_INTERVAL: "30m"
       ARCHIVE_RETENTION_PERIOD: "87672h"
       ARCHIVE_BATCH_SIZE: "1000"
       WAIT_BEFORE_ARCHIVE: "2160h"
-      
+
       # Metrics
       METRICS_ADDR: ":2112"
     ports:
@@ -413,6 +488,89 @@ services:
       - "2116:2112"
     tmpfs:
       - /tmp:size=100M
+    networks:
+      - stargate-network
+
+  apisix:
+    image: apache/apisix:3.15.0-debian
+    container_name: stargate-apisix
+    depends_on:
+      apisix-init:
+        condition: service_completed_successfully
+      keycloak:
+        condition: service_healthy
+    environment:
+      APISIX_ADMIN_KEY: ${APISIX_ADMIN_KEY:-changeme}
+    volumes:
+      - ./config/apisix/config.yaml:/usr/local/apisix/conf/config.yaml:ro
+      - ./config/apisix/generated/apisix.yaml:/usr/local/apisix/conf/apisix.yaml
+    ports:
+      - "9080:9080" # Gateway — main entry point for API traffic
+      - "9180:9180" # Admin API (read-only in standalone mode)
+      - "9091:9091" # Prometheus metrics
+    healthcheck:
+      test: "bash -c \"{ printf >&3 'GET /v1/healthcheck  HTTP/1.0\r\nHost: localhost\r\n\r\n'; cat <&3; } 3<>/dev/tcp/localhost/9090 | head -1 | grep 200\" "
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    networks:
+      - stargate-network
+
+  dashboard:
+    image: registry.vereign.io/svdh/dashboard-hin:${DASHBOARD_VERSION:-dev}
+    container_name: stargate-dashboard
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      apisix:
+        condition: service_healthy
+    environment:
+      # API gateway base URL (all backend calls go through APISIX)
+      BASE_URL: "http://apisix:9080"
+      NEXT_PUBLIC_APP_URL: "${DASHBOARD_PUBLIC_URL:-https://localhost:3000}"
+      SHOW_DEV_PAGES: "${DASHBOARD_SHOW_DEV_PAGES:-false}"
+      IS_ROOT: "false"
+
+      # Base URL used by the auth library to construct the OAuth redirect_uri.
+      # Must match the URL the browser uses to reach the dashboard.
+      NEXTAUTH_URL: "${DASHBOARD_PUBLIC_URL:-https://localhost:3000}"
+      AUTH_URL: "${DASHBOARD_PUBLIC_URL:-https://localhost:3000}"
+
+      # Keycloak OIDC
+      KEYCLOAK_URL: "${KEYCLOAK_PUBLIC_URL:-https://localhost:8180}"
+      KEYCLOAK_REALM: stargate
+      KEYCLOAK_CLIENT_ID: ${KEYCLOAK_DASHBOARD_CLIENT_ID:-dashboard}
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_DASHBOARD_CLIENT_SECRET:-changeme}
+
+      # Database (Prisma)
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/dashboard"
+
+      NODE_ENV: production
+      # Allow self-signed TLS cert on the Keycloak nginx proxy
+      NODE_TLS_REJECT_UNAUTHORIZED: "0"
+
+      # Root instance URL and domain (used for cross-instance API calls)
+      ROOT_URL: "${DASHBOARD_ROOT_URL:-https://apisix.k8s.vereign-cdn.com}"
+      ROOT_DOMAIN: "${DASHBOARD_ROOT_DOMAIN:-vereign-cdn.com}"
+      NATS_URL: "nats://nats:4222"
+
+    networks:
+      - stargate-network
+
+  # Nginx reverse proxy in front of the dashboard.
+  # Terminates TLS so the browser delivers Secure cookies to the dashboard,
+  # which the auth library requires (Secure+SameSite=None are hardcoded).
+  dashboard-proxy:
+    image: nginx:alpine
+    container_name: stargate-dashboard-proxy
+    depends_on:
+      - dashboard
+    volumes:
+      - ./config/nginx/dashboard.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./config/nginx/ssl:/etc/nginx/ssl:ro
+    ports:
+      - "3000:8080"
     networks:
       - stargate-network
 
@@ -430,11 +588,11 @@ services:
       - /:/rootfs:ro
       - textfile_collector:/textfile_collector:ro
     command:
-      - '--path.procfs=/host/proc'
-      - '--path.sysfs=/host/sys'
-      - '--path.rootfs=/rootfs'
-      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
-      - '--collector.textfile.directory=/textfile_collector'
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/rootfs"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+      - "--collector.textfile.directory=/textfile_collector"
     ports:
       - "9100:9100"
     networks:
@@ -448,7 +606,7 @@ services:
     depends_on:
       - smimekeys-client
       - policy
-      - idagent
+      - irisagent
       - mxengine
     volumes:
       - ./scripts/gather-app-versions.sh:/scripts/gather-app-versions.sh:ro
@@ -465,39 +623,27 @@ services:
     networks:
       - stargate-network
 
-  postfix-relay:
-    build:
-      context: ./config/postfix
-      dockerfile: Dockerfile
-    container_name: stargate-postfix-relay
+  postfixconf:
+    image: registry.vereign.io/svdh/postfixconf:${POSTFIXCONF_VERSION:-dev}
+    container_name: stargate-postfixconf
     restart: unless-stopped
     environment:
-      # Required: Mail domains to relay for, comma-separated (auto-configures from DNS)
-      MAIL_DOMAINS: "${MAIL_DOMAINS:-${MAIL_DOMAIN}}"
-      # Optional: Hostname for Postfix (default: mail.<first domain>)
-      MAIL_HOSTNAME: "${MAIL_HOSTNAME:-}"
+      # Required: smimekeys backend the daemon queries per recipient
+      SMIMEKEYS_ADDR: "http://smimekeys-client:8080"
+      # Required by boky/postfix base — sender domains are managed dynamically
+      # by the daemon at runtime, no static list at boot
+      ALLOW_EMPTY_SENDER_DOMAINS: "true"
       # MXEngine integration (Docker service name and port)
       MXENGINE_HOST: "${MXENGINE_HOST:-mxengine}"
       MXENGINE_PORT: "${MXENGINE_PORT:-1587}"
-      # Optional: Enable IPv6 (default: false, ipv4 only)
-      ENABLE_IPV6: "${POSTFIX_ENABLE_IPV6:-false}"
-      # Optional: DNS timeout in seconds (default: 2)
-      DNS_TIMEOUT: "${DNS_TIMEOUT:-2}"
-      # Optional: Specific DNS server to use
-      DNS_SERVER: "${DNS_SERVER:-}"
-      # Optional: Manual relay host (skip MX lookup for transport map)
-      RELAYHOST: "${RELAYHOST:-}"
-      # Optional: Per-domain relay mapping (overrides MX lookup for listed domains)
-      DOMAIN_RELAY_MAP: "${DOMAIN_RELAY_MAP:-}"
-      # Optional: Manual allowed networks (skip SPF lookup)
-      MYNETWORKS: "${POSTFIX_MYNETWORKS:-}"
-      # Server public IP (used to filter own MX records and prevent mail loops)
-      SERVER_STATIC_IP: "${SERVER_STATIC_IP:-}"
+      DASHBOARD_CONFIG_URL: "http://dashboard:3000/api/internal/installation-config?service=postfix"
     volumes:
       - postfix_spool:/var/spool/postfix
     ports:
       - "25:25"
       - "10026:10026"
+    depends_on:
+      - smimekeys-client
     networks:
       - stargate-network
 

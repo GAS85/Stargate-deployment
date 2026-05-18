@@ -6,8 +6,6 @@
 
     Interfaces, configuration, and behaviour may change between releases.
 
-    A web-based admin UI dashboard is currently under development. Until it is released, all configuration and operations are performed over the terminal using the scripts in this repository.
-
 ![Logo](https://www.hin.ch/files/png1/hero/stargate_visual.png)
 
 [What is Stargate?](https://www.hin.ch/de/services/hin-mail/hin-gateway.cfm){ .md-button style="position:relative;left:50%;transform:translate(-50%,0%);" }
