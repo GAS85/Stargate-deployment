@@ -6,8 +6,6 @@
 
     Interfaces, configuration, and behaviour may change between releases.
 
-    A web-based admin UI dashboard is in the works - until it ships, all configuration and operations are performed over the terminal using the scripts in this repository.
-
 ![Logo](https://www.hin.ch/files/png1/hero/stargate_visual.png)
 
 ## Quick Start

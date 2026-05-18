@@ -182,6 +182,7 @@ WG_TRANSPORT_MODE=tcp
 
 | Service | URL/Port |
 |---------|----------|
+| Dashboard | <https://localhost:3000> |
 | smimekeys-client | <http://localhost:8081> |
 | policy | <http://localhost:8082> |
 | irisagent | <http://localhost:8083> |
@@ -189,6 +190,8 @@ WG_TRANSPORT_MODE=tcp
 | mxengine SMTP | localhost:1587 |
 | Postfix SMTP | localhost:25 |
 | Postfix Reinjection | localhost:10026 (internal) |
+| APISIX Gateway | <http://localhost:9080> |
+| Keycloak | <https://localhost:8180> |
 | Vault UI | <http://localhost:8200> |
 | MinIO Console | <http://localhost:9001> |
 | PostgreSQL | localhost:5432 |

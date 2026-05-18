@@ -7,9 +7,6 @@
 > $\textcolor{red}{\textsf{\textbf{Stargate (HIN MGW) is under active development.}}}$
 >
 > $\textcolor{red}{\textsf{\textbf{Interfaces, configuration, and behaviour may change between releases.}}}$
->
-> $\textcolor{red}{\textsf{\textbf{A web-based admin UI dashboard is in the works - until it ships,}}}$
-> $\textcolor{red}{\textsf{\textbf{all configuration and operations are performed over the terminal using the scripts in this repository.}}}$
 
 Recommendations and Expectations for the Alpha Phase
 
@@ -26,10 +23,11 @@ The beta phase will be announced separately. During beta, the system will still 
 ### Applications
 
 * **smimekeys-client** - S/MIME keys client service (port 8081)
-
 * **policy** - Policy service (port 8082)
 * **irisagent** - IRIS Agent service (port 8083, WireGuard: 19818/tcp)
 * **mxengine** - MX Engine service (port 8084, SMTP: 1587)
+* **postfixconf** - Postfix mail relay with configuration daemon (port 25, API: 8080)
+* **dashboard** - Web-based admin UI for onboarding, domain management, and monitoring (port 3000)
 * **policy-sync** - Syncs OPA/Rego policies from Git repository to database (runs continuously)
 
 ## Docs

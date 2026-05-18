@@ -5,8 +5,8 @@ This guide covers all DNS records required for a working Stargate deployment. Co
 Throughout this guide:
 
 - `<STARGATE_IP>` - your Stargate server's public static IP address (`SERVER_STATIC_IP` in `customer-config.sh`)
-- `<MAIL_HOSTNAME>` - the FQDN of the Stargate relay (e.g. `mail.example.ch`; set via `MAIL_HOSTNAME` in `customer-config.sh`)
-- `<YOUR_DOMAIN>` - your mail domain (e.g. `example.ch`; set via `MAIL_DOMAINS` in `customer-config.sh`)
+- `<MAIL_HOSTNAME>` - the FQDN of the Stargate relay (e.g. `mail.example.ch`; configured via the dashboard's `/postfix` page)
+- `<YOUR_DOMAIN>` - your mail domain (e.g. `example.ch`; configured via the dashboard's `/postfix` page)
 
 ---
 
@@ -166,11 +166,11 @@ selector2._domainkey.<YOUR_DOMAIN>.    CNAME    selector2-<YOUR_DOMAIN_DASHED>._
 
 ## Multi-Domain Setup
 
-For deployments handling multiple mail domains (set via `MAIL_DOMAINS` in `customer-config.sh`), each domain needs its own set of DNS records.
+For deployments handling multiple mail domains (configured via the dashboard's `/postfix` page), each domain needs its own set of DNS records.
 
 ### Per-Domain Records
 
-For each domain in `MAIL_DOMAINS`:
+For each configured domain:
 
 | Record | Required |
 |--------|----------|
@@ -193,11 +193,7 @@ domain2.ch    MX    15    mail.domain2.ch.
 domain2.ch    MX    20    exchange2.domain2.ch.
 ```
 
-Alternatively, use the `DOMAIN_RELAY_MAP` setting in `customer-config.sh` to override MX-based routing with explicit per-domain relay targets:
-
-```bash
-DOMAIN_RELAY_MAP="domain1.ch:[exchange1.domain1.ch]:25,domain2.ch:[exchange2.domain2.ch]:25"
-```
+Alternatively, configure explicit per-domain relay targets via the dashboard's `/postfix` page (relay host field per domain) to override MX-based routing.
 
 ---
 
@@ -271,9 +267,9 @@ Online tools:
 Postfix is rejecting the sending server because its IP is not in `mynetworks`. This usually means:
 
 - The SPF record for your domain does not include the sending server's IP range
-- The Postfix container has not restarted since the SPF record was updated
+- The Postfix configuration has not been reloaded since the SPF record was updated
 
-Restart the Postfix container to re-read SPF: `docker compose restart postfix-relay`
+Reload the Postfix configuration via the dashboard's `/postfix` page (submit the config again), or restart the container: `docker compose restart postfixconf`
 
 ### Mail flagged as spam / "can't verify sender"
 

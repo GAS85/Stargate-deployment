@@ -301,6 +301,7 @@ docker compose down -v   # The -v flag removes volumes!
 | Script | Purpose |
 |--------|--------|
 | `install.sh` | First-time installation (Docker, Vault). Domain/cert/peer setup happens in the dashboard afterwards. |
+| `update.sh` | Update service images (preserves Vault token, recreates containers) |
 | `start.sh` | Start services and unseal Vault |
 | `stop.sh` | Stop containers (data preserved) |
 | `backup.sh` | Full backup (database, Vault keys, config, certificates) |
@@ -308,6 +309,7 @@ docker compose down -v   # The -v flag removes volumes!
 | `purge.sh` | Delete ALL data (requires confirmation) |
 | `health-check.sh` | Comprehensive health check of all services (exit 0 = healthy, 1 = failures) |
 | `init-vault.sh` | Vault initialization (used by `vault-init` container, not called directly) |
+| `init-keycloak.sh` | Keycloak admin password setup (used by `keycloak-init` container, not called directly) |
 | `gather-app-versions.sh` | Collects app versions from `/liveness` endpoints for node-exporter (runs in `version-collector` container) |
 
 ## Configuration Files
