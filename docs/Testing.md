@@ -4,8 +4,6 @@
 
     Interfaces, configuration, and behaviour may change between releases.
 
-    A web-based admin UI dashboard is currently under development. Until it is released, all configuration and operations are performed over the terminal using the scripts in this repository.
-
 Recommendations and Expectations for the Alpha Phase
 
 * As HIN MGW is still under rapid development, you should expect periodic requests to update your instance.

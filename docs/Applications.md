@@ -1,30 +1,32 @@
 ## Applications
 
 * **smimekeys-client** - S/MIME keys client service (port 8081)
-
 * **policy** - Policy service (port 8082)
-* **idagent** - ID Agent service (port 8083, WireGuard: 19818/tcp+udp)
+* **irisagent** - IRIS Agent service (port 8083, WireGuard: 19818/tcp)
 * **mxengine** - MX Engine service (port 8084, SMTP: 1587)
+* **postfixconf** - Postfix mail relay with configuration daemon (port 25, API: 8080)
+* **dashboard** - Web-based admin UI for onboarding, domain management, and monitoring (port 3000)
 * **policy-sync** - Syncs OPA/Rego policies from Git repository to database (runs continuously)
 
 ## Infrastructure
 
 * **PostgreSQL** - Database (port 5432)
-
 * **Vault** - Secrets management (port 8200)
 * **MinIO** - S3-compatible storage (API: 9000, Console: 9001)
-* **Postfix Relay** - Mail relay server (port 25) - auto-configures from DNS
+* **Keycloak** - Identity provider and OIDC authentication (port 8180)
+* **APISIX** - API gateway with OIDC bearer auth (port 9080)
+* **NATS** - Inter-service messaging (triggers Postfix reloads from dashboard)
 
 ## Init Containers
 
 * **vault-init** - Initializes and unseals Vault on first run
-
-* **idagent-init** - Creates WireGuard peer connection in idagent database
+* **minio-init** - Creates the S3 bucket
+* **apisix-init** - Generates APISIX config from template
+* **keycloak-init** - Sets initial admin password
 
 ## Monitoring
 
 * **node-exporter** - Host metrics for Prometheus (port 9100)
-
 * **version-collector** - Collects app versions from `/liveness` endpoints for node-exporter
 * **Promtail** - Log collector for Loki (ships app logs)
 

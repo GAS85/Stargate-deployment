@@ -13,42 +13,25 @@
 # ==============================================================================
 
 # Static public IP address of this VM/server.
-# This is the single network identity for the deployment — used to derive:
+# This is the single network identity for the deployment - used to derive:
 #   - WireGuard local IP (unique tunnel address)
 #   - MXEngine public address (seal callbacks)
 # Must be a real routable static IP (not a private/NAT address).
-SERVER_STATIC_IP="YOUR_SERVER_STATIC_IP"
+SERVER_STATIC_IP=""
 
 # ==============================================================================
 # REQUIRED: Customer Identification
 # ==============================================================================
 
 # Customer/Organization name (used for identification and logging)
-CUSTOMER_NAME="Example Company Corp"
+CUSTOMER_NAME="vereign alpha"
 
 # Deployment name (used for log labels and identification)
 DEPLOYMENT_NAME="stargate-example"
 
 # ==============================================================================
-# REQUIRED: Mail Configuration
+# OPTIONAL: MXEngine public address
 # ==============================================================================
-
-# Mail domains for the Postfix relay (comma-separated for multiple domains)
-# MX records for each domain determine where to relay mail
-# SPF records for each domain determine which networks are allowed to send
-MAIL_DOMAINS="example.com"
-
-# Public FQDN of this Stargate as an SMTP relay.
-# Used in the SMTP EHLO greeting, in the TLS certificate subject, and as a SAN
-# on the S/MIME signing certificate. External mail servers and (if you relay
-# back through M365) Exchange Online's inbound connector check this value, so
-# it must be a real, DNS-resolvable FQDN that you control - not a placeholder.
-#
-# If left empty, it auto-derives to mail.<first domain in MAIL_DOMAINS>.
-# Override when:
-#   - the auto-derived value does not actually exist in DNS, or
-#   - your Stargate uses a different public hostname (e.g. stargate01.<domain>).
-MAIL_HOSTNAME=""
 
 # MXEngine public address (for seal strategy callbacks)
 # Auto-derived from SERVER_STATIC_IP if left empty: http://<SERVER_STATIC_IP>:8084
@@ -59,24 +42,8 @@ MXENGINE_PUBLIC_ADDRESS=""
 # REQUIRED: S/MIME Certificate Configuration
 # ==============================================================================
 
-# DNS names for the certificate (comma-separated)
-# Auto-derived from MAIL_DOMAINS + MAIL_HOSTNAME if left empty.
-# Override only if you need different SANs on the certificate.
-CERT_DNS_NAMES=""
-
-# Organization name for the certificate subject
-# Defaults to CUSTOMER_NAME if left empty.
-CERT_ORGANIZATION=""
-
-# Common Name for the certificate subject
-# Defaults to "<CUSTOMER_NAME> Mail Signing" if left empty.
-CERT_COMMON_NAME=""
-
-# Countries for the certificate subject (comma-separated, 2-letter codes)
-CERT_COUNTRIES="US"
-
-# CA IDAgent domain for certificate issuance via WireGuard tunnel
-CERT_CA_IDAGENT_DOMAIN="hintest.ch"
+# CA IRIS AGENT domain for certificate issuance via WireGuard tunnel
+CERT_CA_IRISAGENT_DOMAIN="vereign-cdn.com"
 
 # ==============================================================================
 # AUTO-GENERATED: Vault Configuration
@@ -111,37 +78,26 @@ S3_BUCKET_NAME="stargate-bucket"
 # Use "dev" for the latest development builds,
 # or specify exact versions like "v0.0.3"
 
-SMIMEKEYS_VERSION="v0.0.7"
-POLICY_VERSION="v0.0.5"
-IDAGENT_VERSION="v0.0.8"
-MXENGINE_VERSION="v0.0.36"
+SMIMEKEYS_VERSION="dev"
+POLICY_VERSION="dev"
+IRISAGENT_VERSION="dev"
+MXENGINE_VERSION="dev"
 POLICY_SYNC_VERSION="dev"
+DASHBOARD_VERSION="dev"
+POSTFIXCONF_VERSION="dev"
 
 # ==============================================================================
 # OPTIONAL: Advanced Mail Configuration
 # ==============================================================================
 
 # Sealer MX domain for outbound seal delivery
-OUTBOUND_SEALER_MX_DOMAIN="hintest.ch"
+OUTBOUND_SEALER_MX_DOMAIN="vereign-cdn.com"
 
-# External SMTP host for outbound delivery (default: postfix-relay)
+# External SMTP host for outbound delivery (default: postfixconf)
 # Set if the customer uses an external Postfix server
 OUTBOUND_SMTP_HOST=""
 # External SMTP port for outbound delivery (default: 10026)
 OUTBOUND_SMTP_PORT=""
-
-POSTFIX_ENABLE_IPV6="false"
-RELAYHOST=""
-POSTFIX_MYNETWORKS=""
-DNS_SERVER=""
-DNS_TIMEOUT="2"
-
-# Per-domain relay mapping (optional, overrides MX lookup for listed domains)
-# Format: comma-separated domain:[relay_host]:port pairs
-# Domains not listed here fall back to RELAYHOST (if set) or MX lookup.
-# Example with multiple domains routed to different Exchange servers:
-#   DOMAIN_RELAY_MAP="domain1.ch:[exchange1.domain1.ch]:25,domain2.ch:[exchange2.domain2.ch]:25"
-DOMAIN_RELAY_MAP=""
 
 # ==============================================================================
 # OPTIONAL: Policy Sync Configuration
@@ -166,9 +122,37 @@ POLICY_SYNC_VERSION="dev"
 LOKI_URL="https://loki.infra.vereign-cdn.com"
 
 # ==============================================================================
+# OPTIONAL: Keycloak / APISIX / Dashboard Configuration
+# ==============================================================================
+
+# Keycloak admin console credentials
+KEYCLOAK_ADMIN_USER="admin"
+KEYCLOAK_ADMIN_PASSWORD=""  # Auto-generated if empty
+
+# Generate strong random values (e.g. openssl rand -hex 32).
+# IMPORTANT: change from defaults before exposing Keycloak to any network.
+KEYCLOAK_APISIX_CLIENT_SECRET=""    # Auto-generated if empty
+KEYCLOAK_DASHBOARD_CLIENT_SECRET="" # Auto-generated if empty
+
+# APISIX admin API key (for the debug admin endpoint on port 9180)
+APISIX_ADMIN_KEY=""  # Auto-generated if empty
+
+# Public-facing URLs (must be reachable from the end-user's browser)
+KEYCLOAK_PUBLIC_URL=""      # Default: https://<SERVER_STATIC_IP>:8180
+DASHBOARD_PUBLIC_URL=""     # Default: https://<SERVER_STATIC_IP>:3000
+
+# Show developer pages in the dashboard UI
+DASHBOARD_SHOW_DEV_PAGES="false"
+
+# Root instance URL (the central APISIX gateway that this instance connects to)
+DASHBOARD_ROOT_URL="https://apisix.k8s.vereign-cdn.com"
+# Root domain (used for cross-instance service discovery)
+DASHBOARD_ROOT_DOMAIN="vereign-cdn.com"
+
+# ==============================================================================
 # REQUIRED: WireGuard Configuration
 # ==============================================================================
-# Local WireGuard settings for this IDAgent instance.
+# Local WireGuard settings for this IRIS AGENT instance.
 # Contact Vereign to get your assigned WireGuard IP address.
 
 # WireGuard private key (optional - auto-generated if empty, then saved back here)
@@ -188,40 +172,6 @@ WG_INTERFACE_PORT="19818"
 # WireGuard transport mode: "tcp" (default) or "udp"
 # Set to "udp" only if TCP tunneling causes issues
 WG_TRANSPORT_MODE=""
-
-# ==============================================================================
-# REQUIRED: WireGuard Peer Configuration
-# ==============================================================================
-# Configuration for WireGuard tunnel connection to the HIN Test IDAgent.
-# This enables secure agent-to-agent communication for sealed message delivery.
-# All customers connect to the HIN Test environment during this phase.
-
-# Unique connection identifier (auto-generated UUID v7 if left empty)
-WG_PEER_CONNECTION_ID=""
-
-# Human-readable name for this connection
-WG_PEER_NAME="hin-test"
-
-# WireGuard public key of the HIN Test IDAgent
-WG_PEER_PUBLIC_KEY="ol2zlG40M7+Rn81V9RUFmkIQV2ILLmEJHZww7HfoLxA="
-
-# HIN Test IDAgent endpoint
-WG_PEER_ENDPOINT="5.102.144.182:19818"
-
-# WireGuard IP address of the HIN Test IDAgent
-WG_PEER_IP="5.102.144.182"
-
-# Port for tunnel communication with HIN Test IDAgent
-WG_PEER_PORT="9090"
-
-# Allowed IPs for routing (defaults to WG_PEER_IP/32)
-WG_PEER_ALLOWED_IPS="5.102.144.182/32"
-
-# External identifier for HIN Test
-WG_PEER_EXTERNAL_ID="hintest.ch"
-
-# Description of this connection
-WG_PEER_DESCRIPTION="Connection to HIN Test IDAgent"
 
 # ==============================================================================
 # END OF CONFIGURATION

@@ -41,9 +41,9 @@ EXPECTED_RUNNING=(
   stargate-minio
   stargate-smimekeys-client
   stargate-policy
-  stargate-idagent
+  stargate-irisagent
   stargate-mxengine
-  stargate-postfix-relay
+  stargate-postfixconf
   stargate-promtail
   stargate-node-exporter
 )
@@ -82,7 +82,7 @@ echo "--- Liveness ---"
 declare -A LIVENESS_ENDPOINTS=(
   [smimekeys-client]=8081
   [policy]=8082
-  [idagent]=8083
+  [irisagent]=8083
   [mxengine]=8084
 )
 
@@ -138,7 +138,7 @@ else
   fail "PostgreSQL not ready"
 fi
 
-for db in smimekeys_client policy idagent mxengine; do
+for db in smimekeys_client policy irisagent mxengine; do
   count=$(docker exec stargate-postgres psql -U postgres -d "$db" -tAc "SELECT 1" 2>/dev/null)
   if [ "$count" = "1" ]; then
     pass "Database: $db"
@@ -168,7 +168,7 @@ echo ""
 # ------------------------------------------------------------------
 echo "--- WireGuard ---"
 
-wg_output=$(docker exec stargate-idagent wg show 2>/dev/null)
+wg_output=$(docker exec stargate-irisagent wg show 2>/dev/null)
 if [ $? -eq 0 ] && [ -n "$wg_output" ]; then
   peer_count=$(echo "$wg_output" | grep -c "^peer:")
   if [ "$peer_count" -gt 0 ]; then
@@ -187,7 +187,7 @@ if [ $? -eq 0 ] && [ -n "$wg_output" ]; then
     echo "$wg_output" | sed 's/^/         /'
   fi
 else
-  warn "WireGuard interface not available (idagent may still be initializing)"
+  warn "WireGuard interface not available (irisagent may still be initializing)"
 fi
 
 echo ""
@@ -197,7 +197,7 @@ echo ""
 # ------------------------------------------------------------------
 echo "--- Postfix ---"
 
-pf_status=$(docker exec stargate-postfix-relay postfix status 2>&1)
+pf_status=$(docker exec stargate-postfixconf postfix status 2>&1)
 if echo "$pf_status" | grep -q "is running"; then
   pass "Postfix running"
 else
@@ -205,7 +205,7 @@ else
 fi
 
 # Check port 25 is listening (use netstat since ss may not be available)
-port25=$(docker exec stargate-postfix-relay sh -c 'netstat -tlnp 2>/dev/null || ss -tlnp 2>/dev/null' | grep ":25 ")
+port25=$(docker exec stargate-postfixconf sh -c 'netstat -tlnp 2>/dev/null || ss -tlnp 2>/dev/null' | grep ":25 ")
 if [ -n "$port25" ]; then
   pass "Port 25 listening"
 else
@@ -213,7 +213,7 @@ else
 fi
 
 # Check reinjection port 10026
-port10026=$(docker exec stargate-postfix-relay sh -c 'netstat -tlnp 2>/dev/null || ss -tlnp 2>/dev/null' | grep ":10026 ")
+port10026=$(docker exec stargate-postfixconf sh -c 'netstat -tlnp 2>/dev/null || ss -tlnp 2>/dev/null' | grep ":10026 ")
 if [ -n "$port10026" ]; then
   pass "Port 10026 (reinjection) listening"
 else
@@ -221,7 +221,7 @@ else
 fi
 
 # Check mail queue
-queue=$(docker exec stargate-postfix-relay mailq 2>/dev/null)
+queue=$(docker exec stargate-postfixconf mailq 2>/dev/null)
 if echo "$queue" | grep -q "Mail queue is empty"; then
   pass "Mail queue empty"
 else
@@ -238,7 +238,7 @@ echo "--- Metrics ---"
 
 declare -A METRICS_ENDPOINTS=(
   [smimekeys-client]=2113
-  [idagent]=2114
+  [irisagent]=2114
   [policy]=2115
   [mxengine]=2116
   [node-exporter]=9100

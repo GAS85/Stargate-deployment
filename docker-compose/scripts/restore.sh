@@ -294,14 +294,11 @@ MINIO_ROOT_USER="${MINIO_ROOT_USER:-minioadmin}"
 MINIO_ROOT_PASSWORD="${MINIO_ROOT_PASSWORD:-minioadmin}"
 S3_BUCKET_NAME="${S3_BUCKET_NAME:-stargate-bucket}"
 
-SMIMEKEYS_VERSION="${SMIMEKEYS_VERSION:-latest}"
-POLICY_VERSION="${POLICY_VERSION:-latest}"
-IDAGENT_VERSION="${IDAGENT_VERSION:-latest}"
-MXENGINE_VERSION="${MXENGINE_VERSION:-latest}"
-
-MAIL_HOSTNAME="${MAIL_HOSTNAME:-mail.${MAIL_DOMAIN}}"
-POSTFIX_ENABLE_IPV6="${POSTFIX_ENABLE_IPV6:-false}"
-DNS_TIMEOUT="${DNS_TIMEOUT:-2}"
+SMIMEKEYS_VERSION="${SMIMEKEYS_VERSION:-dev}"
+POLICY_VERSION="${POLICY_VERSION:-dev}"
+IRISAGENT_VERSION="${IRISAGENT_VERSION:-dev}"
+MXENGINE_VERSION="${MXENGINE_VERSION:-dev}"
+POSTFIXCONF_VERSION="${POSTFIXCONF_VERSION:-dev}"
 
 LOKI_URL="${LOKI_URL:-https://loki.infra.vereign-cdn.com}"
 
@@ -309,15 +306,6 @@ LOKI_URL="${LOKI_URL:-https://loki.infra.vereign-cdn.com}"
 WG_LOCAL_IP="${WG_LOCAL_IP:-10.0.0.1}"
 WG_INTERFACE_PORT="${WG_INTERFACE_PORT:-19818}"
 WG_PRIVATE_KEY="${WG_PRIVATE_KEY:-}"
-
-# WireGuard peer configuration
-WG_PEER_CONNECTION_ID="${WG_PEER_CONNECTION_ID:-}"
-WG_PEER_NAME="${WG_PEER_NAME:-default}"
-WG_PEER_IP="${WG_PEER_IP:-10.0.0.2}"
-WG_PEER_PORT="${WG_PEER_PORT:-9090}"
-WG_PEER_ALLOWED_IPS="${WG_PEER_ALLOWED_IPS:-${WG_PEER_IP}/32}"
-WG_PEER_EXTERNAL_ID="${WG_PEER_EXTERNAL_ID:-}"
-WG_PEER_DESCRIPTION="${WG_PEER_DESCRIPTION:-WireGuard peer connection}"
 
 # If we have the old .env, try to preserve generated passwords
 if [ -f "$BACKUP_CONTENT/config/.env" ]; then
@@ -349,17 +337,10 @@ S3_BUCKET_NAME=$S3_BUCKET_NAME
 # Application Versions
 SMIMEKEYS_VERSION=$SMIMEKEYS_VERSION
 POLICY_VERSION=$POLICY_VERSION
-IDAGENT_VERSION=$IDAGENT_VERSION
+IRISAGENT_VERSION=$IRISAGENT_VERSION
 MXENGINE_VERSION=$MXENGINE_VERSION
 
-# Postfix Mail Relay
-MAIL_DOMAIN=$MAIL_DOMAIN
-MAIL_HOSTNAME=$MAIL_HOSTNAME
-POSTFIX_ENABLE_IPV6=$POSTFIX_ENABLE_IPV6
-DNS_TIMEOUT=$DNS_TIMEOUT
-DNS_SERVER=${DNS_SERVER:-}
-RELAYHOST=${RELAYHOST:-}
-POSTFIX_MYNETWORKS=${POSTFIX_MYNETWORKS:-}
+POSTFIXCONF_VERSION=$POSTFIXCONF_VERSION
 
 # Logging
 LOKI_URL=$LOKI_URL
@@ -378,17 +359,6 @@ POLICY_SYNC_INTERVAL=${POLICY_SYNC_INTERVAL:-1h}
 WG_LOCAL_IP=$WG_LOCAL_IP
 WG_INTERFACE_PORT=$WG_INTERFACE_PORT
 WG_PRIVATE_KEY=${WG_PRIVATE_KEY:-}
-
-# WireGuard Peer Configuration
-WG_PEER_CONNECTION_ID=$WG_PEER_CONNECTION_ID
-WG_PEER_NAME=$WG_PEER_NAME
-WG_PEER_PUBLIC_KEY=$WG_PEER_PUBLIC_KEY
-WG_PEER_ENDPOINT=$WG_PEER_ENDPOINT
-WG_PEER_IP=$WG_PEER_IP
-WG_PEER_PORT=$WG_PEER_PORT
-WG_PEER_ALLOWED_IPS=$WG_PEER_ALLOWED_IPS
-WG_PEER_EXTERNAL_ID=$WG_PEER_EXTERNAL_ID
-WG_PEER_DESCRIPTION=$WG_PEER_DESCRIPTION
 EOF
 
 echo "  ✓ Environment file generated"
@@ -403,7 +373,7 @@ echo "============================================"
 echo ""
 
 echo "Starting PostgreSQL, Vault, MinIO, Postfix..."
-docker compose up -d postgres vault minio postfix-relay
+docker compose up -d postgres vault minio postfixconf
 
 echo "Waiting for PostgreSQL to be ready..."
 for i in {1..30}; do
@@ -437,7 +407,7 @@ echo ""
 
 # Verify databases exist
 echo "Verifying databases..."
-for DB in smimekeys_client policy idagent mxengine; do
+for DB in smimekeys_client policy irisagent mxengine; do
   if docker exec stargate-postgres psql -U "$POSTGRES_USER" -lqt | cut -d \| -f 1 | grep -qw "$DB"; then
     echo "  ✓ $DB exists"
   else
@@ -491,14 +461,19 @@ else
   echo "  Vault is not initialized (fresh VM)"
   echo "  Running Vault initialization..."
   
-  # Run vault-init to initialize Vault
-  docker compose up vault-init
-  
-  # Wait for vault-init to complete
-  while docker compose ps vault-init 2>/dev/null | grep -q "running"; do
-    sleep 2
-  done
-  
+  # Run vault-init to initialize Vault.
+  # Use detached + `docker wait` so we capture the init container's exit
+  # code; `docker compose ps | grep running` never matches (status reads
+  # "Up ..." for live containers and the row disappears once they exit).
+  docker compose up -d vault-init
+
+  VAULT_INIT_EXIT=$(docker wait stargate-vault-init 2>/dev/null) || VAULT_INIT_EXIT=1
+  if [ "$VAULT_INIT_EXIT" != "0" ]; then
+    echo "  ✗ vault-init exited with code $VAULT_INIT_EXIT"
+    echo "    Check logs: docker compose logs vault-init"
+    exit 1
+  fi
+
   # Check if new keys were generated
   if [ -f "$SECRETS_DIR/vault-keys.json" ]; then
     NEW_TOKEN=$(jq -r '.root_token' "$SECRETS_DIR/vault-keys.json")
@@ -608,7 +583,7 @@ docker compose ps
 echo ""
 
 # Check service health
-SERVICES=("smimekeys-client:8081" "policy:8082" "idagent:8083" "mxengine:8084")
+SERVICES=("smimekeys-client:8081" "policy:8082" "irisagent:8083" "mxengine:8084")
 echo "Service health checks:"
 for svc in "${SERVICES[@]}"; do
   NAME="${svc%%:*}"
@@ -656,7 +631,7 @@ echo "  Service URLs:"
 echo "  -------------"
 echo "  smimekeys-client:  http://localhost:8081"
 echo "  policy:            http://localhost:8082"
-echo "  idagent:           http://localhost:8083"
+echo "  irisagent:         http://localhost:8083"
 echo "  mxengine:          http://localhost:8084"
 echo ""
 echo "  If services show errors, wait a minute and check:"
