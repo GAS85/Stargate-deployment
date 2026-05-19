@@ -79,30 +79,40 @@ example.ch.    MX    20    example-ch.mail.protection.outlook.com.
 
 ### SPF Record
 
-Add the Stargate server IP to your domain's SPF record so outbound mail relayed through it passes SPF checks at the recipient's end.
+Add the Stargate server IP **and the HIN sealer IP** to your domain's SPF record so outbound mail relayed through it passes SPF checks at the recipient's end.
 
 **If you use M365 / Exchange Online:**
 
 ```plain
-<YOUR_DOMAIN>.    TXT    "v=spf1 ip4:<STARGATE_IP> include:spf.protection.outlook.com -all"
+<YOUR_DOMAIN>.    TXT    "v=spf1 ip4:<STARGATE_IP> ip4:<HIN_SEALER_IP> include:spf.protection.outlook.com -all"
 ```
 
 **If you do not use M365 / Google Workspace:**
 
 ```plain
-<YOUR_DOMAIN>.    TXT    "v=spf1 ip4:<STARGATE_IP> -all"
+<YOUR_DOMAIN>.    TXT    "v=spf1 ip4:<STARGATE_IP> ip4:<HIN_SEALER_IP> -all"
 ```
 
 Example:
 
 ```plain
-example.ch.    TXT    "v=spf1 ip4:128.140.117.200 include:spf.protection.outlook.com -all"
+example.ch.    TXT    "v=spf1 ip4:128.140.117.200 ip4:193.247.208.66 include:spf.protection.outlook.com -all"
 ```
+
+!!! important "Why the HIN sealer IP is required"
+    When the Stargate produces a SEAL'd (encrypted) message for a non-HIN recipient, the final outbound hop to the recipient is the **HIN sealer**, not your Stargate or M365. Without the sealer IP in your SPF record, every SEAL'd outbound message will fail SPF at the recipient and - because there is no DKIM signature on the SEAL'd payload - DMARC will fail too. Strict-DMARC recipients (Gmail, Outlook with `p=reject` enforcement, Proofpoint) will reject or junk the message.
+
+    Sealer IPs to add in SPF:
+
+    | Environment | Sealer host | IP to add to SPF |
+    |-------------|-------------|------------------|
+    | HIN Test (alpha/beta) | `mx3.hintest.ch` | `193.247.208.66` |
+    | HIN Production | TBD - request canonical list from HIN before go-live | TBD |
+
+    If HIN publishes more than one sealer host (e.g. `mx1`, `mx2`, `mx3`), include **all** their IPs. Resolve them with `dig +short mx hintest.ch` followed by `dig +short A <each-mx>`. Until you have the full list, leave the SPF policy at `~all` (softfail) instead of `-all` (hardfail) so that legitimate SEAL mail through any unlisted sealer IP is not outright rejected.
 
 !!! warning "SPF lookup limit"
     The total `include:` chain in an SPF record must stay under **10 DNS lookups**. Adding `ip4:` entries does not count toward this limit. Check your count with [MXToolbox SPF lookup](https://mxtoolbox.com/spf.aspx).
-
-**Why**: The Stargate sends mail from its own IP on behalf of your users. Without the Stargate IP in SPF, recipients will see SPF failures and may reject or flag the mail.
 
 **How the Stargate uses SPF**: The Postfix container resolves each domain's SPF record at startup to auto-populate `mynetworks` (the list of IPs allowed to relay through the Stargate without authentication). This is how Microsoft 365 outbound IPs get whitelisted automatically - they appear in the `include:spf.protection.outlook.com` chain.
 
