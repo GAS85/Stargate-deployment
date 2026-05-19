@@ -23,6 +23,8 @@ services:
       retries: 10
     networks:
       - stargate-network
+    labels:
+      - autoheal=true
 
   # Fix vault data volume permissions
   vault-data-fixer:
@@ -64,6 +66,8 @@ services:
       start_period: 10s
     networks:
       - stargate-network
+    labels:
+      - autoheal=true
 
   minio:
     image: minio/minio:latest
@@ -84,6 +88,8 @@ services:
       retries: 5
     networks:
       - stargate-network
+    labels:
+      - autoheal=true
 
   # MinIO bucket initialization
   minio-init:
@@ -162,6 +168,8 @@ services:
       start_period: 60s
     networks:
       - stargate-network
+    labels:
+      - autoheal=true
 
   # Forces the Keycloak admin to change their password on first login.
   # Idempotent: if the admin already changed their password (auth with the
@@ -197,6 +205,8 @@ services:
       - "8180:8080"
     networks:
       - stargate-network
+    labels:
+      - autoheal=true
 
   # Generates /config/apisix/generated/apisix.yaml from the template by
   # substituting KEYCLOAK_APISIX_CLIENT_SECRET with envsubst.
@@ -214,6 +224,8 @@ services:
              echo 'APISIX config generated'"
     networks:
       - stargate-network
+    labels:
+      - autoheal=true
 
   nats:
     image: nats:2.14-alpine
@@ -233,6 +245,32 @@ services:
       retries: 5
     networks:
       - stargate-network
+    labels:
+      - autoheal=true
+
+  autoheal:
+    container_name: autoheal
+    restart: always
+    # Version 1.2.0
+    image: willfarrell/autoheal@sha256:a2e5e76d239b127081f8f96041a21f9747015b23af439c23ee60de0350c06880
+    network_mode: none
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - AUTOHEAL_CONTAINER_LABEL=autoheal
+      - AUTOHEAL_INTERVAL=300
+      - AUTOHEAL_DEFAULT_STOP_TIMEOUT=30
+    healthcheck:
+      test: ps -ef | grep sleep
+      interval: 5m00s
+      timeout: 10s
+      retries: 2
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 200M
 
   # ===================
   # Applications
@@ -298,6 +336,8 @@ services:
       - "2113:2112"
     networks:
       - stargate-network
+    labels:
+      - autoheal=true
 
   policy:
     image: registry.vereign.io/svdh/policy:${POLICY_VERSION:-dev}
@@ -334,6 +374,8 @@ services:
       - "2115:2112"
     networks:
       - stargate-network
+    labels:
+      - autoheal=true
 
   irisagent:
     image: registry.vereign.io/svdh/irisagent:${IRISAGENT_VERSION:-dev}
@@ -396,6 +438,8 @@ services:
       - "${WG_INTERFACE_PORT:-19818}:${WG_INTERFACE_PORT:-19818}/tcp" # WireGuard tunnel (TCP)
     networks:
       - stargate-network
+    labels:
+      - autoheal=true
 
   mxengine:
     image: registry.vereign.io/svdh/mxengine:${MXENGINE_VERSION:-dev}
@@ -491,6 +535,8 @@ services:
       - /tmp:size=100M
     networks:
       - stargate-network
+    labels:
+      - autoheal=true
 
   apisix:
     image: apache/apisix:3.15.0-debian
@@ -517,6 +563,8 @@ services:
       start_period: 60s
     networks:
       - stargate-network
+    labels:
+      - autoheal=true
 
   dashboard:
     image: registry.vereign.io/svdh/dashboard-hin:${DASHBOARD_VERSION:-dev}
@@ -558,6 +606,8 @@ services:
 
     networks:
       - stargate-network
+    labels:
+      - autoheal=true
 
   # Nginx reverse proxy in front of the dashboard.
   # Terminates TLS so the browser delivers Secure cookies to the dashboard,
@@ -574,6 +624,8 @@ services:
       - "3000:8080"
     networks:
       - stargate-network
+    labels:
+      - autoheal=true
 
   # ===================
   # Monitoring
@@ -598,6 +650,8 @@ services:
       - "9100:9100"
     networks:
       - stargate-network
+    labels:
+      - autoheal=true
 
   # Collects app versions from /liveness endpoints for node-exporter
   version-collector:
@@ -623,6 +677,8 @@ services:
         done
     networks:
       - stargate-network
+    labels:
+      - autoheal=true
 
   postfixconf:
     image: registry.vereign.io/svdh/postfixconf:${POSTFIXCONF_VERSION:-dev}
@@ -647,6 +703,8 @@ services:
       - smimekeys-client
     networks:
       - stargate-network
+    labels:
+      - autoheal=true
 
   promtail:
     image: grafana/promtail:latest
@@ -662,6 +720,8 @@ services:
       HOSTNAME: "${PROMTAIL_HOSTNAME:-stargate}"
     networks:
       - stargate-network
+    labels:
+      - autoheal=true
 
   # Policy sync service - syncs policies from Git repository to database
   # Automatically syncs policies when POLICY_SYNC_REPO_URL is configured
@@ -686,6 +746,8 @@ services:
       SYNC_INTERVAL: "${POLICY_SYNC_INTERVAL:-1h}"
     networks:
       - stargate-network
+    labels:
+      - autoheal=true
 
   # Dozzle - Real-time log viewer for all containers
   # Enable with: docker compose --profile dozzle up -d
@@ -708,6 +770,14 @@ services:
       - "8090:8080"
     networks:
       - stargate-network
+    healthcheck:
+      test: ["CMD", "/dozzle", "healthcheck"]
+      interval: 5m00s
+      timeout: 30s
+      retries: 2
+      start_period: 30s
+    labels:
+      - autoheal=true
 
 volumes:
   postgres_data:
