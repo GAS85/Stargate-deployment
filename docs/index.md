@@ -14,9 +14,6 @@
 
 ### Installation options
 
-* Container installation:
-    * [Docker installation](./Docker-deploy.md)
-    * [HELM charts](./helm-deploy.md)
 * VM image installation:
     * [Azure VM image installation](vm/Azure-image-install.md)
     * [Windows 11 pro (Hyper-V) image installation](vm/Windows11pro-image-install.md)
