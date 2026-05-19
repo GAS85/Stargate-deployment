@@ -150,6 +150,20 @@ DASHBOARD_ROOT_URL="https://apisix.hindev.ch"
 DASHBOARD_ROOT_DOMAIN="hindev"
 
 # ==============================================================================
+# OPTIONAL: Dozzle - Real-time Log Viewer
+# ==============================================================================
+# Dozzle provides a web UI to view live logs from all Stargate containers.
+# Access at: http://localhost:8090
+# Set to "true" to enable, "false" to disable.
+# When enabled, a users.yml is auto-generated during install with the
+# credentials below. Change the password after first login if desired.
+
+DOZZLE_ENABLED="false"
+DOZZLE_VERSION="v10.5.0"
+DOZZLE_USERNAME="admin"
+DOZZLE_PASSWORD=""
+
+# ==============================================================================
 # REQUIRED: WireGuard Configuration
 # ==============================================================================
 # Local WireGuard settings for this IRIS AGENT instance.
