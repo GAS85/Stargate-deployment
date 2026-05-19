@@ -101,6 +101,61 @@ echo ""
 echo "Starting services with updated configuration..."
 docker compose up -d
 
+# Handle Dozzle enable/disable and credential updates
+update_dozzle() {
+  local dozzle_enabled
+  dozzle_enabled=$(grep -m1 '^DOZZLE_ENABLED=' "$CONFIG_FILE" 2>/dev/null | cut -d'=' -f2 | tr -d '"' | tr -d "'" || true)
+
+  local dozzle_running
+  dozzle_running=$(docker compose --profile dozzle ps --format '{{.Name}}' 2>/dev/null | grep -q stargate-dozzle && echo "true" || echo "false")
+
+  if [ "$dozzle_enabled" != "true" ]; then
+    if [ "$dozzle_running" = "true" ]; then
+      echo ""
+      echo "Dozzle disabled in config - stopping..."
+      docker compose --profile dozzle down
+    fi
+    return 0
+  fi
+
+  # Dozzle is enabled - regenerate users.yml if credentials changed
+  local dozzle_username dozzle_password
+  dozzle_username=$(grep -m1 '^DOZZLE_USERNAME=' "$CONFIG_FILE" 2>/dev/null | cut -d'=' -f2 | tr -d '"' | tr -d "'" || true)
+  dozzle_password=$(grep -m1 '^DOZZLE_PASSWORD=' "$CONFIG_FILE" 2>/dev/null | cut -d'=' -f2 | tr -d '"' | tr -d "'" || true)
+  dozzle_username="${dozzle_username:-admin}"
+
+  if [ -z "$dozzle_password" ]; then
+    dozzle_password=$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 16)
+    if grep -q '^DOZZLE_PASSWORD=' "$CONFIG_FILE"; then
+      sed -i "s|^DOZZLE_PASSWORD=.*|DOZZLE_PASSWORD=\"$dozzle_password\"|" "$CONFIG_FILE"
+    else
+      echo "DOZZLE_PASSWORD=\"$dozzle_password\"" >> "$CONFIG_FILE"
+    fi
+  fi
+
+  local dozzle_data_dir="$PROJECT_DIR/dozzle"
+  mkdir -p "$dozzle_data_dir"
+
+  local dozzle_image="amir20/dozzle:${DOZZLE_VERSION:-v10.5.0}"
+  echo ""
+  echo "Updating Dozzle credentials..."
+  if docker run --rm "$dozzle_image" generate \
+    "$dozzle_username" \
+    --password "$dozzle_password" \
+    --name "Stargate Admin" \
+    --user-filter "name=stargate" \
+    > "$dozzle_data_dir/users.yml" 2>/dev/null; then
+    echo "  Dozzle credentials updated (user: $dozzle_username)"
+  else
+    echo "  WARNING: Failed to regenerate Dozzle users.yml"
+  fi
+
+  echo "Starting Dozzle..."
+  docker compose --profile dozzle up -d
+}
+
+update_dozzle
+
 echo ""
 echo "============================================"
 echo "  Update Complete"

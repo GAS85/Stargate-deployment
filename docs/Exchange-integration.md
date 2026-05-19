@@ -51,7 +51,7 @@ At minimum, before proceeding with the Exchange configuration below, you need:
 
 - **A record**: `<MAIL_HOSTNAME>` pointing to `<STARGATE_IP>`
 - **MX record**: `<YOUR_DOMAIN>` with Stargate at higher priority (lower number) than Exchange
-- **SPF record**: `ip4:<STARGATE_IP>` added to your domain's TXT record
+- **SPF record**: `ip4:<STARGATE_IP>` and `ip4:<HIN_SEALER_IP>` added to your domain's TXT record (see [DNS Setup Guide - SPF](DNS-setup.md#spf-record) for sealer IPs)
 
 ---
 
@@ -378,6 +378,6 @@ The outbound connector validation requires:
 | A | `mail IN A <STARGATE_IP>` | Point hostname to Stargate |
 | MX (Stargate) | `@ IN MX 15 mail.<YOUR_DOMAIN>.` | Inbound mail hits Stargate first |
 | MX (Exchange) | `@ IN MX 20 <DOMAIN>.mail.protection.outlook.com.` | Fallback / delivery target |
-| SPF | `ip4:<STARGATE_IP>` added to existing TXT record | Authorize Stargate to send mail |
+| SPF | `ip4:<STARGATE_IP>` and `ip4:<HIN_SEALER_IP>` added to existing TXT record | Authorize Stargate and HIN sealer to send mail |
 
 For the full DNS setup (including PTR, DMARC, DKIM, and multi-domain), see the [DNS Setup Guide](DNS-setup.md).
