@@ -191,7 +191,7 @@ WG_TRANSPORT_MODE=tcp
 | mxengine HTTP | <http://localhost:8084> |
 | mxengine SMTP | localhost:1587 |
 | Postfix SMTP | localhost:25 |
-| Postfix Reinjection | localhost:10026 (internal) |
+| Postfix Reinjection (internal) | localhost:10026 |
 | APISIX Gateway | <http://localhost:9080> |
 | Keycloak | <https://localhost:8180> |
 | Vault UI | <http://localhost:8200> |
@@ -315,13 +315,13 @@ External Mail Server
          │
          ▼ (port 25)
 ┌─────────────────────────────────────────────────────┐
-│ postfixconf (stargate-postfixconf)                     │
+│ postfixconf (stargate-postfixconf)                  │
 │                                                     │
 │  Port 25 (main listener)                            │
 │    │                                                │
 │    ▼                                                │
 │  smtpd_recipient_restrictions:                      │
-│    check_policy_service inet:127.0.0.1:10030 ──────┼──►  postfix-domain-daemon
+│    check_policy_service inet:127.0.0.1:10030 ───────┼──►  postfix-domain-daemon
 │    │                                                │     (in-container, queries
 │    ▼                                                │      smimekeys per recipient)
 │  content_filter = smtp:[mxengine]:1587              │
@@ -344,7 +344,7 @@ External Mail Server
      │
      ▼ (port 10026)
 ┌─────────────────────────────────────────────────────┐
-│ postfixconf (stargate-postfixconf)                     │
+│ postfixconf (stargate-postfixconf)                  │
 │                                                     │
 │  Port 10026 (reinjection listener)                  │
 │    │                                                │
@@ -489,7 +489,7 @@ Each Stargate instance uses its server's real static public IP as the WireGuard 
 ┌──────────────────────────────────────────┐       ┌──────────────────────────────────────────┐
 │ Your Stargate (203.0.113.50)             │       │ HIN Test (5.102.144.182)                 │
 │                                          │       │                                          │
-│  IRISAgent (203.0.113.50:19818)           │◄─────►│  IRISAgent (5.102.144.182:19818)          │
+│  IRISAgent (203.0.113.50:19818)          │◄─────►│  IRISAgent (5.102.144.182:19818)         │
 │     │                                    │  WG   │     │                                    │
 │     ▼                                    │ Tunnel│     ▼                                    │
 │  Sealed message delivery via WG tunnel   │ (TCP) │  Receive sealed message                  │

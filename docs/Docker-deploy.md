@@ -189,7 +189,7 @@ docker compose logs irisagent 2>&1 | grep -i "handshake\|peer"
 
 Once the certificate is issued and mail is flowing, two configuration items are strongly recommended for any production deployment. Skipping them does not break encryption, but it will degrade your sender reputation, cause "we can't verify the sender" warnings in Outlook/Gmail, and can eventually lead to outbound mail being blocklisted.
 
-### 6.1 SPF / DKIM / DMARC for sender domains
+### Step 6.1 SPF / DKIM / DMARC for sender domains
 
 The Stargate sends mail from its own public IP on behalf of your users. Without proper DNS authentication records, recipients will see "we can't verify this sender" warnings and may reject the mail.
 
@@ -197,11 +197,11 @@ For complete instructions on configuring SPF, DKIM, DMARC, and PTR records, see 
 
 At minimum, for each domain you route through the Stargate:
 
-- **SPF**: add `ip4:<STARGATE_IP>` to the domain's TXT record
-- **DMARC**: publish `v=DMARC1; p=none` at `_dmarc.<YOUR_DOMAIN>`
-- **PTR**: set reverse DNS for the Stargate IP to match `MAIL_HOSTNAME`
+* **SPF**: add `ip4:<STARGATE_IP>` to the domain's TXT record
+* **DMARC**: publish `v=DMARC1; p=none` at `_dmarc.<YOUR_DOMAIN>`
+* **PTR**: set reverse DNS for the Stargate IP to match `MAIL_HOSTNAME`
 
-### 6.2 Relay outbound mail back through your mail platform (recommended for M365 / Exchange Online)
+### Step 6.2 Relay outbound mail back through your mail platform (recommended for M365 / Exchange Online)
 
 By default, after the Stargate signs/encrypts an outbound mail it delivers directly to the recipient's MX. This works, but the connecting IP is your Stargate's IP - and unless that IP has years of warm reputation, it can end up on third-party blocklists (e.g. Barracuda, abusix), causing intermittent delivery failures.
 
@@ -280,17 +280,25 @@ docker compose up -d     # Restarts containers
 
 After any restart, run `./scripts/start.sh` to unseal Vault. The script uses the keys stored in `secrets/vault-keys.json`.
 
-## Destructive Operations (data deleted)
+## :warning: Destructive Operations (data deleted)
 
-These commands **DELETE ALL DATA** - use with caution:
+!!! warning
+    These commands **DELETE ALL DATA** - use with caution!
+    
+    You can only restore data, if you perform [backup operations](./Docker-advanced.md#manual-backup) before and save backup in a safe place.
 
-```bash
-# Delete everything (volumes, secrets, config)
-./scripts/stop.sh --purge
+!!! danger
+    Delete everything (volumes, secrets, config)
 
-# Or manually remove volumes
-docker compose down -v   # The -v flag removes volumes!
-```
+    ```bash
+    ./scripts/stop.sh --purge
+    ```
+
+    Or manually remove volumes. The -v flag removes volumes
+
+    ```bash
+    docker compose down -v
+    ```
 
 ## Scripts Reference
 
