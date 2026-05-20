@@ -53,6 +53,12 @@ if [ "$confirmation" = "DELETE ALL DATA" ]; then
   rm -rf "$PROJECT_DIR/dozzle"
 
   echo ""
+  echo "Removing systemd service..."
+  sudo systemctl disable --now stargate 2>/dev/null || true
+  sudo rm -f /etc/systemd/system/stargate.service
+  sudo systemctl daemon-reload
+
+  echo ""
   echo "============================================"
   echo "  All data has been deleted"
   echo "============================================"

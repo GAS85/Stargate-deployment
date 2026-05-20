@@ -34,7 +34,7 @@ if [ -f "$KEYS_FILE" ]; then
   echo "Vault keys found at: $KEYS_FILE"
   echo ""
   echo "To start services, use: ./scripts/start.sh"
-  echo "To reinstall, first run: ./scripts/stop.sh --purge"
+  echo "To reinstall, first run: ./scripts/purge.sh"
   exit 1
 fi
 
@@ -379,6 +379,50 @@ generate_keycloak_realm() {
   echo ""
 }
 
+# Function to create and enable a systemd service for start/stop
+setup_systemd_service() {
+  local service_name="stargate"
+  local service_file="/etc/systemd/system/${service_name}.service"
+
+  echo ""
+  echo "============================================"
+  echo "  Setting up systemd Service"
+  echo "============================================"
+  echo ""
+
+  cat > "$service_file" << EOF
+[Unit]
+Description=Stargate Deployment
+After=docker.service network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=${PROJECT_DIR}
+ExecStart=${SCRIPT_DIR}/start.sh
+ExecStop=${SCRIPT_DIR}/stop.sh
+TimeoutStartSec=300
+TimeoutStopSec=120
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+  chmod 644 "$service_file"
+  chcon -t bin_t "$SCRIPT_DIR"/*.sh 2>/dev/null || true
+  systemctl daemon-reload
+  systemctl enable --now "$service_name"
+
+  echo "systemd service created:  $service_file"
+  echo "Service enabled:          $service_name.service"
+  echo ""
+  echo "  Start:   sudo systemctl start $service_name"
+  echo "  Stop:    sudo systemctl stop $service_name"
+  echo "  Status:  sudo systemctl status $service_name"
+  echo ""
+}
+
 # Function to setup backup cron job
 setup_backup_cron() {
   echo ""
@@ -640,6 +684,9 @@ if [ -f "$KEYS_FILE" ]; then
   # Setup backup cron job
   setup_backup_cron
 
+  # Create and enable systemd service for auto-start on boot
+  setup_systemd_service
+
   # Save WireGuard key to customer-config.sh for persistence
   save_wireguard_key_to_config
 
@@ -703,10 +750,11 @@ fi
 echo ""
 echo "  Scripts:"
 echo "  --------"
-echo "  Start services:    ./scripts/start.sh"
-echo "  Stop services:     ./scripts/stop.sh"
+echo "  You can use systemctl or the scripts directly:"
+echo "  systemctl {start|stop|status|restart} stargate"
+echo "  ./scripts/start.sh  |  ./scripts/stop.sh"
 echo "  Backup databases:  ./scripts/backup.sh"
-echo "  Destroy all data:  ./scripts/stop.sh --purge"
+echo "  Destroy all data:  ./scripts/purge.sh"
 echo ""
 echo "  Backups:"
 echo "  --------"
