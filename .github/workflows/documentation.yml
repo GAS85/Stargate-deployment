@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           # 0 is required to scan full git history
-          fetch-depth: 0
+          fetch-depth: 10
 
       - name: Run Gitleaks on docs/
         # https://github.com/gacts/gitleaks/releases/tag/v1.3.2
