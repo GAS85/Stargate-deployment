@@ -203,7 +203,7 @@ load_customer_config() {
   WG_LOCAL_IP="${WG_LOCAL_IP:-$SERVER_STATIC_IP}"
   MXENGINE_PUBLIC_ADDRESS="${MXENGINE_PUBLIC_ADDRESS:-http://${SERVER_STATIC_IP}:8084}"
   KEYCLOAK_PUBLIC_URL="${KEYCLOAK_PUBLIC_URL:-https://${SERVER_STATIC_IP}:8180}"
-  DASHBOARD_PUBLIC_URL="${DASHBOARD_PUBLIC_URL:-https://${SERVER_STATIC_IP}:3000}"
+  DASHBOARD_PUBLIC_URL="${DASHBOARD_PUBLIC_URL:-https://${SERVER_STATIC_IP}}"
 
   OUTBOUND_SEALER_MX_DOMAIN="${OUTBOUND_SEALER_MX_DOMAIN:-hintest.ch}"
   CERT_CA_IRISAGENT_DOMAIN="${CERT_CA_IRISAGENT_DOMAIN:-hintest.ch}"
@@ -322,16 +322,21 @@ EOF
   echo ""
 }
 
-# Generate a self-signed TLS certificate for the Keycloak nginx proxy.
-# The cert is written to config/nginx/ssl/ and mounted read-only into the
-# keycloak-proxy container.  Skipped on re-runs when the cert already exists.
-generate_keycloak_tls_cert() {
+# Generate a self-signed TLS certificate for the Caddy proxy.
+# The cert is written to config/caddy/ssl/ and mounted read-only into the
+# caddy container.  Skipped on re-runs when the cert already exists.
+#
+# A subjectAltName matching the server IP (or hostname) is required — modern
+# browsers ignore the CN and reject certs that only have a CN with no SAN,
+# showing NET::ERR_CERT_COMMON_NAME_INVALID instead of the bypassable
+# NET::ERR_CERT_AUTHORITY_INVALID.
+generate_tls_cert() {
   echo "============================================"
-  echo "  Generating Keycloak TLS Certificate"
+  echo "  Generating TLS Certificate"
   echo "============================================"
   echo ""
 
-  local ssl_dir="$PROJECT_DIR/config/nginx/ssl"
+  local ssl_dir="$PROJECT_DIR/config/caddy/ssl"
   mkdir -p "$ssl_dir"
 
   if [ -f "$ssl_dir/server.crt" ] && [ -f "$ssl_dir/server.key" ]; then
@@ -344,14 +349,23 @@ generate_keycloak_tls_cert() {
   local kc_host
   kc_host=$(echo "$KEYCLOAK_PUBLIC_URL" | sed 's|https\?://||' | cut -d: -f1 | cut -d/ -f1)
 
+  # Use IP: prefix for bare IP addresses, DNS: for hostnames.
+  local san
+  if [[ "$kc_host" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    san="IP:${kc_host},DNS:localhost"
+  else
+    san="DNS:${kc_host},DNS:localhost"
+  fi
+
   openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
     -keyout "$ssl_dir/server.key" \
     -out    "$ssl_dir/server.crt" \
-    -subj   "/CN=${kc_host}/O=Stargate" 2>/dev/null
+    -subj   "/CN=${kc_host}/O=Stargate" \
+    -addext "subjectAltName=${san}" 2>/dev/null
 
   chmod 600 "$ssl_dir/server.key"
   echo "TLS certificate generated: $ssl_dir/server.crt"
-  echo "  CN: $kc_host  |  Valid: 10 years"
+  echo "  CN: $kc_host  |  SAN: $san  |  Valid: 10 years"
   echo ""
 }
 
@@ -611,8 +625,8 @@ mkdir -p "$PROJECT_DIR/backups"
 # Generate .env file from customer config
 generate_env_file
 
-# Generate self-signed TLS cert for the Keycloak nginx proxy
-generate_keycloak_tls_cert
+# Generate self-signed TLS cert for the Caddy proxy
+generate_tls_cert
 
 # Generate Keycloak realm JSON with actual client secrets substituted in
 generate_keycloak_realm
@@ -770,6 +784,20 @@ echo "  CSR file:          $SECRETS_DIR/signing-key.csr"
 echo ""
 echo "  IMPORTANT: Back up customer-config.sh before recreating the VM!"
 echo "  It now contains your WireGuard private key for persistence."
+echo ""
+echo "  Browser TLS trust:"
+echo "  ------------------"
+echo "  Caddy uses a self-signed certificate for HTTPS."
+echo "  Browsers will show a warning that can be bypassed via Advanced ->"
+echo "  Accept the Risk (Firefox) or Proceed anyway (Chrome)."
+echo "  To silence the warning permanently, import the certificate:"
+echo ""
+echo "    $PROJECT_DIR/config/caddy/ssl/server.crt"
+echo ""
+echo "  Import it into your OS/browser trust store (Keychain on macOS,"
+echo "  Certificate Manager on Windows, update-ca-certificates on Debian/Ubuntu,"
+echo "  update-ca-trust on RHEL/AlmaLinux). Firefox requires a separate import"
+echo "  under Settings -> Privacy -> Certificates."
 echo ""
 
 # ============================================

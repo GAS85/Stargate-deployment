@@ -1,0 +1,53 @@
+{
+	admin off
+	# Only H1/H2 over TCP; H3 (QUIC/UDP) is not forwarded by Docker.
+	servers {
+		protocols h1 h2
+	}
+}
+
+# HTTP → HTTPS redirect (80 → 443).
+# Required: auto_https only redirects for managed (ACME/internal) certs.
+# With a static cert file, Caddy does not create this redirect automatically.
+:80 {
+	redir https://{host}{uri} permanent
+}
+
+# TLS termination for Keycloak.
+# X-Forwarded-Proto https is explicit so Keycloak builds correct issuer URLs
+# and sets Secure cookies regardless of internal transport.
+:8180 {
+	tls /etc/caddy/ssl/server.crt /etc/caddy/ssl/server.key
+
+	reverse_proxy keycloak:8080 {
+		header_up X-Real-IP         {remote_host}
+		header_up X-Forwarded-Proto https
+	}
+}
+
+# TLS termination for the dashboard — standard HTTPS port.
+:443 {
+	tls /etc/caddy/ssl/server.crt /etc/caddy/ssl/server.key
+
+	# /api/internal/* is for in-cluster callers only; those services reach
+	# the dashboard directly at http://dashboard:3000 over the Docker network.
+	# Block it here so the internal API surface is not reachable externally.
+	respond /api/internal/* 404
+
+	reverse_proxy dashboard:3000 {
+		header_up X-Real-IP         {remote_host}
+		header_up X-Forwarded-Proto https
+	}
+}
+
+# TLS termination for the dashboard — legacy port kept for compatibility.
+:3000 {
+	tls /etc/caddy/ssl/server.crt /etc/caddy/ssl/server.key
+
+	respond /api/internal/* 404
+
+	reverse_proxy dashboard:3000 {
+		header_up X-Real-IP         {remote_host}
+		header_up X-Forwarded-Proto https
+	}
+}
