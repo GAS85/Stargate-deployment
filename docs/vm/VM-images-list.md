@@ -4,6 +4,21 @@ Here you can find an actual VM images list for different platforms. Please do no
 
 ??? hint "How to perform SHA256 Check locally"
     You can calculate SHA256 fingerprint of downloaded files by following command and then compare it with values in a table below:
+
+    ```bash
+    sha256sum <File Name>
+    ```
+
+    You as move advanced variant you can execute following command and paste predefined Checksum as `SHA256_VALUE` and File Name as `IMAGE_NAME`:
+
+    ```bash
+    SHA256_VALUE="" \
+    IMAGE_NAME="" \
+    echo "$SHA256_VALUE  $IMAGE_NAME" | sudo sha1sum --check --status
+    ```
+
+| Image name | Image Type | Image Size | Link | SHA256 Checksum |
+|:-----------|:-----------|:-----------|:-----|:----------------|
 | `Alma10-202605211209.stargate-2699da2.x86_64.ova` | ![ova](https://img.shields.io/badge/Type-ova-blue) | 739M /<br>774041600 bytes | [Download](https://images.hin.ch/vm-images/Alma10-202605211209.stargate-2699da2.x86_64.ova) | `a87fc7332fc11824537a61db881223e200713bd7c395768de818b40db0ece870` |
 | `Alma10-202605211209.stargate-2699da2.x86_64.mf` | ![mf](https://img.shields.io/badge/Type-mf-blue) | 4.0K /<br>247 bytes | [Download](https://images.hin.ch/vm-images/Alma10-202605211209.stargate-2699da2.x86_64.mf) | `ad69d424348ab0ef2ad748c302631f3f0b5dc7325a5d89357fcbb31cc9aacd2b` |
 | `Alma10-202605211209.stargate-2699da2.x86_64.ovf` | ![ovf](https://img.shields.io/badge/Type-ovf-blue) | 8.0K /<br>7680 bytes | [Download](https://images.hin.ch/vm-images/Alma10-202605211209.stargate-2699da2.x86_64.ovf) | `c615603938e6452c633bcb60e058e54405d8f710e2d350dd26d21001f778013f` |
