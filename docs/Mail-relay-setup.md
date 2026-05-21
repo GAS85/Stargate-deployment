@@ -8,7 +8,7 @@ In this example we will use a VM with IP address `128.140.117.200` and hostname 
 
 ## Set up DNS records
 
-See the [DNS Setup Guide](../DNS-setup.md) for complete instructions on all required records (A, MX, SPF, PTR, DMARC, DKIM).
+See the [DNS Setup Guide](./DNS-setup.md) for complete instructions on all required records (A, MX, SPF, PTR, DMARC, DKIM).
 
 Quick example for domain `vrgnservices.eu` with Stargate IP `128.140.117.200`:
 
@@ -36,7 +36,7 @@ vrgnservices.eu descriptive text "v=spf1 ip4:128.140.117.200 include:spf.protect
 
 ## Install the stargate docker compose containers
 
-[Stargate Deployment](../Docker-deploy.md)
+[Stargate Deployment](./Docker-deploy.md)
 
 ### Requirements
 

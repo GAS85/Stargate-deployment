@@ -70,7 +70,7 @@ example.ch.    MX    15    mail.example.ch.
 example.ch.    MX    20    example-ch.mail.protection.outlook.com.
 ```
 
-!!! note
+!!! info
     The lower MX number means higher priority. Stargate at priority 15 receives mail before Exchange Online at priority 20.
 
 **Why**: The Stargate intercepts inbound mail, processes S/MIME, then forwards to the next MX (Exchange). The second MX record is also used by the Stargate's Postfix to know where to relay processed mail.
@@ -99,7 +99,7 @@ Example:
 example.ch.    TXT    "v=spf1 ip4:128.140.117.200 ip4:193.247.208.66 include:spf.protection.outlook.com -all"
 ```
 
-!!! important "Why the HIN sealer IP is required"
+!!! question "Why the HIN sealer IP is required"
     When the Stargate produces a SEAL'd (encrypted) message for a non-HIN recipient, the final outbound hop to the recipient is the **HIN sealer**, not your Stargate or M365. Without the sealer IP in your SPF record, every SEAL'd outbound message will fail SPF at the recipient and - because there is no DKIM signature on the SEAL'd payload - DMARC will fail too. Strict-DMARC recipients (Gmail, Outlook with `p=reject` enforcement, Proofpoint) will reject or junk the message.
 
     Sealer IPs to add in SPF:
