@@ -1,6 +1,21 @@
 # VM Images list
 
-Here you can find an actual VM images list for different platforms. Please do not forget to check SHA256SUM of downloaded images. You can use a https://images.hin.ch/SHA256SUMS file.
+Here you can find an actual VM images list for different platforms. Please do not forget to check SHA256SUM of downloaded images. You can use a https://images.hin.ch/vm-images/SHA256SUMS file.
+
+??? hint "How to perform SHA256 Check locally"
+    You can calculate SHA256 fingerprint of downloaded files by following command and then compare it with values in a table below:
+    
+    ```bash
+    sha256sum <File Name>
+    ```
+
+    You as move advanced variant you can execute following command and paste predefined Checksum as `SHA256_VALUE` and File Name as `IMAGE_NAME`:
+
+    ```bash
+    SHA256_VALUE="" \
+    IMAGE_NAME="" \
+    echo "$SHA256_VALUE  $IMAGE_NAME" | sudo sha1sum --check --status
+    ```
 
 | Image name | Image Type | Image Size | Link | SHA256 Checksum |
 |:-----------|:-----------|:-----------|:-----|:----------------|

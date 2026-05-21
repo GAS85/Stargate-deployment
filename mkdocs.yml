@@ -140,7 +140,8 @@ nav:
   - Getting started with Stargate:
       - Applications overview: Applications.md
       - Exchange Integration: Exchange-integration.md
-      - Mail relay setup: Mail-relay-setup
+      - Mail relay setup: Mail-relay-setup.md
+      - DNS Setup: DNS-setup.md
   - Container deployment:
       - Install with Docker: Docker-deploy.md
       - Docker Advanced configuration: Docker-advanced.md
@@ -151,3 +152,4 @@ nav:
       - Proxmox: vm/Proxmox-image-install.md
       - Windows 11 pro: vm/Windows11pro-image-install.md
   - VM Images list: vm/VM-images-list.md
+  - Support / Contact us: Support.md
