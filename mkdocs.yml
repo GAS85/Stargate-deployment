@@ -136,6 +136,7 @@ not_in_nav: |
 # Page tree
 nav:
   - Home: index.md
+  - Installation Guide: Installation-guide.md
   - Test Phase: Testing.md
   - Getting started with Stargate:
       - Applications overview: Applications.md
