@@ -17,8 +17,9 @@ Here you can find an actual VM images list for different platforms. Please do no
     echo "$SHA256_VALUE  $IMAGE_NAME" | sudo sha1sum --check --status
     ```
 
+<!-- Script will replace everything AFTER this line -->
 | Image name | Image Type | Image Size | Link | SHA256 Checksum |
-|:-----------|:-----------|:-----------|:-----|:----------------|
+| :--------- | :--------: | :--------- | :--: | :-------------- |
 | `Alma10-202605212341.stargate-ab7d8ea.x86_64.ova` | ![ova](https://img.shields.io/badge/Type-ova-blue) | 738M /<br>773416960 bytes | [Download](https://images.hin.ch/vm-images/Alma10-202605212341.stargate-ab7d8ea.x86_64.ova) | `b619305b6cbe26e41e8d55a8b8929f51f72b83b5329d254fa842f99df10a830d` |
 | `Alma10-202605212341.stargate-ab7d8ea.x86_64.mf` | ![mf](https://img.shields.io/badge/Type-mf-blue) | 4.0K /<br>247 bytes | [Download](https://images.hin.ch/vm-images/Alma10-202605212341.stargate-ab7d8ea.x86_64.mf) | `646b89d6af56351676a4f7c77f5a058817275943e86ee0b57ff2943b18f86c1c` |
 | `Alma10-202605212341.stargate-ab7d8ea.x86_64.ovf` | ![ovf](https://img.shields.io/badge/Type-ovf-blue) | 8.0K /<br>7680 bytes | [Download](https://images.hin.ch/vm-images/Alma10-202605212341.stargate-ab7d8ea.x86_64.ovf) | `2746f600eaca14f4fafec361bc4359bc8c04c77c9992f355770409607b2fb421` |
@@ -31,3 +32,4 @@ Here you can find an actual VM images list for different platforms. Please do no
 | `Alma10-202605212341.stargate-ab7d8ea.x86_64.vmdk` | ![vmdk](https://img.shields.io/badge/Type-vmdk-blue) | 738M /<br>773398016 bytes | [Download](https://images.hin.ch/vm-images/Alma10-202605212341.stargate-ab7d8ea.x86_64.vmdk) | `b26f620d9d9a6f5d18a1984fd66dbf092494efa507be48bb7acb78a7cddaf2d6` |
 | `SHA256SUMS` | ![Checksum](https://img.shields.io/badge/Type-SHA256_checksum-blue) | 4.0K /<br>1169 bytes | [Download](https://images.hin.ch/vm-images/SHA256SUMS) | `8c50021f973a305faeda4fcc089719cbfccda1169a029b77afe4699dba178e22` |
 
+<!-- Script will replace everything BEFORE this line -->
