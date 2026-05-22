@@ -1,0 +1,99 @@
+// Env vars (set in docker-compose):
+//   LOKI_URL        — Loki push base URL
+//   ALLOY_HOSTNAME  — deployment id (used for `host`/`environment` labels and remotecfg id)
+
+logging {
+  level  = "info"
+  format = "logfmt"
+}
+
+
+import.http "dashboard" {
+  url            = "http://dashboard:3000/api/internal/installation-config?service=alloy"
+  poll_frequency = "1m"
+}
+
+discovery.docker "stargate" {
+  host             = "unix:///var/run/docker.sock"
+  refresh_interval = "5s"
+
+  filter {
+    name   = "name"
+    values = [
+      "stargate-apisix",
+      "stargate-keycloak",
+      "stargate-dashboard",
+      "stargate-smimekeys-client",
+      "stargate-policy",
+      "stargate-policy-sync",
+      "stargate-irisagent",
+      "stargate-mxengine",
+    ]
+  }
+}
+
+discovery.relabel "stargate" {
+  targets = discovery.docker.stargate.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/stargate-(apisix|keycloak|dashboard|smimekeys-client|policy|policy-sync|irisagent|mxengine)"
+    action        = "keep"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/stargate-(.*)"
+    target_label  = "service"
+  }
+
+  rule {
+    target_label = "environment"
+    replacement  = sys.env("ALLOY_HOSTNAME")
+  }
+
+  rule {
+    target_label = "host"
+    replacement  = sys.env("ALLOY_HOSTNAME")
+  }
+}
+
+loki.source.docker "stargate" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.stargate.output
+  forward_to = [loki.process.stargate.receiver]
+}
+
+loki.process "stargate" {
+  stage.json {
+    expressions = {
+      level   = "level",
+      msg     = "msg",
+      message = "message",
+      ts      = "ts",
+      time    = "time",
+    }
+  }
+
+  stage.regex {
+    expression = "(?P<level>INFO|WARN|ERROR|DEBUG|info|warn|error|debug)"
+  }
+
+  stage.labels {
+    values = { level = "level" }
+  }
+
+  forward_to = [loki.write.loki.receiver]
+}
+
+loki.write "loki" {
+  endpoint {
+    url = sys.env("LOKI_URL") + "/loki/api/v1/push"
+  }
+}

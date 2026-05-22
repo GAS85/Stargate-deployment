@@ -30,7 +30,7 @@
 
 * **node-exporter** - Host metrics for Prometheus (port 9100)
 * **version-collector** - Collects app versions from `/liveness` endpoints for node-exporter
-* **Promtail** - Log collector for Loki (ships app logs)
+* **Alloy** - Log collector for Loki (ships app logs)
 
 ## Architecture overview
 

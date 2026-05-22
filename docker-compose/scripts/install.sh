@@ -212,7 +212,7 @@ load_customer_config() {
   OUTBOUND_SMTP_PORT="${OUTBOUND_SMTP_PORT:-10026}"
   POSTFIXCONF_VERSION="${POSTFIXCONF_VERSION:-latest}"
 
-  LOKI_URL="${LOKI_URL:-https://loki.infra.vereign-cdn.com}"
+  LOKI_URL="${LOKI_URL:-}"
 
   # Keycloak / APISIX / Dashboard
   KEYCLOAK_ADMIN_USER="${KEYCLOAK_ADMIN_USER:-admin}"
@@ -283,9 +283,9 @@ CERT_CA_IRISAGENT_DOMAIN="$CERT_CA_IRISAGENT_DOMAIN"
 OUTBOUND_SMTP_HOST="$OUTBOUND_SMTP_HOST"
 OUTBOUND_SMTP_PORT="$OUTBOUND_SMTP_PORT"
 
-# Logging (Promtail -> Loki)
+# Logging (Alloy -> Loki)
 LOKI_URL="$LOKI_URL"
-PROMTAIL_HOSTNAME="$DEPLOYMENT_NAME"
+ALLOY_HOSTNAME="$DEPLOYMENT_NAME"
 
 # Policy Sync (optional - syncs policies from Git repo)
 # To enable: docker compose --profile policy-sync up -d
@@ -757,7 +757,7 @@ echo ""
 echo "  Monitoring:"
 echo "  -----------"
 echo "  Node Exporter:     http://localhost:9100/metrics"
-echo "  Promtail:          Logs -> $LOKI_URL"
+echo "  Alloy:             Logs -> $LOKI_URL"
 if [ "${DOZZLE_ENABLED:-false}" = "true" ]; then
   echo "  Dozzle (logs):     http://localhost:8090"
 fi

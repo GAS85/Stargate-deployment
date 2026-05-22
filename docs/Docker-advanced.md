@@ -255,14 +255,18 @@ curl -s http://localhost:2116/metrics | head -20  # mxengine
 curl -s http://localhost:9100/metrics | head -20  # node-exporter
 ```
 
-### Log Collection (Promtail → Loki)
+### Log Collection (Alloy → Loki)
 
-Promtail collects logs from application containers and ships them to Loki.
+Alloy collects logs from application containers and ships them to Loki.
 
 **Containers monitored:**
 
+* stargate-apisix
+* stargate-keycloak
+* stargate-dashboard
 * stargate-smimekeys-client
 * stargate-policy
+* stargate-policy-sync
 * stargate-irisagent
 * stargate-mxengine
 
@@ -270,16 +274,16 @@ Promtail collects logs from application containers and ships them to Loki.
 
 ```env
 ## Loki push URL
-LOKI_URL=https://loki.infra.vereign-cdn.com
+LOKI_URL=https://loki.example.com
 
 ## Hostname label for logs (auto-set to DEPLOYMENT_NAME)
-PROMTAIL_HOSTNAME=stargate-acme
+ALLOY_HOSTNAME=stargate-acme
 ```
 
 **Labels added to logs:**
 
 * `environment=<DEPLOYMENT_NAME>` - Identifies the deployment
-* `host=<PROMTAIL_HOSTNAME>` - Identifies the host (same as deployment name)
+* `host=<ALLOY_HOSTNAME>` - Identifies the host (same as deployment name)
 * `container=<container-name>` - Container name
 * `service=<service-name>` - Service name (e.g., smimekeys-client, policy)
 * `level=<log-level>` - Extracted from JSON logs if available
@@ -292,14 +296,14 @@ PROMTAIL_HOSTNAME=stargate-acme
 {environment="stargate-acme", level="error"}
 ```
 
-**Verify Promtail is working:**
+**Verify Alloy is working:**
 
 ```bash
-## Check Promtail status
-docker logs stargate-promtail
+## Check Alloy status and recent activity
+docker logs stargate-alloy
 
-## Check targets
-curl -s http://localhost:9080/targets
+## Health probe (from within the docker network)
+docker exec stargate-alloy wget -qO- http://localhost:12345/-/ready
 ```
 
 **Note:** The VM's public IP must be whitelisted in Loki's ingress configuration.
@@ -820,8 +824,8 @@ stargate/
 │   ├── nginx
 │   │   ├── dashboard.conf
 │   │   └── keycloak.conf
-│   ├── promtail
-│   │   └── promtail-config.yaml  # Promtail log shipping config
+│   ├── alloy
+│   │   └── config.alloy          # Alloy log shipping config
 │   └── vault
 │       └── vault.hcl             # Vault configuration
 ├── customer-config.example       # Template for customer configuration

@@ -37,7 +37,7 @@ nano customer-config.sh
 |---------|-------------|---------|
 | `SERVER_STATIC_IP` | This server's real static public IP. Used to derive WireGuard tunnel address and MXEngine callback URL. | `203.0.113.10` |
 | `CUSTOMER_NAME` | Customer/organization name (used for identification and logging). | `Acme Corp` |
-| `DEPLOYMENT_NAME` | Unique deployment identifier (used in log labels and Promtail hostname). | `stargate-acme` |
+| `DEPLOYMENT_NAME` | Unique deployment identifier (used in log labels and Alloy hostname). | `stargate-acme` |
 
 Mail domains and the Postfix hostname are configured at runtime via the dashboard's `/postfix` page; they are not part of `customer-config.sh`.
 
@@ -73,7 +73,7 @@ Mail domains and the Postfix hostname are configured at runtime via the dashboar
 | `MINIO_ROOT_PASSWORD` | *(auto-generated)* | Auto-generated 24-char random password if empty |
 | `OUTBOUND_SEALER_MX_DOMAIN` | `hintest.ch` | Sealer MX domain for outbound seal delivery |
 | `POLICY_SYNC_REPO_URL` | GitHub HIN Stargate policies | Git repo URL for OPA/Rego policy sync |
-| `LOKI_URL` | `https://loki.infra.vereign-cdn.com` | Loki endpoint for centralized log shipping |
+| `LOKI_URL` | *(unset)* | Loki endpoint for centralized log shipping (e.g. `https://loki.example.com`) |
 
 **Auto-generated (do not set manually):**
 
