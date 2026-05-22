@@ -369,6 +369,8 @@ services:
         condition: service_completed_successfully
       minio-init:
         condition: service_completed_successfully
+      dashboard:
+        condition: service_started
     environment:
       # HTTP Server
       HTTP_HOST: ""
@@ -433,6 +435,8 @@ services:
       minio-init:
         condition: service_completed_successfully
       irisagent:
+        condition: service_started
+      dashboard:
         condition: service_started
     environment:
       # HTTP Server
@@ -670,6 +674,9 @@ services:
     image: registry.vereign.io/svdh/postfixconf:${POSTFIXCONF_VERSION:-dev}
     container_name: stargate-postfixconf
     restart: unless-stopped
+    depends_on:
+      dashboard:
+        condition: service_started
     environment:
       # Required: smimekeys backend the daemon queries per recipient
       SMIMEKEYS_ADDR: "http://smimekeys-client:8080"
