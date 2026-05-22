@@ -23,11 +23,13 @@ SERVER_STATIC_IP=""
 # REQUIRED: Customer Identification
 # ==============================================================================
 
-# Customer/Organization name (used for identification and logging)
-CUSTOMER_NAME="vereign alpha"
+# Customer/Organization name (used for identification and logging).
+# Defaults to the system hostname if left empty.
+CUSTOMER_NAME=""
 
-# Deployment name (used for log labels and identification)
-DEPLOYMENT_NAME="stargate-example"
+# Deployment name (used for log labels and identification).
+# Defaults to "${CUSTOMER_NAME}-stargate" if left empty.
+DEPLOYMENT_NAME=""
 
 # ==============================================================================
 # OPTIONAL: MXEngine public address

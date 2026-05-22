@@ -16,12 +16,16 @@
 # TLS termination for Keycloak.
 # X-Forwarded-Proto https is explicit so Keycloak builds correct issuer URLs
 # and sets Secure cookies regardless of internal transport.
+# X-Forwarded-Port tells the dashboard/Keycloak the public-facing port so
+# their redirect URLs don't leak the upstream listening port (e.g. :8080).
 :8180 {
 	tls /etc/caddy/ssl/server.crt /etc/caddy/ssl/server.key
 
 	reverse_proxy keycloak:8080 {
+		header_up Host              {host}
 		header_up X-Real-IP         {remote_host}
 		header_up X-Forwarded-Proto https
+		header_up X-Forwarded-Port  8180
 	}
 }
 
@@ -35,8 +39,10 @@
 	respond /api/internal/* 404
 
 	reverse_proxy dashboard:3000 {
+		header_up Host              {host}
 		header_up X-Real-IP         {remote_host}
 		header_up X-Forwarded-Proto https
+		header_up X-Forwarded-Port  443
 	}
 }
 
@@ -47,7 +53,9 @@
 	respond /api/internal/* 404
 
 	reverse_proxy dashboard:3000 {
+		header_up Host              {host}
 		header_up X-Real-IP         {remote_host}
 		header_up X-Forwarded-Proto https
+		header_up X-Forwarded-Port  3000
 	}
 }

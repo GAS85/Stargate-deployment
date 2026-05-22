@@ -143,35 +143,24 @@ load_customer_config() {
   echo "============================================"
   echo ""
 
+  # Bootstrap customer-config.sh from the example if it doesn't exist yet,
+  # so a fresh deployment works with zero manual setup. The customer can edit
+  # the file later to override defaults or set optional knobs (LOKI_URL,
+  # OUTBOUND_SMTP_HOST, etc.). Generated values (vault token, IP, etc.) get
+  # written back here as install progresses.
   if [ ! -f "$CONFIG_FILE" ]; then
-    echo "ERROR: Customer configuration file not found!"
-    echo ""
-    echo "Please fill in the customer configuration file:"
-    echo "  $CONFIG_FILE"
-    echo ""
-    echo "Then run this script again."
-    exit 1
+    echo "customer-config.sh not found, bootstrapping from customer-config.example..."
+    cp "$PROJECT_DIR/customer-config.example" "$CONFIG_FILE"
   fi
 
   # Source the config file
   source "$CONFIG_FILE"
 
-  # Validate required fields
-  local missing_required=()
-
-  [ -z "$CUSTOMER_NAME" ] && missing_required+=("CUSTOMER_NAME")
-  [ -z "$DEPLOYMENT_NAME" ] && missing_required+=("DEPLOYMENT_NAME")
-
-  if [ ${#missing_required[@]} -gt 0 ]; then
-    echo "ERROR: Missing required configuration values:"
-    for field in "${missing_required[@]}"; do
-      echo "  - $field"
-    done
-    echo ""
-    echo "Please fill in all required fields in:"
-    echo "  $CONFIG_FILE"
-    exit 1
-  fi
+  # Sensible defaults for identification fields. Customer can override in
+  # customer-config.sh; if left empty, derive from the system hostname so
+  # the install completes without manual input on a fresh VM.
+  CUSTOMER_NAME="${CUSTOMER_NAME:-$(hostname)}"
+  DEPLOYMENT_NAME="${DEPLOYMENT_NAME:-${CUSTOMER_NAME}-stargate}"
 
   # Set defaults for optional fields
   POSTGRES_USER="${POSTGRES_USER:-postgres}"
