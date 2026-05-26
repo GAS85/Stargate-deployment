@@ -157,7 +157,7 @@ DASHBOARD_ROOT_DOMAIN="hindev"
 # When enabled, a users.yml is auto-generated during install with the
 # credentials below. Change the password after first login if desired.
 
-DOZZLE_ENABLED="false"
+DOZZLE_ENABLED="true"
 DOZZLE_VERSION="v10.5.0"
 DOZZLE_USERNAME="admin"
 DOZZLE_PASSWORD=""
