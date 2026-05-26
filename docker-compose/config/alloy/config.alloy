@@ -1,5 +1,6 @@
 // Env vars (set in docker-compose):
-//   LOKI_URL        — Loki push base URL
+//   LOKI_URL        — Remote Loki push URL (defaults to local Loki if not set)
+//   LOCAL_LOKI_URL  — Local Loki push URL (always http://loki:3100)
 //   ALLOY_HOSTNAME  — deployment id (used for `host`/`environment` labels and remotecfg id)
 
 logging {
@@ -89,10 +90,18 @@ loki.process "stargate" {
     values = { level = "level" }
   }
 
-  forward_to = [loki.write.loki.receiver]
+  forward_to = [loki.write.local.receiver, loki.write.remote.receiver]
 }
 
-loki.write "loki" {
+// Always write to local Loki (used by dashboard for log export)
+loki.write "local" {
+  endpoint {
+    url = sys.env("LOCAL_LOKI_URL") + "/loki/api/v1/push"
+  }
+}
+
+// Write to remote Loki when LOKI_URL is configured (central monitoring)
+loki.write "remote" {
   endpoint {
     url = sys.env("LOKI_URL") + "/loki/api/v1/push"
   }
