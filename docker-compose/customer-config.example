@@ -23,11 +23,13 @@ SERVER_STATIC_IP=""
 # REQUIRED: Customer Identification
 # ==============================================================================
 
-# Customer/Organization name (used for identification and logging)
-CUSTOMER_NAME="vereign alpha"
+# Customer/Organization name (used for identification and logging).
+# Defaults to the system hostname if left empty.
+CUSTOMER_NAME=""
 
-# Deployment name (used for log labels and identification)
-DEPLOYMENT_NAME="stargate-example"
+# Deployment name (used for log labels and identification).
+# Defaults to "${CUSTOMER_NAME}-stargate" if left empty.
+DEPLOYMENT_NAME=""
 
 # ==============================================================================
 # OPTIONAL: MXEngine public address
@@ -117,9 +119,8 @@ POLICY_SYNC_VERSION="dev"
 # ==============================================================================
 # OPTIONAL: Monitoring Configuration
 # ==============================================================================
-# Contact Vereign for the Loki URL if you want centralized logging.
 
-LOKI_URL="https://loki.infra.vereign-cdn.com"
+LOKI_URL=""
 
 # ==============================================================================
 # OPTIONAL: Keycloak / APISIX / Dashboard Configuration

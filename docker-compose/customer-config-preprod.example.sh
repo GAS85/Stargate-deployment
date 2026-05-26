@@ -117,7 +117,6 @@ POLICY_SYNC_VERSION="dev"
 # ==============================================================================
 # OPTIONAL: Monitoring Configuration
 # ==============================================================================
-# Contact Vereign for the Loki URL if you want centralized logging.
 
 LOKI_URL=""
 

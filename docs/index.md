@@ -70,7 +70,7 @@
 | hub.docker.com | 443 | Docker image registry |
 | mxengine-dev.k8s.vereign-cdn.com | 443 | Remote sealer service |
 | smimekeys-ca-dev.k8s.vereign-cdn.com | 443 | S/MIME CA service |
-| loki.infra.vereign-cdn.com | 443 | Log shipping (Promtail → Loki) |
+| loki.example.com | 443 | Log shipping (Alloy → Loki, optional) |
 | vereign-issuer.vrgnservices.eu | 443 | Issuer service |
 | vereign-verifier.vrgnservices.eu | 4433 | Verifier service |
 | Destination mail servers | 25 | Outbound mail delivery (via MX lookup) |

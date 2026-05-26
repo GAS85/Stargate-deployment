@@ -44,7 +44,7 @@ EXPECTED_RUNNING=(
   stargate-irisagent
   stargate-mxengine
   stargate-postfixconf
-  stargate-promtail
+  stargate-alloy
   stargate-node-exporter
 )
 

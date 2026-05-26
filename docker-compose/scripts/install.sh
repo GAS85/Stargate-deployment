@@ -143,35 +143,24 @@ load_customer_config() {
   echo "============================================"
   echo ""
 
+  # Bootstrap customer-config.sh from the example if it doesn't exist yet,
+  # so a fresh deployment works with zero manual setup. The customer can edit
+  # the file later to override defaults or set optional knobs (LOKI_URL,
+  # OUTBOUND_SMTP_HOST, etc.). Generated values (vault token, IP, etc.) get
+  # written back here as install progresses.
   if [ ! -f "$CONFIG_FILE" ]; then
-    echo "ERROR: Customer configuration file not found!"
-    echo ""
-    echo "Please fill in the customer configuration file:"
-    echo "  $CONFIG_FILE"
-    echo ""
-    echo "Then run this script again."
-    exit 1
+    echo "customer-config.sh not found, bootstrapping from customer-config.example..."
+    cp "$PROJECT_DIR/customer-config.example" "$CONFIG_FILE"
   fi
 
   # Source the config file
   source "$CONFIG_FILE"
 
-  # Validate required fields
-  local missing_required=()
-
-  [ -z "$CUSTOMER_NAME" ] && missing_required+=("CUSTOMER_NAME")
-  [ -z "$DEPLOYMENT_NAME" ] && missing_required+=("DEPLOYMENT_NAME")
-
-  if [ ${#missing_required[@]} -gt 0 ]; then
-    echo "ERROR: Missing required configuration values:"
-    for field in "${missing_required[@]}"; do
-      echo "  - $field"
-    done
-    echo ""
-    echo "Please fill in all required fields in:"
-    echo "  $CONFIG_FILE"
-    exit 1
-  fi
+  # Sensible defaults for identification fields. Customer can override in
+  # customer-config.sh; if left empty, derive from the system hostname so
+  # the install completes without manual input on a fresh VM.
+  CUSTOMER_NAME="${CUSTOMER_NAME:-$(hostname)}"
+  DEPLOYMENT_NAME="${DEPLOYMENT_NAME:-${CUSTOMER_NAME}-stargate}"
 
   # Set defaults for optional fields
   POSTGRES_USER="${POSTGRES_USER:-postgres}"
@@ -193,8 +182,30 @@ load_customer_config() {
     SERVER_STATIC_IP="$WG_LOCAL_IP"
   fi
 
+  # Auto-detect SERVER_STATIC_IP if still unset.
+  # Method 1: source IP of the default route — works on direct-public-IP VMs
+  # Method 2 (fallback): query an external service if Method 1 returned a
+  #           private/loopback IP (host is behind NAT).
   if [ -z "$SERVER_STATIC_IP" ]; then
-    echo "ERROR: SERVER_STATIC_IP is required."
+    SERVER_STATIC_IP=$(ip -4 route get 1.1.1.1 2>/dev/null \
+      | awk '{for(i=1;i<=NF;i++) if($i=="src"){print $(i+1); exit}}')
+    if [ -z "$SERVER_STATIC_IP" ] \
+       || [[ "$SERVER_STATIC_IP" =~ ^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.|169\.254\.|127\.) ]]; then
+      SERVER_STATIC_IP=$(curl -sf --max-time 5 https://api.ipify.org 2>/dev/null \
+                      || curl -sf --max-time 5 https://ifconfig.me 2>/dev/null \
+                      || true)
+    fi
+    if [ -n "$SERVER_STATIC_IP" ]; then
+      echo "Auto-detected SERVER_STATIC_IP=$SERVER_STATIC_IP"
+      # Persist back to customer-config.sh so subsequent runs are idempotent.
+      if [ -f "$CONFIG_FILE" ] && grep -q '^SERVER_STATIC_IP=' "$CONFIG_FILE"; then
+        sed -i "s|^SERVER_STATIC_IP=.*|SERVER_STATIC_IP=\"$SERVER_STATIC_IP\"|" "$CONFIG_FILE"
+      fi
+    fi
+  fi
+
+  if [ -z "$SERVER_STATIC_IP" ]; then
+    echo "ERROR: SERVER_STATIC_IP is required and could not be auto-detected."
     echo "  Set it to this server's real static public IP address."
     echo "  Example: SERVER_STATIC_IP=\"203.0.113.10\""
     exit 1
@@ -212,7 +223,7 @@ load_customer_config() {
   OUTBOUND_SMTP_PORT="${OUTBOUND_SMTP_PORT:-10026}"
   POSTFIXCONF_VERSION="${POSTFIXCONF_VERSION:-latest}"
 
-  LOKI_URL="${LOKI_URL:-https://loki.infra.vereign-cdn.com}"
+  LOKI_URL="${LOKI_URL:-}"
 
   # Keycloak / APISIX / Dashboard
   KEYCLOAK_ADMIN_USER="${KEYCLOAK_ADMIN_USER:-admin}"
@@ -283,9 +294,9 @@ CERT_CA_IRISAGENT_DOMAIN="$CERT_CA_IRISAGENT_DOMAIN"
 OUTBOUND_SMTP_HOST="$OUTBOUND_SMTP_HOST"
 OUTBOUND_SMTP_PORT="$OUTBOUND_SMTP_PORT"
 
-# Logging (Promtail -> Loki)
+# Logging (Alloy -> Loki)
 LOKI_URL="$LOKI_URL"
-PROMTAIL_HOSTNAME="$DEPLOYMENT_NAME"
+ALLOY_HOSTNAME="$DEPLOYMENT_NAME"
 
 # Policy Sync (optional - syncs policies from Git repo)
 # To enable: docker compose --profile policy-sync up -d
@@ -757,7 +768,7 @@ echo ""
 echo "  Monitoring:"
 echo "  -----------"
 echo "  Node Exporter:     http://localhost:9100/metrics"
-echo "  Promtail:          Logs -> $LOKI_URL"
+echo "  Alloy:             Logs -> $LOKI_URL"
 if [ "${DOZZLE_ENABLED:-false}" = "true" ]; then
   echo "  Dozzle (logs):     http://localhost:8090"
 fi

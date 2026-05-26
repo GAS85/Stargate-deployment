@@ -37,14 +37,14 @@ This document lists the licenses of third-party software components used in the 
 
 ---
 
-## Grafana Promtail
+## Grafana Alloy
 
-- **Component:** Promtail - Log shipper for Grafana Loki
-- **Image:** `grafana/promtail:latest`
-- **License:** GNU Affero General Public License v3.0 (AGPL v3)
+- **Component:** Alloy - Open-source OpenTelemetry Collector distribution
+- **Image:** `grafana/alloy:v1.16.1`
+- **License:** Apache License 2.0
 - **Copyright:** Copyright Grafana Labs
-- **Source:** https://github.com/grafana/loki/tree/main/pkg/promtail
-- **License Text:** https://github.com/grafana/loki/blob/main/LICENSE
+- **Source:** https://github.com/grafana/alloy
+- **License Text:** https://github.com/grafana/alloy/blob/main/LICENSE
 
 ---
 
@@ -108,7 +108,7 @@ This document lists the licenses of third-party software components used in the 
 | Dozzle | MIT | Permissive |
 | PostgreSQL | PostgreSQL License | Permissive |
 | Node Exporter | Apache 2.0 | Permissive |
-| Promtail | AGPL v3 | Copyleft |
+| Alloy | Apache 2.0 | Permissive |
 | MinIO | AGPL v3 | Copyleft |
 | HashiCorp Vault | BUSL 1.1 | Source-available |
 | Postfix | IPLR | Permissive |
