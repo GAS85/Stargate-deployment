@@ -681,6 +681,10 @@ services:
     depends_on:
       dashboard:
         condition: service_started
+      vault-init:
+        condition: service_completed_successfully
+      smimekeys-client:
+        condition: service_started
     environment:
       # Required: smimekeys backend the daemon queries per recipient
       SMIMEKEYS_ADDR: "http://smimekeys-client:8080"
@@ -691,13 +695,15 @@ services:
       MXENGINE_HOST: "${MXENGINE_HOST:-mxengine}"
       MXENGINE_PORT: "${MXENGINE_PORT:-1587}"
       DASHBOARD_CONFIG_URL: "http://dashboard:3000/api/internal/installation-config?service=postfix"
+      # Vault
+      VAULT_ADDRESS: "http://vault:8200"
+      VAULT_TOKEN: "${VAULT_TOKEN}"
+      VAULT_MOUNT_PATH: "secret-postfixconf"
     volumes:
       - postfix_spool:/var/spool/postfix
     ports:
       - "25:25"
       - "10026:10026"
-    depends_on:
-      - smimekeys-client
     networks:
       - stargate-network
     labels:
