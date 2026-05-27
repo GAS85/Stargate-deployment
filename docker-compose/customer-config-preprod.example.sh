@@ -78,10 +78,10 @@ S3_BUCKET_NAME="stargate-bucket"
 # Use "dev" for the latest development builds,
 # or specify exact versions like "v0.0.3"
 
-SMIMEKEYS_VERSION="v0.0.12"
+SMIMEKEYS_VERSION="v0.0.13-test-import-cert-on-create-2"
 POLICY_VERSION="v0.0.5"
 IRISAGENT_VERSION="v0.0.3"
-MXENGINE_VERSION="v0.0.39"
+MXENGINE_VERSION="v0.0.41-test"
 POLICY_SYNC_VERSION="dev"
 DASHBOARD_VERSION="v0.0.32-test"
 POSTFIXCONF_VERSION="v0.0.12"
@@ -157,7 +157,7 @@ DASHBOARD_ROOT_DOMAIN="hindev"
 # When enabled, a users.yml is auto-generated during install with the
 # credentials below. Change the password after first login if desired.
 
-DOZZLE_ENABLED="false"
+DOZZLE_ENABLED="true"
 DOZZLE_VERSION="v10.5.0"
 DOZZLE_USERNAME="admin"
 DOZZLE_PASSWORD=""
