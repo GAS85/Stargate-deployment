@@ -784,22 +784,17 @@ services:
       - autoheal=true
 
   # Dozzle - Real-time log viewer for all containers
-  # Enable with: docker compose --profile dozzle up -d
   # Access at: http://localhost:8090
   dozzle:
     image: amir20/dozzle:${DOZZLE_VERSION:-v10.5.0}
     container_name: stargate-dozzle
     restart: unless-stopped
-    profiles:
-      - dozzle
     environment:
-      DOZZLE_AUTH_PROVIDER: "simple"
       DOZZLE_FILTER: "name=stargate"
       DOZZLE_HOSTNAME: "${DEPLOYMENT_NAME:-stargate}"
       DOZZLE_NO_ANALYTICS: "true"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./dozzle:/data
     ports:
       - "8090:8080"
     networks:
