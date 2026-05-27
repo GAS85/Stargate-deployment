@@ -260,7 +260,7 @@ services:
   # ===================
 
   smimekeys-client:
-    image: registry.vereign.io/svdh/smimekeys:${SMIMEKEYS_VERSION:-dev}
+    image: healthinfonetag/smimekeys:${SMIMEKEYS_VERSION:-dev}
     container_name: stargate-smimekeys-client
     depends_on:
       postgres:
@@ -323,7 +323,7 @@ services:
       - autoheal=true
 
   policy:
-    image: registry.vereign.io/svdh/policy:${POLICY_VERSION:-dev}
+    image: healthinfonetag/policy:${POLICY_VERSION:-dev}
     container_name: stargate-policy
     depends_on:
       postgres:
@@ -361,7 +361,7 @@ services:
       - autoheal=true
 
   irisagent:
-    image: registry.vereign.io/svdh/irisagent:${IRISAGENT_VERSION:-dev}
+    image: healthinfonetag/irisagent:${IRISAGENT_VERSION:-dev}
     container_name: stargate-irisagent
     restart: unless-stopped
     depends_on:
@@ -427,7 +427,7 @@ services:
       - autoheal=true
 
   mxengine:
-    image: registry.vereign.io/svdh/mxengine:${MXENGINE_VERSION:-dev}
+    image: healthinfonetag/mxengine:${MXENGINE_VERSION:-dev}
     container_name: stargate-mxengine
     depends_on:
       postgres:
@@ -556,7 +556,7 @@ services:
       - autoheal=true
 
   dashboard:
-    image: registry.vereign.io/svdh/dashboard-hin:${DASHBOARD_VERSION:-dev}
+    image: healthinfonetag/dashboard:${DASHBOARD_VERSION:-dev}
     container_name: stargate-dashboard
     depends_on:
       keycloak:
@@ -674,7 +674,7 @@ services:
       - autoheal=true
 
   postfixconf:
-    image: registry.vereign.io/svdh/postfixconf:${POSTFIXCONF_VERSION:-dev}
+    image: healthinfonetag/postfixconf:${POSTFIXCONF_VERSION:-dev}
     container_name: stargate-postfixconf
     restart: unless-stopped
     depends_on:
@@ -760,7 +760,7 @@ services:
   # Policy sync service - syncs policies from Git repository to database
   # Automatically syncs policies when POLICY_SYNC_REPO_URL is configured
   policy-sync:
-    image: registry.vereign.io/svdh/policy-sync:${POLICY_SYNC_VERSION:-dev}
+    image: healthinfonetag/policy-sync:${POLICY_SYNC_VERSION:-dev}
     container_name: stargate-policy-sync
     restart: unless-stopped
     depends_on:
