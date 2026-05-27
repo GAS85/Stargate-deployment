@@ -31,7 +31,7 @@ echo -e "\n######\n" >> "$TEMP_FILE"
 while IFS= read -r container; do
     docker logs "${args[@]}" --timestamps "$container" 2>&1 |
     sed "s/^/[$container] /"
-done < <(docker ps --format '{{.Names}}') >> "$TEMP_FILE"
+done < <(docker ps -a --format '{{.Names}}') >> "$TEMP_FILE"
 
 FILE_SIZE=$(stat -c%s "$TEMP_FILE" 2>/dev/null || stat -f%z "$TEMP_FILE")
 

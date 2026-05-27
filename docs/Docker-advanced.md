@@ -889,10 +889,10 @@ docker logs stargate-mxengine --tail 10
 docker logs -f stargate-mxengine
 
 # Check all container statuses
-docker ps --format 'table {{.Names}}\t{{.Status}}'
+docker ps -a --format 'table {{.Names}}\t{{.Status}}'
 
 # Follow all containers logs in real-time
-docker ps --format '{{.Names}}' | xargs -I {} sh -c 'docker logs --timestamps -f {} 2>&1 | sed "s/^/[{}] /"'
+docker ps -a --format '{{.Names}}' | xargs -I {} sh -c 'docker logs --timestamps -f {} 2>&1 | sed "s/^/[{}] /"'
 ```
 
 ### Provide logs to support
@@ -906,13 +906,13 @@ Upload all containers logs:
     Use our script:
 
     ```shell
-    ~/stargate-deployment/docker-compose/scripts/send-logs-to-support.sh --all
+    ./scripts/send-logs-to-support.sh --all
     ```
 
     Or execute manually:
 
     ```shell
-    docker ps --format '{{.Names}}' | xargs -I {} sh -c 'docker logs --timestamps {} 2>&1 | sed "s/^/[{}] /"' | curl https://pastebin.hin-infra.ch/ --data-binary @-
+    docker ps -a --format '{{.Names}}' | xargs -I {} sh -c 'docker logs --timestamps {} 2>&1 | sed "s/^/[{}] /"' | curl https://pastebin.hin-infra.ch/ --data-binary @-
     ```
     !!! info
         This operation can hit our upload limits - 20 Mb.
@@ -920,13 +920,13 @@ Upload all containers logs:
 === "For the last hour (`1h`)"
 
     ```shell
-    ~/stargate-deployment/docker-compose/scripts/send-logs-to-support.sh --since 1h
+    ./scripts/send-logs-to-support.sh --since 1h
     ```
 
     Or execute manually:
 
     ```shell
-    docker ps --format '{{.Names}}' | xargs -I {} sh -c 'docker logs --since 1h --timestamps {} 2>&1 | sed "s/^/[{}] /"' | curl https://pastebin.hin-infra.ch/ --data-binary @-
+    docker ps -a --format '{{.Names}}' | xargs -I {} sh -c 'docker logs --since 1h --timestamps {} 2>&1 | sed "s/^/[{}] /"' | curl https://pastebin.hin-infra.ch/ --data-binary @-
     ```
 
 === "Last 500 lines of logs"
@@ -935,13 +935,13 @@ Upload all containers logs:
         `--tail 500` is default value for our script, but you still can provide it
 
     ```shell
-    ~/stargate-deployment/docker-compose/scripts/send-logs-to-support.sh --tail 500
+    ./scripts/send-logs-to-support.sh --tail 500
     ```
 
     Or execute manually:
 
     ```shell
-    docker ps --format '{{.Names}}' | xargs -I {} sh -c 'docker logs --tail 500 --timestamps {} 2>&1 | sed "s/^/[{}] /"' | curl https://pastebin.hin-infra.ch/ --data-binary @-
+    docker ps -a --format '{{.Names}}' | xargs -I {} sh -c 'docker logs --tail 500 --timestamps {} 2>&1 | sed "s/^/[{}] /"' | curl https://pastebin.hin-infra.ch/ --data-binary @-
     ```
 
 Upload specific container logs:
