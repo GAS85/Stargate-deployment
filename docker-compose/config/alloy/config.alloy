@@ -1,7 +1,12 @@
 // Env vars (set in docker-compose):
-//   LOKI_URL        — Remote Loki push URL (defaults to local Loki if not set)
 //   LOCAL_LOKI_URL  — Local Loki push URL (always http://loki:3100)
-//   ALLOY_HOSTNAME  — deployment id (used for `host`/`environment` labels and remotecfg id)
+//   ALLOY_HOSTNAME  — deployment id (used for `host`/`environment` labels)
+//
+// Remote log shipping is managed by the dashboard service: the dashboard serves a
+// `log_collection` module (imported below) whose exported `receiver` ships logs to
+// the remote Loki URL configured in the dashboard. When no remote URL is set, the
+// module's receiver is a no-op and only the local write below applies. Local Loki
+// is always written here — the dashboard reads it for log export.
 
 logging {
   level  = "info"
@@ -13,6 +18,11 @@ import.http "dashboard" {
   url            = "http://dashboard:3000/api/internal/alloy"
   poll_frequency = "1m"
 }
+
+// Instantiate the dashboard-served module. Its exported `receiver` is the remote
+// sink: it ships to the remote Loki URL the dashboard is configured with (and is
+// a no-op when the dashboard has no remote URL set).
+dashboard.log_collection "default" { }
 
 discovery.docker "stargate" {
   host             = "unix:///var/run/docker.sock"
@@ -90,19 +100,13 @@ loki.process "stargate" {
     values = { level = "level" }
   }
 
-  forward_to = [loki.write.local.receiver, loki.write.remote.receiver]
+  forward_to = [loki.write.local.receiver, dashboard.log_collection.default.receiver]
 }
 
-// Always write to local Loki (used by dashboard for log export)
+// Always write to local Loki (used by the dashboard for log export).
+// Remote shipping is handled by dashboard.log_collection above.
 loki.write "local" {
   endpoint {
     url = sys.env("LOCAL_LOKI_URL") + "/loki/api/v1/push"
-  }
-}
-
-// Write to remote Loki when LOKI_URL is configured (central monitoring)
-loki.write "remote" {
-  endpoint {
-    url = sys.env("LOKI_URL") + "/loki/api/v1/push"
   }
 }
