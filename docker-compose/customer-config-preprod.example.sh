@@ -83,8 +83,8 @@ POLICY_VERSION="v0.0.5"
 IRISAGENT_VERSION="v0.0.3"
 MXENGINE_VERSION="v0.0.39"
 POLICY_SYNC_VERSION="dev"
-DASHBOARD_VERSION="v0.0.6"
-POSTFIXCONF_VERSION="v0.0.11"
+DASHBOARD_VERSION="v0.0.32-test"
+POSTFIXCONF_VERSION="v0.0.12"
 
 # ==============================================================================
 # OPTIONAL: Advanced Mail Configuration
@@ -138,7 +138,7 @@ APISIX_ADMIN_KEY=""  # Auto-generated if empty
 
 # Public-facing URLs (must be reachable from the end-user's browser)
 KEYCLOAK_PUBLIC_URL=""      # Default: https://<SERVER_STATIC_IP>:8180
-DASHBOARD_PUBLIC_URL=""     # Default: https://<SERVER_STATIC_IP>:3000
+DASHBOARD_PUBLIC_URL=""     # Default: https://<SERVER_STATIC_IP>
 
 # Show developer pages in the dashboard UI
 DASHBOARD_SHOW_DEV_PAGES="true"
