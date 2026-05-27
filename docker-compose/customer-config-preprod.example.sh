@@ -84,7 +84,7 @@ IRISAGENT_VERSION="v0.0.5"
 MXENGINE_VERSION="v0.0.42"
 POLICY_SYNC_VERSION="dev"
 DASHBOARD_VERSION="v0.0.35-test"
-POSTFIXCONF_VERSION="v0.0.12"
+POSTFIXCONF_VERSION="v0.0.14"
 
 # ==============================================================================
 # OPTIONAL: Advanced Mail Configuration
