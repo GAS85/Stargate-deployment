@@ -10,7 +10,7 @@ logging {
 
 
 import.http "dashboard" {
-  url            = "http://dashboard:3000/api/internal/installation-config?service=alloy"
+  url            = "http://dashboard:3000/api/internal/alloy"
   poll_frequency = "1m"
 }
 
