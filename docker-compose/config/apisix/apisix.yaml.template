@@ -135,6 +135,18 @@ routes:
           - "127.0.0.1"
           - "172.16.0.0/12"
 
+ - id: "smimekeys-peer-sync"
+   uri: "/smimekeys/v1/certs/peers/sync"
+   upstream_id: "smimekeys"
+   priority: 100
+   plugins:
+     proxy-rewrite:
+       regex_uri: ["^/smimekeys/(.*)","/$1"]
+     ip-restriction:
+        whitelist:
+          - "127.0.0.1"
+          - "172.16.0.0/12"
+
   # ==================
   # Authenticated routes — Bearer token required via Keycloak OIDC
   # ==================
