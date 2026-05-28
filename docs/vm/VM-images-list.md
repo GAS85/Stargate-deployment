@@ -1,21 +1,36 @@
 # VM Images list
 
-Here you can find an actual VM images list for different platforms. Please do not forget to check SHA256SUM of downloaded images. You can use a https://images.hin.ch/vm-images/SHA256SUMS file.
+Here you can find an actual VM images list for different platforms. Please do not forget to check SHA-256 Hash of downloaded images. You can use a https://images.hin.ch/vm-images/SHA256SUMS file to compare it.
 
-??? hint "How to perform SHA256 Check locally"
-    You can calculate SHA256 fingerprint of downloaded files by following command and then compare it with values in a table below:
+??? info "How to perform SHA256 Hash check locally"
 
-    ```bash
-    sha256sum <File Name>
-    ```
+    You can calculate SHA256 Hash of downloaded files by following command and then compare it with values in a table below.
 
-    You as move advanced variant you can execute following command and paste predefined Checksum as `SHA256_VALUE` and File Name as `IMAGE_NAME`:
+    === "Linux and MaxOS"
 
-    ```bash
-    SHA256_VALUE="" \
-    IMAGE_NAME="" \
-    echo "$SHA256_VALUE  $IMAGE_NAME" | sudo sha1sum --check --status
-    ```
+        Open Terminal and execute:
+
+        ```bash
+        sha256sum <File Name>
+        ```
+
+        As move advanced variant you can execute following command and paste predefined Checksum as `SHA256_VALUE` and File Name as `IMAGE_NAME`:
+
+        ```bash
+        SHA256_VALUE="" \
+        IMAGE_NAME="" \
+        echo "$SHA256_VALUE  $IMAGE_NAME" | sudo sha1sum --check --status
+        ```
+
+    === "Windows"
+
+        Open Powershell and execute:
+
+        ```powershell
+        Get-FileHash "<File Name>"
+        ```
+
+        You can add `-Algorithm SHA256` argument to force SHA256 use.
 
 <!-- Script will replace everything AFTER this line -->
 | Image name | Image Type | Image Size | Link | SHA256 Checksum |
