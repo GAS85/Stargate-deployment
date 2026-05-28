@@ -30,12 +30,10 @@ The structured, step-by-step procedure described in this document covers the fol
 
 HIN's objective in this process is to ensure a secure, smooth and fully validated migration that causes minimal disruption to operations and guarantees the uninterrupted continuity of email services.
 
----
-
 ## Overview of the installation steps
 
 | Step | Topic | Responsibility |
-|------|-------|----------------|
+| :--: | :---- | :------------: |
 | 1.1 | Backing up the old MGW | Customer |
 | 1.2 | Contingency plan | Customer |
 | 2 | WireGuard | Customer |
@@ -61,19 +59,17 @@ HIN's objective in this process is to ensure a secure, smooth and fully validate
 | 22 | End of the waiting period | Customer |
 | 23 | Take MGW out of service | Customer |
 
----
-
 ## Detailed steps
 
 ### Step 1.1 - Backing up the old MGW
 
-**Responsibility:** Customer
+![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
 
 Back up the old MGW appliance and ensure that the VM is not deleted until the migration has been successfully completed and accepted.
 
 ### Step 1.2 - Fallback scenario
 
-**Responsibility:** Customer
+![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
 
 We recommend setting up the new HIN Gateway Appliance in parallel with the old MGW to enable testing and validation without impacting the production environment. Once the HIN Gateway Appliance has been successfully installed, email traffic can be routed via both platforms during the transition phase.
 
@@ -81,7 +77,7 @@ Should problems arise with email traffic on the HIN Gateway, a fallback can be s
 
 ### Step 2 - WireGuard
 
-**Responsibility:** Customer
+![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
 
 Configure the WireGuard port 19818 (TCP/UDP) in your firewall:
 
@@ -96,7 +92,7 @@ Configure the WireGuard port 19818 (TCP/UDP) in your firewall:
 
 ### Step 3 - Select target VM
 
-**Responsibility:** Customer
+![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
 
 Select one of the available virtual images and provision it as described in the installation guide on the HIN Gateway service page:
 
@@ -111,13 +107,13 @@ Select one of the available virtual images and provision it as described in the 
 
 ### Step 4 - Load VM image
 
-**Responsibility:** Customer
+![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
 
 Upload the selected VM to your hypervisor.
 
 ### Step 5 - Network connection to the VM
 
-**Responsibility:** Customer
+![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
 
 Ensure that the VM has a network connection with a static IP address.
 
@@ -125,12 +121,17 @@ Ensure that the VM has a network connection with a static IP address.
 
 **Option B:** Log in locally via the VM console and manually configure a static IP address.
 
-!!! note
-    If you choose Option B, use the HIN Admin Credentials provided to you by your HIN contact at T-4 via email. You will be prompted to change the password when you log in for the first time. If you do not have the HIN admin credentials, please contact HIN Support by email or phone (support@hin.ch / 0848 830 740).
+!!! tip
+    If you choose Option B, use the HIN Admin Credentials provided to you by your HIN contact at T-4 via email. You will be prompted to change the password when you log in for the first time.
+    
+    !!! question
+        If you do not have the HIN admin credentials, please contact HIN Support by Email.
+        
+        [Click here to send an Email](mailto:support@hin.ch?subject=Password%20required%20for%20VM%20installation.&body=Hello%20dear%20Support,%0A%0AI%20would%20like%20to%20receive%20the%20password%20for%20a%20VM%20installation.%0A%0APLEASE%20PROVIDE%20YOUR%20CUSTOMER%20INFO%20HERE){ .md-button style="position:relative;left:50%;transform:translate(-50%,0%);" }
 
 ### Step 6 - Access via the browser
 
-**Responsibility:** Customer
+![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
 
 Open a browser and enter the IP address and port configured for the VM. You should see the initial setup screen.
 
@@ -140,18 +141,20 @@ https://<VM IP address>
 
 ### Step 7 - Enter setup key
 
-**Responsibility:** Customer
+![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
 
 Enter the setup key that you received via email from your HIN contact person in T-4. Click on "Next".
 
 ![Setup key entry screen](assets/installation-guide/step7-setup-key.png)
 
-!!! note
-    If you do not have the setup key, please contact HIN Support.
+!!! question
+    If you do not have the setup key, please contact HIN Support via Email.
+    
+    [Click here to send an Email](mailto:support@hin.ch?subject=Password%20required%20for%20VM%20installation.&body=Hello%20dear%20Support,%0A%0AI%20would%20like%20to%20receive%20the%20password%20for%20a%20VM%20installation.%0A%0APLEASE%20PROVIDE%20YOUR%20CUSTOMER%20INFO%20HERE){ .md-button style="position:relative;left:50%;transform:translate(-50%,0%);" }
 
 ### Step 8 - Initial Configuration and Domain Setup
 
-**Responsibility:** Customer
+![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
 
 Check that the public IP address displayed in the "Endpoint" field is correct. If it is incorrect, update it accordingly. On this screen, you can now:
 
@@ -171,7 +174,7 @@ Click on "Save configuration".
 
 ### Step 9 - Configure Postfix
 
-**Responsibility:** Customer
+![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
 
 On this screen, configure your Postfix mail settings for the secure mail relay setup.
 
@@ -198,7 +201,7 @@ Once the configuration has been reviewed and completed, click "Apply configurati
 
 ### Step 10 - Backend Service Health Check
 
-**Responsibility:** Customer
+![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
 
 Once the installation is complete, the system will display the status "Up" for all backend services.
 
@@ -216,7 +219,7 @@ Check that all services can be accessed successfully. Click on "Finish".
 
 ### Step 11 - Log in to the dashboard
 
-**Responsibility:** Customer
+![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
 
 Click on "Sign in with Keycloak".
 
@@ -224,14 +227,16 @@ Click on "Sign in with Keycloak".
 
 ### Step 12 - Enter Keycloak credentials
 
-**Responsibility:** Customer
+![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
 
 Enter the Keycloak username and password received in T-4.
 
 ![Keycloak login page](assets/installation-guide/step12-keycloak-login.png)
 
-!!! note
-    If you do not have these login details, please contact HIN Support.
+!!! question
+    If you do not have these login details, please contact HIN Support via Email.
+    
+    [Click here to send an Email](mailto:support@hin.ch?subject=Password%20required%20for%20VM%20installation.&body=Hello%20dear%20Support,%0A%0AI%20would%20like%20to%20receive%20the%20password%20for%20a%20VM%20installation.%0A%0APLEASE%20PROVIDE%20YOUR%20CUSTOMER%20INFO%20HERE){ .md-button style="position:relative;left:50%;transform:translate(-50%,0%);" }
 
 After logging in, check the following:
 
@@ -245,7 +250,7 @@ After logging in, check the following:
 
 ### Step 13 - Verify domains
 
-**Responsibility:** Customer
+![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
 
 Check the list of trusted domains. If there are any errors, contact HIN Support.
 
@@ -253,25 +258,25 @@ Check the list of trusted domains. If there are any errors, contact HIN Support.
 
 ### Step 14 - Activate domains
 
-**Responsibility:** Customer
+![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
 
 Select the domain(s) and enable them so that traffic is routed via the HIN Gateway. Click "Finish".
 
 ### Step 15 - Peer certificates
 
-**Responsibility:** HIN
+![Responsibility HIN](https://img.shields.io/badge/Responsibility-HIN-orange)
 
 Peer certificates are issued by the HIN Certification Authority (HIN CA) for activated domains.
 
 ### Step 16 - Validate peer certificates
 
-**Responsibility:** Customer
+![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
 
 Ensure that each domain has received its policy-based peer certificate. Contact HIN Support if you encounter any issues.
 
 ### Step 17 - Configure mail server
 
-**Responsibility:** Customer
+![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
 
 Configure your mail server or the associated components so that traffic is routed via the new HIN Gateway Appliance:
 
@@ -284,7 +289,7 @@ See [Exchange Integration](Exchange-integration.md) for detailed instructions.
 
 ### Step 18 - Tests prior to migration
 
-**Responsibility:** Customer
+![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
 
 Check the email flow using a test domain:
 
@@ -294,7 +299,7 @@ Check the email flow using a test domain:
 
 ### Step 19 - Go-live
 
-**Responsibility:** Customer
+![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
 
 Migrate all domains to the HIN Gateway. Update:
 
@@ -304,7 +309,7 @@ Migrate all domains to the HIN Gateway. Update:
 
 ### Step 20 - Validation after the migration
 
-**Responsibility:** Customer
+![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
 
 Confirm:
 
@@ -317,7 +322,7 @@ Complete the acceptance report and return it to HIN.
 
 ### Step 21 - Transition period
 
-**Responsibility:** HIN
+![Responsibility HIN](https://img.shields.io/badge/Responsibility-HIN-orange)
 
 A one-month transition period will be granted to transfer all trusted domains to the HIN Gateway.
 
@@ -330,13 +335,13 @@ A one-month transition period will be granted to transfer all trusted domains to
 
 ### Step 22 - End of the transition period
 
-**Responsibility:** Customer
+![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
 
 All trusted domains must be migrated within the transition period.
 
 ### Step 23 - Take MGW out of service
 
-**Responsibility:** Customer
+![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
 
 1. **Ensure there is no active traffic** - Check:
     - No domains are pointing to the MGW (DNS, SMTP, connectors).
