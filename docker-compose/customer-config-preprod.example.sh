@@ -78,12 +78,12 @@ S3_BUCKET_NAME="stargate-bucket"
 # Use "dev" for the latest development builds,
 # or specify exact versions like "v0.0.3"
 
-SMIMEKEYS_VERSION="v0.0.14"
+SMIMEKEYS_VERSION="6c60562a"
 POLICY_VERSION="v0.0.6"
 IRISAGENT_VERSION="v0.0.5"
 MXENGINE_VERSION="v0.0.42"
 POLICY_SYNC_VERSION="dev"
-DASHBOARD_VERSION="v0.0.8"
+DASHBOARD_VERSION="v0.0.36-test"
 POSTFIXCONF_VERSION="v0.0.14"
 
 # ==============================================================================
