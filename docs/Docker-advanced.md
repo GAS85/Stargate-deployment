@@ -958,7 +958,7 @@ Upload all containers logs:
 
 === "Last 500 lines of logs"
 
-    !!! success
+    !!! success "This is default"
         `--tail 500` is default value for our script, but you still can provide it
 
     Use our script:
@@ -982,7 +982,7 @@ Upload specific container logs:
     ```
 
     !!! tip
-        This operation can hit our upload limits - 20 Mb.
+        This operation can hit our upload limits - 20 Mb. If it happens, try to reduce logs amount by setting time limit or lines of logs.
 
 === "For the last hour (`1h`)"
 
