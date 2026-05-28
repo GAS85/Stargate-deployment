@@ -11,16 +11,36 @@ Stargate acts as a mail relay between external mail servers and your Exchange en
 
 **Pattern A - Stargate as primary MX (recommended for inbound S/MIME processing):**
 
-```plain
-Internet → Stargate (MX priority 15) → Exchange Online (MX priority 20)
-Exchange Online → Transport Rule → Outbound Connector → Stargate → Internet
+```mermaid
+flowchart LR
+    I1 --> mx15 --> mx20
+    EO --> TR --> OC --> Stargate --> I2
+    I1["Internet"]
+    I2["Internet"]
+    mx15["Stargate (MX priority 15)"]
+    mx20["Exchange Online (MX priority 20)"]
+    EO["Exchange Online"]
+    TR["Transport Rule"]
+    OC["Outbound Connector"]
+    Stargate
 ```
 
 **Pattern B - Exchange Online as primary MX with transport rules:**
 
-```plain
-Internet → Exchange Online → Transport Rule → Connector → Stargate → Exchange Online
-Exchange Online → Transport Rule → Outbound Connector → Stargate → Internet
+```mermaid
+flowchart LR
+    I1 --> EO --> TR --> C --> S1 --> EO
+    E2 --> TR2 --> OC --> S2 --> I2
+    I1["Internet"]
+    I2["Internet"]
+    EO["Exchange Online"]
+    E2["Exchange Online"]
+    TR["Transport Rule"]
+    TR2["Transport Rule"]
+    OC["Outbound Connector"]
+    C["Connector"]
+    S1["Stargate"]
+    S2["Stargate"]
 ```
 
 In both patterns, you need:
@@ -306,21 +326,29 @@ Each domain's MX records tell Stargate where to deliver processed mail for that 
 
 After setup, verify the Postfix configuration:
 
+#### Check relay configuration
+
 ```bash
-# Check relay configuration
 docker exec stargate-postfixconf postconf | grep -E 'relayhost|mynetworks|relay_domains|content_filter'
-
-# Check transport maps
-docker exec stargate-postfixconf postconf transport_maps
-
-# Check mail queue (should be empty when everything is working)
-docker exec stargate-postfixconf mailq
-
-# Send a test email and check logs
-docker logs stargate-postfixconf --tail 50
 ```
 
----
+#### Check transport maps
+
+```bash
+docker exec stargate-postfixconf postconf transport_maps
+```
+
+#### Check mail queue (should be empty when everything is working)
+
+```bash
+docker exec stargate-postfixconf mailq
+```
+
+#### Send a test email and check logs
+
+```bash
+docker logs stargate-postfixconf --tail 50
+```
 
 ## Troubleshooting
 
