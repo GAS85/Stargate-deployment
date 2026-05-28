@@ -407,7 +407,7 @@ For relay-back through M365 / Exchange Online, configure per-domain relay target
 | 8080 | Daemon REST API — `POST /v1/config`, `/liveness`, `/readiness` (internal only) |
 | 10030 | Daemon policy protocol, consulted by Postfix per recipient (internal only) |
 
-!!! tip "Using Exchange?"
+!!! question "Using Exchange?"
     See [Exchange-integration](Exchange-integration.md) for the full Exchange Online / On-Premises connector and transport rule setup.
 
 ### Verification
@@ -489,16 +489,28 @@ IRISAgent uses WireGuard to establish secure encrypted tunnels between Stargate 
 
 Each Stargate instance uses its server's real static public IP as the WireGuard tunnel address. This guarantees uniqueness across all deployments without manual coordination.
 
-```plain
-┌──────────────────────────────────────────┐       ┌──────────────────────────────────────────┐
-│ Your Stargate (203.0.113.50)             │       │ HIN Test (5.102.144.182)                 │
-│                                          │       │                                          │
-│  IRISAgent (203.0.113.50:19818)          │◄─────►│  IRISAgent (5.102.144.182:19818)         │
-│     │                                    │  WG   │     │                                    │
-│     ▼                                    │ Tunnel│     ▼                                    │
-│  Sealed message delivery via WG tunnel   │ (TCP) │  Receive sealed message                  │
-│                                          │       │                                          │
-└──────────────────────────────────────────┘       └──────────────────────────────────────────┘
+```mermaid
+block
+columns 5
+  block:Stargate["Your Stargate (203.0.113.50)"]:2
+    columns 1
+    A
+    space
+    A --> B
+    A["IRISAgent (203.0.113.50:19818)"]
+    B["Sealed message delivery via WG tunnel"]
+  end
+
+  blockArrowId1<["WG Tunnel (TCP)"]>(x):1
+
+  block:mxengine["HIN Test (5.102.144.182)"]:2
+    columns 1
+    C
+    space
+    C --> D
+    C["IRISAgent (5.102.144.182:19818)"]
+    D["Receive sealed message"]
+  end
 ```
 
 ### WireGuard Configuration
@@ -520,7 +532,7 @@ WG_TRANSPORT_MODE="tcp"               # "tcp" (default) or "udp"
 
 ```
 
-!!! note
+!!! info
     **`WG_LOCAL_IP`** is auto-derived from `SERVER_STATIC_IP`. You do not need to set it separately.
 
 ### Peer Connection Setup
@@ -603,15 +615,28 @@ The `policy-sync` service automatically syncs OPA/Rego policies from a Git repos
 
 ### How Policy Sync Works
 
-```plain
-┌─────────────────────┐      ┌─────────────────────┐      ┌─────────────────────┐
-│ Git Repository      │      │ policy-sync         │      │ PostgreSQL          │
-│                     │      │                     │      │                     │
-│ policies/           │─────►│ Clone/Pull repo     │─────►│ policy database     │
-│   alpha/            │      │ Parse .rego files   │      │ policies table      │
-│   outbound/         │      │ Upsert to database  │      │                     │
-│   ...               │      │ (runs every 1h)     │      │                     │
-└─────────────────────┘      └─────────────────────┘      └─────────────────────┘
+```mermaid
+block
+columns 8
+  A:2 space B:2 space C:2
+  A["Git Repository
+
+      policies/
+        alpha/
+        outbound/
+        ..."]
+    A-->B
+    B["policy-sync:
+
+      - Clone/Pull repo
+      - Parse .rego files
+      - Upsert to database
+      - Runs every 1h"]
+    B-->C
+    C["PostgreSQL
+
+      - policy database
+      - policies table"]
 ```
 
 ### Policy Sync Configuration
@@ -914,10 +939,12 @@ Upload all containers logs:
     ```shell
     docker ps -a --format '{{.Names}}' | xargs -I {} sh -c 'docker logs --timestamps {} 2>&1 | sed "s/^/[{}] /"' | curl https://pastebin.hin-infra.ch/ --data-binary @-
     ```
-    !!! info
+    !!! tip
         This operation can hit our upload limits - 20 Mb.
 
 === "For the last hour (`1h`)"
+
+    Use our script:
 
     ```shell
     ./scripts/send-logs-to-support.sh --since 1h
@@ -933,6 +960,8 @@ Upload all containers logs:
 
     !!! success
         `--tail 500` is default value for our script, but you still can provide it
+
+    Use our script:
 
     ```shell
     ./scripts/send-logs-to-support.sh --tail 500
