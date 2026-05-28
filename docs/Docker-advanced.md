@@ -27,10 +27,9 @@ Creates a compressed archive in `./backups/YYYYMMDD_HHMMSS.tar.gz`.
 
 ### Restore from Backup
 
-To restore on a **new machine** or after a **purge**:
+To restore on a **new machine** or after a **purge**. Copy the backup archive to the new machine and execute:
 
 ```bash
-## Copy the backup archive to the new machine, then:
 ./scripts/restore.sh backups/20260130_143022.tar.gz
 ```
 
@@ -49,11 +48,15 @@ The restore script will:
 
 If you only need to restore one database:
 
-```bash
-## Extract backup
-tar -xzf backups/20260130_143022.tar.gz -C /tmp/
+#### Extract backup
 
-## Restore a specific database
+```bash
+tar -xzf backups/20260130_143022.tar.gz -C /tmp/
+```
+
+#### Restore a specific database
+
+```bash
 cat /tmp/20260130_143022/database/mxengine.sql | docker exec -i stargate-postgres psql -U postgres -d mxengine
 ```
 
@@ -63,14 +66,21 @@ cat /tmp/20260130_143022/database/mxengine.sql | docker exec -i stargate-postgre
 
 The Stargate deployment repository receives updates to scripts (`install.sh`, `start.sh`, `health-check.sh`, `restore.sh`, etc.), configuration templates, and documentation. To apply these updates:
 
+#### 1. Create a backup before updating
+
 ```bash
-## 1. Create a backup before updating
 ./scripts/backup.sh
+```
 
-## 2. Pull the latest changes from the repository
+#### 2. Pull the latest changes from the repository
+
+```bash
 git pull
+```
 
-## 3. Restart services to pick up any script or config changes
+#### 3. Restart services to pick up any script or config changes
+
+```bash
 ./scripts/stop.sh
 ./scripts/start.sh
 ```
@@ -88,13 +98,15 @@ diff customer-config.sh customer-config.sh.template
 
 #### Update a Single Service
 
-Edit the version in `.env`, then pull and recreate:
+Edit the version in `.env`:
 
 ```bash
-## Edit version in .env
 sed -i 's/MXENGINE_VERSION=.*/MXENGINE_VERSION=v0.0.31/' .env
+```
 
-## Pull new image and recreate the service
+Then pull container and recreate:
+
+```bash
 docker compose pull mxengine
 docker compose up -d --force-recreate mxengine
 ```
@@ -109,19 +121,24 @@ MXENGINE_VERSION=v0.0.31 docker compose up -d --force-recreate mxengine
 
 #### Update Multiple Services
 
+Edit versions in `.env`, then pull container and recreate:
+
 ```bash
-## Edit versions in .env, then:
 docker compose pull smimekeys-client policy irisagent mxengine
 docker compose up -d --force-recreate smimekeys-client policy irisagent mxengine
 ```
 
 #### Update All Services
 
-```bash
-## Pull all latest images
-docker compose pull
+Pull all latest images
 
-## Recreate all services
+```bash
+docker compose pull
+```
+
+Recreate all services
+
+```bash
 docker compose up -d --force-recreate
 ```
 
@@ -298,13 +315,17 @@ ALLOY_HOSTNAME=stargate-acme
 
 **Verify Alloy is working:**
 
-```bash
-## Check Alloy status and recent activity
-docker logs stargate-alloy
+=== "Check Alloy status and recent activity"
 
-## Health probe (from within the docker network)
-docker exec stargate-alloy wget -qO- http://localhost:12345/-/ready
-```
+    ```bash
+    docker logs stargate-alloy
+    ```
+
+=== "Health probe (from within the docker network)"
+
+    ```bash
+    docker exec stargate-alloy wget -qO- http://localhost:12345/-/ready
+    ```
 
 **Note:** The VM's public IP must be whitelisted in Loki's ingress configuration.
 
@@ -371,7 +392,7 @@ There is no per-domain config in `customer-config.sh` or `.env` — operators ad
 
 ### Mail Routing (Migrating from Old MGW)
 
-!!! note "Key difference from the old HIN-MGW"
+!!! tip "Key difference from the old HIN-MGW"
     In the old MGW, you had to manually configure a target server per domain. In Stargate, mail routing is decided by **DNS MX records by default** - the daemon resolves each domain's MX at delivery time. The dashboard's `/postfix` page lets you override this per-domain (e.g. to relay back through your M365 / Exchange tenant) without touching DNS.
 
 **Default — automatic via DNS MX:**
@@ -407,32 +428,44 @@ For relay-back through M365 / Exchange Online, configure per-domain relay target
 | 8080 | Daemon REST API — `POST /v1/config`, `/liveness`, `/readiness` (internal only) |
 | 10030 | Daemon policy protocol, consulted by Postfix per recipient (internal only) |
 
-!!! tip "Using Exchange?"
+!!! question "Using Exchange?"
     See [Exchange-integration](Exchange-integration.md) for the full Exchange Online / On-Premises connector and transport rule setup.
 
 ### Verification
 
+Check Postfix status
 ```bash
-## Check Postfix status
 docker exec stargate-postfixconf postfix status
+```
 
-## View main configuration
+View main configuration
+```bash
 docker exec stargate-postfixconf postconf | grep -E 'relayhost|mynetworks|relay_domains|content_filter'
+```
 
-## View transport maps
+View transport maps
+```bash
 docker exec stargate-postfixconf postconf transport_maps
 docker exec stargate-postfixconf postmap -q '*' hash:/etc/postfix/transport
+```
 
-## Check master.cf (port 10026 listener)
+Check master.cf (port 10026 listener)
+```bash
 docker exec stargate-postfixconf grep -A5 "10026" /etc/postfix/master.cf
+```
 
-## Check logs
+Check logs
+```bash
 docker logs stargate-postfixconf
+```
 
-## Test connection to port 25
+Test connection to port 25
+```bash
 telnet localhost 25
+```
 
-## Test internal port 10026 (from mxengine container)
+Test internal port 10026 (from mxengine container)
+```bash
 docker exec stargate-mxengine nc -zv postfixconf 10026
 ```
 
@@ -489,16 +522,28 @@ IRISAgent uses WireGuard to establish secure encrypted tunnels between Stargate 
 
 Each Stargate instance uses its server's real static public IP as the WireGuard tunnel address. This guarantees uniqueness across all deployments without manual coordination.
 
-```plain
-┌──────────────────────────────────────────┐       ┌──────────────────────────────────────────┐
-│ Your Stargate (203.0.113.50)             │       │ HIN Test (5.102.144.182)                 │
-│                                          │       │                                          │
-│  IRISAgent (203.0.113.50:19818)          │◄─────►│  IRISAgent (5.102.144.182:19818)         │
-│     │                                    │  WG   │     │                                    │
-│     ▼                                    │ Tunnel│     ▼                                    │
-│  Sealed message delivery via WG tunnel   │ (TCP) │  Receive sealed message                  │
-│                                          │       │                                          │
-└──────────────────────────────────────────┘       └──────────────────────────────────────────┘
+```mermaid
+block
+columns 5
+  block:Stargate["Your Stargate (203.0.113.50)"]:2
+    columns 1
+    A
+    space
+    A --> B
+    A["IRISAgent (203.0.113.50:19818)"]
+    B["Sealed message delivery via WG tunnel"]
+  end
+
+  blockArrowId1<["WG Tunnel (TCP)"]>(x):1
+
+  block:mxengine["HIN Test (5.102.144.182)"]:2
+    columns 1
+    C
+    space
+    C --> D
+    C["IRISAgent (5.102.144.182:19818)"]
+    D["Receive sealed message"]
+  end
 ```
 
 ### WireGuard Configuration
@@ -520,7 +565,7 @@ WG_TRANSPORT_MODE="tcp"               # "tcp" (default) or "udp"
 
 ```
 
-!!! note
+!!! info
     **`WG_LOCAL_IP`** is auto-derived from `SERVER_STATIC_IP`. You do not need to set it separately.
 
 ### Peer Connection Setup
@@ -559,22 +604,35 @@ curl --location 'localhost:8083/v1/connections' \
 
 ### WireGuard Verification
 
-```bash
-## Check IRISAgent WireGuard interface
-docker exec stargate-irisagent wg show
+Check IRISAgent WireGuard interface
 
-## Check connection in database
+```bash
+docker exec stargate-irisagent wg show
+```
+
+Check connection in database
+
+```bash
 docker exec stargate-postgres psql -U postgres -d irisagent \
   -c "SELECT connection_id, name, endpoint, wireguard_ip, transport, status FROM connections;"
+```
 
-## Check connection external IDs (used for routing)
+Check connection external IDs (used for routing)
+
+```bash
 docker exec stargate-postgres psql -U postgres -d irisagent \
   -c "SELECT connection_id, external_id FROM connection_external_ids;"
+```
 
-## Test WireGuard connectivity (check tunnel status from host)
+Test WireGuard connectivity (check tunnel status from host
+
+```bash
 docker logs stargate-irisagent 2>&1 | grep -i "handshake\|peer.*added\|started listening"
+```
 
-## Check IRISAgent logs for tunnel activity
+Check IRISAgent logs for tunnel activity
+
+```bash
 docker logs stargate-irisagent | grep -i wireguard
 ```
 
@@ -603,15 +661,28 @@ The `policy-sync` service automatically syncs OPA/Rego policies from a Git repos
 
 ### How Policy Sync Works
 
-```plain
-┌─────────────────────┐      ┌─────────────────────┐      ┌─────────────────────┐
-│ Git Repository      │      │ policy-sync         │      │ PostgreSQL          │
-│                     │      │                     │      │                     │
-│ policies/           │─────►│ Clone/Pull repo     │─────►│ policy database     │
-│   alpha/            │      │ Parse .rego files   │      │ policies table      │
-│   outbound/         │      │ Upsert to database  │      │                     │
-│   ...               │      │ (runs every 1h)     │      │                     │
-└─────────────────────┘      └─────────────────────┘      └─────────────────────┘
+```mermaid
+block
+columns 8
+  A:2 space B:2 space C:2
+  A["Git Repository
+
+      policies/
+        alpha/
+        outbound/
+        ..."]
+    A-->B
+    B["policy-sync:
+
+      - Clone/Pull repo
+      - Parse .rego files
+      - Upsert to database
+      - Runs every 1h"]
+    B-->C
+    C["PostgreSQL
+
+      - policy database
+      - policies table"]
 ```
 
 ### Policy Sync Configuration
@@ -638,18 +709,25 @@ POLICY_SYNC_INTERVAL="1h"
 
 ### Policy Sync Verification
 
-```bash
-## Check policy-sync status
-docker logs stargate-policy-sync
+=== "Check policy-sync status"
 
-## View synced policies
-docker exec stargate-postgres psql -U postgres -d policy \
-  -c "SELECT name, policy_group, filename, to_timestamp(updated_at) as updated FROM policies ORDER BY name;"
+    ```bash
+    docker logs stargate-policy-sync
+    ```
 
-## View specific policy content
-docker exec stargate-postgres psql -U postgres -d policy \
-  -c "SELECT rego FROM policies WHERE name='deliveryStrategy' AND policy_group='alpha';"
-```
+=== "View synced policies"
+
+    ```bash
+    docker exec stargate-postgres psql -U postgres -d policy \
+      -c "SELECT name, policy_group, filename, to_timestamp(updated_at) as updated FROM policies ORDER BY name;"
+    ```
+
+=== "View specific policy content"
+
+    ```bash
+    docker exec stargate-postgres psql -U postgres -d policy \
+      -c "SELECT rego FROM policies WHERE name='deliveryStrategy' AND policy_group='alpha';"
+    ```
 
 ### Manual Trigger
 
@@ -677,16 +755,23 @@ The following KV-v2 secret engines are created:
 
 ### Manual Vault Operations
 
-```bash
-## Check status
-docker exec stargate-vault vault status
+=== "Check status"
 
-## List mounts
-docker exec -e VAULT_TOKEN=<token> stargate-vault vault secrets list
+    ```bash
+    docker exec stargate-vault vault status
+    ```
 
-## Write a secret
-docker exec -e VAULT_TOKEN=<token> stargate-vault vault kv put secret-smimekeys-client/test key=value
-```
+=== "List mounts"
+
+    ```bash
+    docker exec -e VAULT_TOKEN=<token> stargate-vault vault secrets list
+    ```
+
+=== "Write a secret"
+
+    ```bash
+    docker exec -e VAULT_TOKEN=<token> stargate-vault vault kv put secret-smimekeys-client/test key=value
+    ```
 
 ## Databases
 
@@ -701,8 +786,11 @@ PostgreSQL databases created:
 
 ```bash
 docker exec -it stargate-postgres psql -U postgres
+```
 
-## Or connect externally
+Or connect externally
+
+```bash
 psql -h localhost -U postgres -d smimekeys_client
 ```
 
@@ -714,15 +802,18 @@ MXEngine uses OPA/Rego policies stored in PostgreSQL to determine mail delivery 
 
 ### View Current Policy
 
-```bash
-## List all policies
-docker exec stargate-postgres psql -U postgres -d policy \
-  -c "SELECT id, name, policy_group, filename, to_timestamp(updated_at) as updated FROM policies;"
+=== "List all policies"
+    ```bash
+    docker exec stargate-postgres psql -U postgres -d policy \
+      -c "SELECT id, name, policy_group, filename, to_timestamp(updated_at) as updated FROM policies;"
+    ```
 
-## View policy content
-docker exec stargate-postgres psql -U postgres -d policy \
-  -c "SELECT rego FROM policies WHERE name='deliveryStrategy';"
-```
+=== "View policy content"
+
+    ```bash
+    docker exec stargate-postgres psql -U postgres -d policy \
+      -c "SELECT rego FROM policies WHERE name='deliveryStrategy';"
+    ```
 
 ### Policy Location
 
@@ -732,14 +823,24 @@ docker exec stargate-postgres psql -U postgres -d policy \
 
 ## Logs
 
-```bash
-## All services
-docker compose logs -f
+=== "All Services"
 
-## Specific service
-docker compose logs -f smimekeys-client
-docker compose logs -f vault
-```
+    ```bash
+    docker compose logs -f
+    ```
+
+=== "Specific service"
+
+    ```bash
+    docker compose logs -f <service>
+    ```
+
+    E.g.:
+
+    ```bash
+    docker compose logs -f smimekeys-client
+    docker compose logs -f vault
+    ```
 
 ## Troubleshooting
 
@@ -799,6 +900,11 @@ docker compose logs <service-name>
 
 ### Reset everything
 
+!!! warning
+    These commands **DELETE ALL DATA** - use with caution!
+
+    You can only restore data, if you perform [backup operations](./Docker-advanced.md#manual-backup) before and save backup in a safe place.
+
 ```bash
 ./scripts/purge.sh
 ./scripts/install.sh
@@ -855,14 +961,21 @@ stargate/
 
 ## Quick Health & Log Checks
 
-Run the comprehensive health check:
+!!! example "Run the comprehensive health check"
 
-```bash
-./scripts/health-check.sh
+    === "Quick Healt check"
 
-## With verbose output (shows WireGuard details, liveness responses):
-./scripts/health-check.sh -v
-```
+        ```bash
+        ./scripts/health-check.sh
+        ```
+
+    === "Verbose Output"
+
+        ```bash
+        ./scripts/health-check.sh -v
+        ```
+
+        With verbose output (shows WireGuard details, liveness responses).
 
 This checks:
 
@@ -878,20 +991,30 @@ This checks:
 
 For manual log inspection:
 
+Check logs (last 10 lines)
+
 ```bash
-# Check logs (last 10 lines)
 docker logs stargate-smimekeys-client --tail 10
 docker logs stargate-policy --tail 10
 docker logs stargate-irisagent --tail 10
 docker logs stargate-mxengine --tail 10
+```
 
-# Follow logs in real-time
+Follow logs in real-time
+
+```bash
 docker logs -f stargate-mxengine
+```
 
-# Check all container statuses
+Check all container statuses
+
+```bash
 docker ps -a --format 'table {{.Names}}\t{{.Status}}'
+```
 
-# Follow all containers logs in real-time
+Follow all containers logs in real-time
+
+```bash
 docker ps -a --format '{{.Names}}' | xargs -I {} sh -c 'docker logs --timestamps -f {} 2>&1 | sed "s/^/[{}] /"'
 ```
 
@@ -914,10 +1037,12 @@ Upload all containers logs:
     ```shell
     docker ps -a --format '{{.Names}}' | xargs -I {} sh -c 'docker logs --timestamps {} 2>&1 | sed "s/^/[{}] /"' | curl https://pastebin.hin-infra.ch/ --data-binary @-
     ```
-    !!! info
+    !!! tip
         This operation can hit our upload limits - 20 Mb.
 
 === "For the last hour (`1h`)"
+
+    Use our script:
 
     ```shell
     ./scripts/send-logs-to-support.sh --since 1h
@@ -931,8 +1056,10 @@ Upload all containers logs:
 
 === "Last 500 lines of logs"
 
-    !!! success
+    !!! success "This is default"
         `--tail 500` is default value for our script, but you still can provide it
+
+    Use our script:
 
     ```shell
     ./scripts/send-logs-to-support.sh --tail 500
@@ -953,7 +1080,7 @@ Upload specific container logs:
     ```
 
     !!! tip
-        This operation can hit our upload limits - 20 Mb.
+        This operation can hit our upload limits - 20 Mb. If it happens, try to reduce logs amount by setting time limit or lines of logs.
 
 === "For the last hour (`1h`)"
 
