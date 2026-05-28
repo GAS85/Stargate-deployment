@@ -6,7 +6,7 @@ Here you can find an actual VM images list for different platforms. Please do no
 
     You can calculate SHA256 Hash of downloaded files by following command and then compare it with values in a table below.
 
-    === "Linux and MaxOS"
+    === "Linux and MacOS"
 
         Open Terminal and execute:
 
