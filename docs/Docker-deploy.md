@@ -23,11 +23,15 @@ Please refer to [Recommended Requirements](./index.md#recommended)
 
 Before installation, create and fill in the customer configuration file:
 
-```bash
-# Copy the template
-cp customer-config.example customer-config.sh
+Copy the template:
 
-# Edit the config file
+```bash
+cp customer-config.example customer-config.sh
+```
+
+Edit the config file:
+
+```bash
 nano customer-config.sh
 ```
 
@@ -99,19 +103,29 @@ Mail domains and the Postfix hostname are configured at runtime via the dashboar
       cd Stargate-deployment-main
     ```
 
-```bash
-# Copy files to the server
-scp -r docker-compose/* your-server:/path/to/stargate/
+Manual copy files to the server
 
-# SSH to server
+```bash
+scp -r docker-compose/* your-server:/path/to/stargate/
+```
+
+SSH to server
+
+```bash
 ssh your-server
 cd /path/to/stargate
+```
 
-# Create customer config from template
+Create customer config from template and Fill in required settings ([see Step 1](#step-1-configure-customer-settings))
+
+```bash
 cp customer-config.example customer-config.sh
 nano customer-config.sh   # Fill in required settings (see Step 1)
+```
 
-# Run installation
+Run installation
+
+```bash
 chmod +x scripts/*.sh
 ./scripts/install.sh
 ```
@@ -174,11 +188,14 @@ Re-run the `/onboarding` page in the dashboard to regenerate the CSR and submit 
 
 **To verify the tunnel before requesting the certificate:**
 
-```bash
-# Restart just irisagent
-docker compose restart irisagent
+Restart just irisagent
 
-# Check for successful WireGuard handshake
+```bash
+docker compose restart irisagent
+```
+Check for successful WireGuard handshake
+
+```bash
 docker compose logs irisagent 2>&1 | grep -i "handshake\|peer"
 ```
 
@@ -225,8 +242,8 @@ You essentially recreate the same connector + transport-rule set as the old HIN 
 
 mxengine does not strip arbitrary headers, so the `outgoing_<domain>` tag set by `set_header` survives the round-trip and triggers `outgoing_to_mx` correctly.
 
-!!! note "Why this pattern matters"
-    with the relay-back configuration, the public sender to the internet is Microsoft. Combined with correct SPF/DKIM/DMARC (section 6.1), recipients see a Microsoft IP with `spf=pass` and `dkim=pass` aligned to your domain - which is the cleanest reputation profile you can give them.
+!!! info "Why this pattern matters"
+    With the relay-back configuration, the public sender to the internet is Microsoft. Combined with correct SPF/DKIM/DMARC (section 6.1), recipients see a Microsoft IP with `spf=pass` and `dkim=pass` aligned to your domain - which is the cleanest reputation profile you can give them.
 
 See `Exchange-integration.md` for full step-by-step instructions including screenshots.
 
@@ -263,12 +280,16 @@ All data is stored in Docker volumes and **persists across restarts**.
 
 ### Safe Operations (data preserved)
 
+Stop and start - data safe
+
 ```bash
-# Stop and start - data safe
 ./scripts/stop.sh
 ./scripts/start.sh
+```
 
-# Or using docker compose directly
+Using docker compose directly
+
+```bash
 docker compose down      # Stops containers, KEEPS volumes
 docker compose up -d     # Restarts containers
 ./scripts/start.sh       # Unseals Vault
@@ -310,7 +331,7 @@ After any restart, run `./scripts/start.sh` to unseal Vault. The script uses the
 | `stop.sh` | Stop containers (data preserved) |
 | `backup.sh` | Full backup (database, Vault keys, config, certificates) |
 | `restore.sh` | Restore from backup archive (works on fresh machine) |
-| `purge.sh` | Delete ALL data (requires confirmation) |
+| `purge.sh` | :warning: Delete ALL data (requires confirmation) |
 | `health-check.sh` | Comprehensive health check of all services (exit 0 = healthy, 1 = failures) |
 | `init-vault.sh` | Vault initialization (used by `vault-init` container, not called directly) |
 | `init-keycloak.sh` | Keycloak admin password setup (used by `keycloak-init` container, not called directly) |
