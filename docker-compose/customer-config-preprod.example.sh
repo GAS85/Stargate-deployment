@@ -83,7 +83,7 @@ POLICY_VERSION="v0.0.6"
 IRISAGENT_VERSION="v0.0.5"
 MXENGINE_VERSION="v0.0.42"
 POLICY_SYNC_VERSION="dev"
-DASHBOARD_VERSION="v0.0.35-test"
+DASHBOARD_VERSION="v0.0.8"
 POSTFIXCONF_VERSION="v0.0.14"
 
 # ==============================================================================
