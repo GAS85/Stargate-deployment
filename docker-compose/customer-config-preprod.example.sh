@@ -12,11 +12,12 @@
 # REQUIRED: Server Network Configuration
 # ==============================================================================
 
-# Static public IP address of this VM/server.
+# Static IP address of this VM/server.
 # This is the single network identity for the deployment - used to derive:
 #   - WireGuard local IP (unique tunnel address)
-#   - MXEngine public address (seal callbacks)
-# Must be a real routable static IP (not a private/NAT address).
+#   - MXEngine address
+#   - Keycloak and Dashboard public URLs
+# Can be a private IP if the VM is behind NAT. Auto-detected if left empty.
 SERVER_STATIC_IP=""
 
 # ==============================================================================
