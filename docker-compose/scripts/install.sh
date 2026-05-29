@@ -183,18 +183,11 @@ load_customer_config() {
   fi
 
   # Auto-detect SERVER_STATIC_IP if still unset.
-  # Method 1: source IP of the default route — works on direct-public-IP VMs
-  # Method 2 (fallback): query an external service if Method 1 returned a
-  #           private/loopback IP (host is behind NAT).
+  # Uses the source IP of the default route (the VM's primary interface IP).
+  # This can be a private IP if the VM is behind NAT - that's fine.
   if [ -z "$SERVER_STATIC_IP" ]; then
     SERVER_STATIC_IP=$(ip -4 route get 1.1.1.1 2>/dev/null \
       | awk '{for(i=1;i<=NF;i++) if($i=="src"){print $(i+1); exit}}')
-    if [ -z "$SERVER_STATIC_IP" ] \
-       || [[ "$SERVER_STATIC_IP" =~ ^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.|169\.254\.|127\.) ]]; then
-      SERVER_STATIC_IP=$(curl -sf --max-time 5 https://api.ipify.org 2>/dev/null \
-                      || curl -sf --max-time 5 https://ifconfig.me 2>/dev/null \
-                      || true)
-    fi
     if [ -n "$SERVER_STATIC_IP" ]; then
       echo "Auto-detected SERVER_STATIC_IP=$SERVER_STATIC_IP"
       # Persist back to customer-config.sh so subsequent runs are idempotent.
@@ -206,8 +199,8 @@ load_customer_config() {
 
   if [ -z "$SERVER_STATIC_IP" ]; then
     echo "ERROR: SERVER_STATIC_IP is required and could not be auto-detected."
-    echo "  Set it to this server's real static public IP address."
-    echo "  Example: SERVER_STATIC_IP=\"203.0.113.10\""
+    echo "  Set it to this server's network IP address."
+    echo "  Example: SERVER_STATIC_IP=\"10.0.1.50\""
     exit 1
   fi
 
