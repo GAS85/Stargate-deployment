@@ -503,6 +503,9 @@ services:
       # OUTBOUND_SMTP_PASS: "SecureMessage"
       # OUTBOUND_SMTP_AUTH: "PLAIN"
 
+      # NATS
+      NATS_ADDR: "nats://nats:4222"
+
       # Pending message handling
       PENDING_WATCHER_INTERVAL: "20s"
       PENDING_MESSAGE_EXPIRATION: "1m"
