@@ -86,7 +86,7 @@ fi
 # Also create individual dumps for easier partial restore if needed
 echo ""
 echo "Creating individual database dumps..."
-DATABASES=("smimekeys_client" "policy" "irisagent" "mxengine")
+DATABASES=("smimekeys_client" "policy" "irisagent" "mxengine" "dashboard" "keycloak")
 for DB in "${DATABASES[@]}"; do
   echo "  Backing up: $DB..."
   docker exec stargate-postgres pg_dump -U "$POSTGRES_USER" "$DB" > "$BACKUP_SUBDIR/database/${DB}.sql" 2>/dev/null || true
@@ -173,6 +173,16 @@ done
 
 if [ $CERT_COUNT -eq 0 ]; then
   echo "  - No certificates found (CSR may not be signed yet)"
+fi
+
+# Backup TLS certificates (Caddy)
+TLS_DIR="$PROJECT_DIR/config/caddy/ssl"
+if [ -d "$TLS_DIR" ] && [ "$(ls -A "$TLS_DIR" 2>/dev/null)" ]; then
+  mkdir -p "$BACKUP_SUBDIR/config/caddy-ssl"
+  cp "$TLS_DIR"/* "$BACKUP_SUBDIR/config/caddy-ssl/"
+  echo "  ✓ TLS certificates (Caddy) backed up"
+else
+  echo "  - No TLS certificates found in config/caddy/ssl/"
 fi
 
 # ==============================================================================
