@@ -748,7 +748,10 @@ services:
         condition: service_completed_successfully
       vault-init:
         condition: service_completed_successfully
+      dashboard:
+        condition: service_started
     environment:
+      HOME: "/tmp"
       STALWART_URL: "http://stalwart:8080"
       STALWART_USER: "${MTACONF_SVC_USER:-mtaconf-svc}@${MTACONF_SVC_DOMAIN}"
       STALWART_PASSWORD: "${MTACONF_SVC_PASSWORD}"
