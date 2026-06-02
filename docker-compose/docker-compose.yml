@@ -759,6 +759,8 @@ services:
       HTTP_ADDR: ":8080"
       DASHBOARD_CONFIG_URL: "http://dashboard:3000/api/internal/installation-config?service=mtaconf"
       LOG_LEVEL: "info"
+    tmpfs:
+      - /tmp:size=10M
     networks:
       - stargate-network
     labels:
