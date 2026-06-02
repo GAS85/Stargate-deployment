@@ -32,6 +32,8 @@ The beta phase will be announced separately. During beta, the system will still 
 
 ## Docs
 
+[![documentation](https://github.com/Health-Info-Net-AG/Stargate-deployment/actions/workflows/documentation.yml/badge.svg?branch=main)](https://github.com/Health-Info-Net-AG/Stargate-deployment/actions/workflows/documentation.yml)
+
 Build and test docs locally:
 
 ```shell
