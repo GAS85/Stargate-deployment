@@ -611,7 +611,7 @@ services:
     networks:
       - stargate-network
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/liveness"]
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/api/liveness"]
       interval: 10s
       timeout: 5s
       retries: 10
