@@ -428,6 +428,7 @@ services:
   mxengine:
     image: healthinfonetag/mxengine:${MXENGINE_VERSION:-dev}
     container_name: stargate-mxengine
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
