@@ -277,6 +277,17 @@ for cert in "$BACKUP_CONTENT/secrets"/*.crt "$BACKUP_CONTENT/secrets"/*.pem "$BA
   fi
 done
 
+# Restore TLS certificates (Caddy)
+if [ -d "$BACKUP_CONTENT/config/caddy-ssl" ] && [ "$(ls -A "$BACKUP_CONTENT/config/caddy-ssl" 2>/dev/null)" ]; then
+  TLS_DIR="$PROJECT_DIR/config/caddy/ssl"
+  mkdir -p "$TLS_DIR"
+  cp "$BACKUP_CONTENT/config/caddy-ssl"/* "$TLS_DIR/"
+  chmod 600 "$TLS_DIR"/*.key 2>/dev/null || true
+  echo "  ✓ TLS certificates (Caddy) restored"
+else
+  echo "  - No TLS certificates in backup (will need to regenerate)"
+fi
+
 echo ""
 
 # ==============================================================================
@@ -299,8 +310,23 @@ POLICY_VERSION="${POLICY_VERSION:-dev}"
 IRISAGENT_VERSION="${IRISAGENT_VERSION:-dev}"
 MXENGINE_VERSION="${MXENGINE_VERSION:-dev}"
 POSTFIXCONF_VERSION="${POSTFIXCONF_VERSION:-dev}"
+DASHBOARD_VERSION="${DASHBOARD_VERSION:-dev}"
+DOZZLE_VERSION="${DOZZLE_VERSION:-v10.5.0}"
 
 LOKI_URL="${LOKI_URL:-}"
+
+# Keycloak / APISIX / Dashboard
+KEYCLOAK_ADMIN_USER="${KEYCLOAK_ADMIN_USER:-admin}"
+KEYCLOAK_ADMIN_PASSWORD="${KEYCLOAK_ADMIN_PASSWORD:-}"
+KEYCLOAK_APISIX_CLIENT_SECRET="${KEYCLOAK_APISIX_CLIENT_SECRET:-}"
+KEYCLOAK_DASHBOARD_CLIENT_SECRET="${KEYCLOAK_DASHBOARD_CLIENT_SECRET:-}"
+APISIX_ADMIN_KEY="${APISIX_ADMIN_KEY:-}"
+KEYCLOAK_PUBLIC_URL="${KEYCLOAK_PUBLIC_URL:-}"
+DASHBOARD_PUBLIC_URL="${DASHBOARD_PUBLIC_URL:-}"
+DASHBOARD_SHOW_DEV_PAGES="${DASHBOARD_SHOW_DEV_PAGES:-false}"
+DASHBOARD_ROOT_URL="${DASHBOARD_ROOT_URL:-}"
+DASHBOARD_ROOT_DOMAIN="${DASHBOARD_ROOT_DOMAIN:-}"
+DEPLOYMENT_NAME="${DEPLOYMENT_NAME:-stargate}"
 
 # WireGuard local configuration
 WG_LOCAL_IP="${WG_LOCAL_IP:-10.0.0.1}"
@@ -339,12 +365,28 @@ SMIMEKEYS_VERSION=$SMIMEKEYS_VERSION
 POLICY_VERSION=$POLICY_VERSION
 IRISAGENT_VERSION=$IRISAGENT_VERSION
 MXENGINE_VERSION=$MXENGINE_VERSION
-
 POSTFIXCONF_VERSION=$POSTFIXCONF_VERSION
+DASHBOARD_VERSION=$DASHBOARD_VERSION
+DOZZLE_VERSION=$DOZZLE_VERSION
+
+# Deployment
+DEPLOYMENT_NAME=$DEPLOYMENT_NAME
 
 # Logging
 LOKI_URL=$LOKI_URL
 ALLOY_HOSTNAME=$DEPLOYMENT_NAME
+
+# Keycloak / APISIX / Dashboard
+KEYCLOAK_ADMIN_USER=$KEYCLOAK_ADMIN_USER
+KEYCLOAK_ADMIN_PASSWORD=$KEYCLOAK_ADMIN_PASSWORD
+KEYCLOAK_APISIX_CLIENT_SECRET=$KEYCLOAK_APISIX_CLIENT_SECRET
+KEYCLOAK_DASHBOARD_CLIENT_SECRET=$KEYCLOAK_DASHBOARD_CLIENT_SECRET
+APISIX_ADMIN_KEY=$APISIX_ADMIN_KEY
+KEYCLOAK_PUBLIC_URL=$KEYCLOAK_PUBLIC_URL
+DASHBOARD_PUBLIC_URL=$DASHBOARD_PUBLIC_URL
+DASHBOARD_SHOW_DEV_PAGES=$DASHBOARD_SHOW_DEV_PAGES
+DASHBOARD_ROOT_URL=$DASHBOARD_ROOT_URL
+DASHBOARD_ROOT_DOMAIN=$DASHBOARD_ROOT_DOMAIN
 
 # Policy Sync
 POLICY_SYNC_VERSION=${POLICY_SYNC_VERSION:-dev}
@@ -372,8 +414,8 @@ echo "  7. Starting Infrastructure Services"
 echo "============================================"
 echo ""
 
-echo "Starting PostgreSQL, Vault, MinIO, Postfix..."
-docker compose up -d postgres vault minio postfixconf
+echo "Starting PostgreSQL, Vault, MinIO..."
+docker compose up -d postgres vault minio
 
 echo "Waiting for PostgreSQL to be ready..."
 for i in {1..30}; do
@@ -407,7 +449,7 @@ echo ""
 
 # Verify databases exist
 echo "Verifying databases..."
-for DB in smimekeys_client policy irisagent mxengine; do
+for DB in smimekeys_client policy irisagent mxengine dashboard keycloak; do
   if docker exec stargate-postgres psql -U "$POSTGRES_USER" -lqt | cut -d \| -f 1 | grep -qw "$DB"; then
     echo "  ✓ $DB exists"
   else
