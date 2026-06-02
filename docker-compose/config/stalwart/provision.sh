@@ -4,8 +4,9 @@
 # =============================================================================
 # Idempotently provisions Stalwart for the Stargate deployment:
 #   1. Creates network listeners (SMTP, reinject, management HTTP)
-#   2. Configures system settings (hostname, console logging)
-#   3. Creates domain + mtaconf service account
+#   2. Enables a Stdout tracer so logs land on docker stdout
+#   3. Sets system hostname
+#   4. Creates domain + mtaconf service account
 #
 # Designed as a one-shot Docker Compose service (restart: "no").
 # Safe to re-run: checks for existing objects before creating.
@@ -83,6 +84,25 @@ create_listener "reinject" "0.0.0.0:10026" "smtp" "false"
 # Management HTTP (port 8080) - already provided by recovery mode, but ensure
 # it persists if recovery mode is ever disabled
 create_listener "mgmt" "0.0.0.0:8080" "http" "false"
+
+# =============================================================================
+# 2b. Stdout tracer - emit Stalwart's own logs to docker stdout
+# =============================================================================
+# v0.16 stores tracer config in the settings backend; when the backend is
+# empty (fresh Postgres) no tracer is enabled and `docker logs stalwart` is
+# silent even though the server is healthy. Stalwart calls the Stdout/Console
+# tracer's variant `Stdout` (Console is the display label).
+if ! cli query Tracer 2>/dev/null | grep -Fq "Stdout"; then
+  log "creating stdout tracer"
+  cli create Tracer \
+    --field "@type=Stdout" \
+    --field "enable=true" \
+    --field "level=info" \
+    --field "ansi=false" \
+    --field "multiline=false" \
+    --field "buffered=false" \
+    --field "lossy=false"
+fi
 
 # =============================================================================
 # 3. Configure system settings
