@@ -757,7 +757,7 @@ services:
       VAULT_TOKEN: "${VAULT_TOKEN}"
       VAULT_MOUNT_PATH: "secret-mtaconf"
       HTTP_ADDR: ":8080"
-      DASHBOARD_CONFIG_URL: "http://dashboard:3000/api/internal/installation-config?service=mtaconf"
+      DASHBOARD_CONFIG_URL: "http://dashboard:3000/api/internal/installation-config?service=stalwart"
       LOG_LEVEL: "info"
     tmpfs:
       - /tmp:size=10M
