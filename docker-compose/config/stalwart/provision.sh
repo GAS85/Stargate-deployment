@@ -68,7 +68,8 @@ create_listener() {
 
   log "creating listener: $name (${protocol} on ${bind}, tls=${tls})"
   cli create NetworkListener \
-    --field "bind={\"0\":\"${bind}\"}" \
+    --field "name=${name}" \
+    --field "bind={\"${bind}\": true}" \
     --field "protocol=${protocol}" \
     --field "useTls=${tls}"
 }
