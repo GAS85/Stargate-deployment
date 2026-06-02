@@ -4,7 +4,7 @@
 
 ## Introduction
 
-This document provides a comprehensive guide to the technical installation and migration process to the HIN Gateway ("Stargate Appliance"). It is intended for HIN customers, IT administrators and system engineers who are responsible for the deployment, configuration and transition from the existing Mailgateway (MGW) to the HIN Gateway.
+This document provides a comprehensive guide to the technical installation and migration process to the HIN Gateway ("Stargate Appliance"). It is intended for HIN customers, IT administrators and system engineers who are responsible for the deployment, configuration and transition from the existing Mail Gateway (MGW) to the HIN Gateway.
 
 The HIN Gateway is a secure email gateway solution that enables trusted, encrypted and policy-driven communication within the HIN Trust Circle. It acts as a central intermediary between internal email infrastructures and external communication partners, ensuring that all email traffic is transmitted securely, complies with the organisation's policies and meets HIN's security standards.
 
@@ -125,7 +125,7 @@ Ensure that the VM has a network connection with a static IP address.
     If you choose Option B, use the HIN Admin Credentials provided to you by your HIN contact at T-4 via email. You will be prompted to change the password when you log in for the first time.
     
     !!! question
-        If you do not have the HIN admin credentials, please contact HIN Support by Email.
+        If you do not have the HIN admin credentials, please contact HIN Support by email.
         
         [Click here to send an Email](mailto:support@hin.ch?subject=Password%20required%20for%20VM%20installation.&body=Hello%20dear%20Support,%0A%0AI%20would%20like%20to%20receive%20the%20password%20for%20a%20VM%20installation.%0A%0APLEASE%20PROVIDE%20YOUR%20CUSTOMER%20INFO%20HERE){ .md-button style="position:relative;left:50%;transform:translate(-50%,0%);" }
 
@@ -148,7 +148,7 @@ Enter the setup key that you received via email from your HIN contact person in 
 ![Setup key entry screen](assets/installation-guide/step7-setup-key.png)
 
 !!! question
-    If you do not have the setup key, please contact HIN Support via Email.
+    If you do not have the setup key, please contact HIN Support via email.
     
     [Click here to send an Email](mailto:support@hin.ch?subject=Password%20required%20for%20VM%20installation.&body=Hello%20dear%20Support,%0A%0AI%20would%20like%20to%20receive%20the%20password%20for%20a%20VM%20installation.%0A%0APLEASE%20PROVIDE%20YOUR%20CUSTOMER%20INFO%20HERE){ .md-button style="position:relative;left:50%;transform:translate(-50%,0%);" }
 
@@ -234,7 +234,7 @@ Enter the Keycloak username and password received in T-4.
 ![Keycloak login page](assets/installation-guide/step12-keycloak-login.png)
 
 !!! question
-    If you do not have these login details, please contact HIN Support via Email.
+    If you do not have these login details, please contact HIN Support via email.
     
     [Click here to send an Email](mailto:support@hin.ch?subject=Password%20required%20for%20VM%20installation.&body=Hello%20dear%20Support,%0A%0AI%20would%20like%20to%20receive%20the%20password%20for%20a%20VM%20installation.%0A%0APLEASE%20PROVIDE%20YOUR%20CUSTOMER%20INFO%20HERE){ .md-button style="position:relative;left:50%;transform:translate(-50%,0%);" }
 
@@ -283,7 +283,7 @@ Configure your mail server or the associated components so that traffic is route
 - SMTP relay / Smart host
 - Connectors
 - Transport rules
-- Routing Domains
+- Routing domains
 
 See [Exchange Integration](Exchange-integration.md) for detailed instructions.
 
@@ -343,6 +343,9 @@ All trusted domains must be migrated within the transition period.
 
 ![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
 
+!!! warning
+    Do not delete old MGW VM immediately, keep it safe till everything is up and running.
+
 1. **Ensure there is no active traffic** - Check:
     - No domains are pointing to the MGW (DNS, SMTP, connectors).
     - No emails are being forwarded via the old appliance.
@@ -355,7 +358,7 @@ All trusted domains must be migrated within the transition period.
     - Security/audit logs
     - Required for compliance and troubleshooting
 
-4. **Shutdown procedure** - Shut down the MGW-VM correctly.
+4. **Shutdown procedure** - Shut down the MGW VM correctly.
     - DO NOT delete immediately (recommended retention period).
 
 5. **Clean-up (optional)** - Remove:

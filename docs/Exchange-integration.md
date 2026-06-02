@@ -95,7 +95,7 @@ This connector routes outbound mail from Exchange Online to the Stargate relay s
    From Office 365 to postfix relay server
    ```
 
-   - Check **"Retain Internal Exchange email headers"**
+   - Check **"Retain internal Exchange email headers"**
    - Click **"Next"**
 
 5. **Use of connector**: Select **"Only when I have a transport rule set up that redirects messages to this connector"**
@@ -196,7 +196,7 @@ The transport rule redirects all outbound mail through the Stargate outbound con
     **This exception is critical** - it prevents mail loops. Without it, mail from Stargate arriving at Exchange Online would be redirected back to Stargate in an infinite loop.
 
 7. Review the rule summary. It should show:
-   - **Apply this rule if**: The recipient is located Outside the organization
+   - **Apply this rule if**: The recipient is located outside the organization
    - **Do the following**: Redirect the message to the connector "From Office 365 to postfix relay server"
    - **Except if**: The sender IP address is in one of these ranges: `<STARGATE_IP>`
 
@@ -354,7 +354,7 @@ docker logs stargate-postfixconf --tail 50
 
 ### Mail not leaving Exchange Online
 
-- Verify the transport rule is **enabled** (it is created in disabled state)
+- Verify the transport rule is **enabled** (it is created in a disabled state)
 - Check the rule conditions - it should apply to recipients "Outside the organization"
 - Verify the outbound connector validation passed
 - Check Exchange message trace in the Admin Center for delivery status

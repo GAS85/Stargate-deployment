@@ -104,7 +104,7 @@ Edit the version in `.env`:
 sed -i 's/MXENGINE_VERSION=.*/MXENGINE_VERSION=v0.0.31/' .env
 ```
 
-Then pull container and recreate:
+Then pull the container and recreate:
 
 ```bash
 docker compose pull mxengine
@@ -121,7 +121,7 @@ MXENGINE_VERSION=v0.0.31 docker compose up -d --force-recreate mxengine
 
 #### Update Multiple Services
 
-Edit versions in `.env`, then pull container and recreate:
+Edit versions in `.env`, then pull containers and recreate:
 
 ```bash
 docker compose pull smimekeys-client policy irisagent mxengine
@@ -152,7 +152,7 @@ docker image prune -f
 
 #### Rollback
 
-To rollback, edit `.env` to the previous version and recreate:
+To roll back, edit `.env` to the previous version and recreate:
 
 ```bash
 sed -i 's/MXENGINE_VERSION=.*/MXENGINE_VERSION=v0.0.30/' .env
@@ -321,7 +321,7 @@ ALLOY_HOSTNAME=stargate-acme
     docker logs stargate-alloy
     ```
 
-=== "Health probe (from within the docker network)"
+=== "Health probe (from within the Docker network)"
 
     ```bash
     docker exec stargate-alloy wget -qO- http://localhost:12345/-/ready
@@ -416,7 +416,7 @@ example.com    MX 20  stargate.example.com      ← inbound gateway (Stargate)
 
 **Alternative — explicit per-domain relay (sender-based):**
 
-For relay-back through M365 / Exchange Online, configure per-domain relay targets through the dashboard's `/postfix` page. The daemon writes a `sender_dependent_relayhost_maps` entry mapping each sender domain to a specific relay host and port - implementing the ["relay back through M365" pattern](Docker-deploy.md#m365-exchange-online-side). Mail from senders not in the map falls back to MX lookup.
+For relay back through M365 / Exchange Online, configure per-domain relay targets through the dashboard's `/postfix` page. The daemon writes a `sender_dependent_relayhost_maps` entry mapping each sender domain to a specific relay host and port - implementing the ["relay back through M365" pattern](Docker-deploy.md#m365-exchange-online-side). Mail from senders not in the map falls back to MX lookup.
 
 ### Ports
 
@@ -511,7 +511,7 @@ docker compose up -d postfixconf
 
 **Connection Refused on port 25**:
 
-* Ensure port 25 is not blocked by firewall
+* Ensure port 25 is not blocked by the firewall
 * Check if another service is using port 25: `ss -tlnp | grep :25`
 
 ## WireGuard (Agent-to-Agent Communication)
@@ -624,7 +624,7 @@ docker exec stargate-postgres psql -U postgres -d irisagent \
   -c "SELECT connection_id, external_id FROM connection_external_ids;"
 ```
 
-Test WireGuard connectivity (check tunnel status from host
+Test WireGuard connectivity (check tunnel status from host)
 
 ```bash
 docker logs stargate-irisagent 2>&1 | grep -i "handshake\|peer.*added\|started listening"
@@ -903,7 +903,7 @@ docker compose logs <service-name>
 !!! warning
     These commands **DELETE ALL DATA** - use with caution!
 
-    You can only restore data, if you perform [backup operations](./Docker-advanced.md#manual-backup) before and save backup in a safe place.
+    You can only restore data if you perform [backup operations](./Docker-advanced.md#manual-backup) before and save the backup in a safe place.
 
 ```bash
 ./scripts/purge.sh
@@ -950,7 +950,7 @@ stargate/
 │   ├── install.sh                # First-time installation (Docker, Vault). Domain/cert/peer setup happens in the dashboard afterwards.
 │   ├── purge.sh                  # Delete all data (destructive!)
 │   ├── restore.sh                # Restore from backup archive
-│   ├── send-logs-to-support.sh.  # Paste logs online and get you link that you will provide to support
+│   ├── send-logs-to-support.sh   # Paste logs online and get a link that you will provide to support
 │   ├── start.sh                  # Start services + unseal Vault
 │   ├── stop.sh                   # Stop containers (preserves data)
 │   └── update.sh
@@ -963,7 +963,7 @@ stargate/
 
 !!! example "Run the comprehensive health check"
 
-    === "Quick Healt check"
+    === "Quick Health check"
 
         ```bash
         ./scripts/health-check.sh
@@ -1020,7 +1020,7 @@ docker ps -a --format '{{.Names}}' | xargs -I {} sh -c 'docker logs --timestamps
 
 ### Provide logs to support
 
-You can provide logs to our support via [pastebin.hin-infra.ch](pastebin.hin-infra.ch), and CLI command:
+You can provide logs to our support via [pastebin.hin-infra.ch](https://pastebin.hin-infra.ch), and CLI command:
 
 Upload all containers logs:
 
@@ -1057,7 +1057,7 @@ Upload all containers logs:
 === "Last 500 lines of logs"
 
     !!! success "This is default"
-        `--tail 500` is default value for our script, but you still can provide it
+        `--tail 500` is the default value for our script, but you can still provide it.
 
     Use our script:
 
@@ -1080,7 +1080,7 @@ Upload specific container logs:
     ```
 
     !!! tip
-        This operation can hit our upload limits - 20 Mb. If it happens, try to reduce logs amount by setting time limit or lines of logs.
+        This operation can hit our upload limits - 20 Mb. If it happens, try to reduce the log amount by setting a time limit or number of lines.
 
 === "For the last hour (`1h`)"
 
@@ -1091,7 +1091,7 @@ Upload specific container logs:
 === "Last 500 lines of logs"
 
     ```shell
-    docker logs –-tail 500 <CONTAINER_NAME> 2>&1 | curl https://pastebin.hin-infra.ch/ --data-binary @-
+    docker logs --tail 500 <CONTAINER_NAME> 2>&1 | curl https://pastebin.hin-infra.ch/ --data-binary @-
     ```
 
 After that, you will receive a unique link in the format `https://pastebin.hin-infra.ch/<20 symbols>` that you can provide to support / ticket.
