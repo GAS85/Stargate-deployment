@@ -260,7 +260,7 @@ services:
   # ===================
 
   smimekeys-client:
-    image: healthinfonetag/smimekeys:${SMIMEKEYS_VERSION:-dev}
+    image: healthinfonetag/smimekeys:${SMIMEKEYS_VERSION:-latest}
     container_name: stargate-smimekeys-client
     depends_on:
       postgres:
@@ -322,7 +322,7 @@ services:
       - autoheal=true
 
   policy:
-    image: healthinfonetag/policy:${POLICY_VERSION:-dev}
+    image: healthinfonetag/policy:${POLICY_VERSION:-latest}
     container_name: stargate-policy
     depends_on:
       postgres:
@@ -360,7 +360,7 @@ services:
       - autoheal=true
 
   irisagent:
-    image: healthinfonetag/irisagent:${IRISAGENT_VERSION:-dev}
+    image: healthinfonetag/irisagent:${IRISAGENT_VERSION:-latest}
     container_name: stargate-irisagent
     restart: unless-stopped
     depends_on:
@@ -426,7 +426,7 @@ services:
       - autoheal=true
 
   mxengine:
-    image: healthinfonetag/mxengine:${MXENGINE_VERSION:-dev}
+    image: healthinfonetag/mxengine:${MXENGINE_VERSION:-latest}
     container_name: stargate-mxengine
     restart: unless-stopped
     depends_on:
@@ -559,7 +559,7 @@ services:
       - autoheal=true
 
   dashboard:
-    image: healthinfonetag/dashboard:${DASHBOARD_VERSION:-dev}
+    image: healthinfonetag/dashboard:${DASHBOARD_VERSION:-latest}
     container_name: stargate-dashboard
     depends_on:
       keycloak:
@@ -681,7 +681,7 @@ services:
       - autoheal=true
 
   postfixconf:
-    image: healthinfonetag/postfixconf:${POSTFIXCONF_VERSION:-dev}
+    image: healthinfonetag/postfixconf:${POSTFIXCONF_VERSION:-latest}
     container_name: stargate-postfixconf
     restart: unless-stopped
     depends_on:
@@ -767,7 +767,7 @@ services:
   # Policy sync service - syncs policies from Git repository to database
   # Automatically syncs policies when POLICY_SYNC_REPO_URL is configured
   policy-sync:
-    image: healthinfonetag/policy-sync:${POLICY_SYNC_VERSION:-dev}
+    image: healthinfonetag/policy-sync:${POLICY_SYNC_VERSION:-latest}
     container_name: stargate-policy-sync
     restart: unless-stopped
     depends_on:
