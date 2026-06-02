@@ -377,7 +377,7 @@ services:
       minio-init:
         condition: service_completed_successfully
       dashboard:
-        condition: service_started
+        condition: service_healthy
     environment:
       # HTTP Server
       HTTP_HOST: ""
@@ -445,7 +445,7 @@ services:
       irisagent:
         condition: service_started
       dashboard:
-        condition: service_started
+        condition: service_healthy
     environment:
       # HTTP Server
       LOG_LEVEL: "info"
@@ -610,6 +610,12 @@ services:
 
     networks:
       - stargate-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/liveness"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
     labels:
       - autoheal=true
 
@@ -623,7 +629,7 @@ services:
       keycloak:
         condition: service_healthy
       dashboard:
-        condition: service_started
+        condition: service_healthy
     volumes:
       - ./config/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - ./config/caddy/ssl:/etc/caddy/ssl:ro
@@ -749,7 +755,7 @@ services:
       vault-init:
         condition: service_completed_successfully
       dashboard:
-        condition: service_started
+        condition: service_healthy
     environment:
       HOME: "/tmp"
       STALWART_URL: "http://stalwart:8080"
