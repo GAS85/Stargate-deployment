@@ -7,6 +7,7 @@ services:
   postgres:
     image: postgres:18-alpine
     container_name: stargate-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -40,6 +41,7 @@ services:
   vault:
     image: hashicorp/vault:1.19.0
     container_name: stargate-vault
+    restart: unless-stopped
     depends_on:
       vault-data-fixer:
         condition: service_completed_successfully
@@ -72,6 +74,7 @@ services:
   minio:
     image: minio/minio:latest
     container_name: stargate-minio
+    restart: unless-stopped
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
@@ -138,7 +141,8 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:26.5.3
     container_name: stargate-keycloak
-    # Intentionally depends only on the local postgres — no external DB or identity providers
+    restart: unless-stopped
+    # Intentionally depends only on the local postgres - no external DB or identity providers
     depends_on:
       postgres:
         condition: service_healthy
@@ -262,6 +266,7 @@ services:
   smimekeys-client:
     image: healthinfonetag/smimekeys:${SMIMEKEYS_VERSION:-dev}
     container_name: stargate-smimekeys-client
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
@@ -324,6 +329,7 @@ services:
   policy:
     image: healthinfonetag/policy:${POLICY_VERSION:-dev}
     container_name: stargate-policy
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
@@ -428,6 +434,7 @@ services:
   mxengine:
     image: healthinfonetag/mxengine:${MXENGINE_VERSION:-dev}
     container_name: stargate-mxengine
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
@@ -530,6 +537,7 @@ services:
   apisix:
     image: apache/apisix:3.15.0-debian
     container_name: stargate-apisix
+    restart: unless-stopped
     depends_on:
       apisix-init:
         condition: service_completed_successfully
@@ -560,6 +568,7 @@ services:
   dashboard:
     image: healthinfonetag/dashboard:${DASHBOARD_VERSION:-dev}
     container_name: stargate-dashboard
+    restart: unless-stopped
     depends_on:
       keycloak:
         condition: service_healthy
@@ -609,6 +618,7 @@ services:
   caddy:
     image: caddy:2-alpine
     container_name: stargate-caddy
+    restart: unless-stopped
     depends_on:
       keycloak:
         condition: service_healthy
