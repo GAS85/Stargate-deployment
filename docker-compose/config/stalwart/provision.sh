@@ -5,8 +5,9 @@
 # Idempotently provisions Stalwart for the Stargate deployment:
 #   1. Creates network listeners (SMTP, reinject, management HTTP)
 #   2. Enables a Stdout tracer so logs land on docker stdout
-#   3. Sets system hostname
-#   4. Creates domain + mtaconf service account
+#   3. Ensures the service domain exists
+#   4. Sets SystemSettings (defaultHostname + defaultDomainId)
+#   5. Creates the mtaconf service account
 #
 # Designed as a one-shot Docker Compose service (restart: "no").
 # Safe to re-run: checks for existing objects before creating.
@@ -105,14 +106,7 @@ if ! cli query Tracer 2>/dev/null | grep -Fq "Stdout"; then
 fi
 
 # =============================================================================
-# 3. Configure system settings
-# =============================================================================
-log "setting hostname to: $HOSTNAME"
-cli update SystemSettings singleton \
-  --field "hostname=${HOSTNAME}" 2>/dev/null || log "SystemSettings update skipped (may need different field name)"
-
-# =============================================================================
-# 4. Ensure the domain exists
+# 3. Ensure the domain exists
 # =============================================================================
 DID=$(cli query domain 2>/dev/null | awk -v d="$DOMAIN" 'NR>1 && index($0, d) {print $1; exit}') || true
 if [ -z "$DID" ]; then
@@ -129,6 +123,18 @@ if [ -z "$DID" ]; then
 fi
 [ -n "$DID" ] || { log "ERROR: could not resolve domain id for ${DOMAIN}"; exit 1; }
 log "domain ${DOMAIN} id=${DID}"
+
+# =============================================================================
+# 4. Set SystemSettings (hostname + default domain)
+# =============================================================================
+# v0.16's SystemSettings requires both `defaultHostname` and `defaultDomainId`
+# on every update — the validator runs against the full post-patch state, so
+# subsequent partial updates (e.g. from mtaconf updating only the hostname)
+# fail with "defaultDomainId: required" unless we seed both fields here.
+log "setting SystemSettings: defaultHostname=${HOSTNAME}, defaultDomainId=${DID}"
+cli update SystemSettings singleton \
+  --field "defaultHostname=${HOSTNAME}" \
+  --field "defaultDomainId=${DID}"
 
 # =============================================================================
 # 5. Ensure mtaconf service account exists
