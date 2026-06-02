@@ -168,7 +168,7 @@ Submits hostname and the list of relay domains to the `mtaconf` service over its
 
 The S/MIME CSR submission on `/onboarding` will fail if your Stargate instance is not yet registered as a WireGuard peer on the HIN CA side. This is the most common issue during initial setup.
 
-**What you need to provide to HIN:**
+The dashboard's `/installation` page handles the WireGuard peer registration automatically via the nonce/HIN handshake. If the automatic registration fails, manual registration can be done by providing the following values to HIN:
 
 1. **WireGuard public key** — extract from irisagent logs:
 
@@ -180,9 +180,7 @@ The S/MIME CSR submission on `/onboarding` will fail if your Stargate instance i
 3. **`SERVER_STATIC_IP`** — the public IP of your Stargate server
 4. **`WG_INTERFACE_PORT`** — only if you changed it from the default `19818`
 
-Send these values to HIN so they can register your peer on the CA side.
-
-**After HIN confirms your peer is registered:**
+**After peer registration is confirmed:**
 
 Re-run the `/onboarding` page in the dashboard to regenerate the CSR and submit it through the now-up tunnel.
 
@@ -351,6 +349,6 @@ After any restart, run `./scripts/start.sh` to unseal Vault. The script uses the
 
 !!! tip "Support"
 
-    For any questions or issues related to the deployment and operation of the Stargate appliance, please contact the Stargate Product Owner, David Grabovac, at david.grabovac@hin.ch.
+    For any questions or issues related to the deployment and operation of the Stargate appliance, please contact HIN support.
 
-    Please include relevant information such as the customer name, appliance version, and screenshots/[logs](./Docker-advanced.md#provide-logs-to-support) where applicable, to help us process your request efficiently."
+    Please include relevant information such as the customer name, appliance version, and screenshots/[logs](./Docker-advanced.md#provide-logs-to-support) where applicable, to help us process your request efficiently.

@@ -818,36 +818,17 @@ echo "  update-ca-trust on RHEL/AlmaLinux). Firefox requires a separate import"
 echo "  under Settings -> Privacy -> Certificates."
 echo ""
 
-# ============================================
-# HIN WireGuard Peer Registration block
-# ============================================
-# Print the values HIN needs to register this Stargate as a WireGuard peer.
-# Without this registration the WG tunnel cannot be established and S/MIME
-# certificate issuance will keep failing.
-
-WG_PUBKEY_FOR_HIN="$(docker compose logs irisagent 2>/dev/null \
-  | grep -m1 'wireguard public key:' \
-  | sed 's/.*wireguard public key: //' \
-  | tr -d '[:space:]')"
-
+echo ""
 echo "============================================"
-echo "  HIN WireGuard Peer Registration"
+echo "  Next Steps"
 echo "============================================"
 echo ""
-echo "  Send the following values to HIN (david.grabovac@hin.ch)"
-echo "  so they can register this Stargate as a WireGuard peer."
-echo "  Until the peer is registered, S/MIME cert issuance will fail."
+echo "  1. Open the dashboard at https://<SERVER_STATIC_IP>"
+echo "  2. Complete the /installation page (WireGuard peer registration)"
+echo "  3. Complete the /onboarding page (S/MIME certificate)"
+echo "  4. Complete the /mail page (mail domains and relay config)"
 echo ""
-echo "  WireGuard Public Key: ${WG_PUBKEY_FOR_HIN:-<not yet available - run: docker compose logs irisagent | grep \"wireguard public key\">}"
-echo "  DEPLOYMENT_NAME:      $DEPLOYMENT_NAME"
-echo "  SERVER_STATIC_IP:     $SERVER_STATIC_IP"
-echo "  WG_INTERFACE_PORT:    $WG_INTERFACE_PORT"
-echo ""
-echo "  After HIN confirms registration, regenerate the certificate from the dashboard."
-echo ""
-echo "  Recommended next steps:"
+echo "  Recommended after onboarding:"
 echo "    - SPF / DKIM / DMARC for your sending domains"
-echo "      (see docs/README.md - 'Post-Onboarding Recommendations')"
 echo "    - Microsoft 365 / Exchange Online relay-back connectors"
-echo "      (see docs/Exchange-integration.md)"
 echo ""
