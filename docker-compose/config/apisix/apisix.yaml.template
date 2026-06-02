@@ -136,7 +136,9 @@ routes:
           - "172.16.0.0/12"
 
   - id: "smimekeys-peer-sync"
-    uri: "/smimekeys/v1/certs/peers/sync"
+    uris:
+        - "/smimekeys/v1/certs/peers/sync"
+        - "/smimekeys/v1/rootca"
     upstream_id: "smimekeys"
     priority: 100
     plugins:
