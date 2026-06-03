@@ -15,13 +15,23 @@
 # Required env:
 #   STALWART_RECOVERY_ADMIN   "admin:<password>" (recovery admin credentials)
 #   MTACONF_SVC_PASSWORD      password for the mtaconf service account
-#   MTACONF_SVC_USER          account local-part (default: mtaconf-svc)
-#   MTACONF_SVC_DOMAIN        domain the account belongs to
 # Optional env:
 #   STALWART_URL              default http://stalwart:8080
 #   STALWART_CLI_PATH         default /opt/stalwart-cli
 #   STALWART_READY_RETRIES    readiness attempts, 3s apart (default 60)
-#   STALWART_HOSTNAME         server hostname for SystemSettings
+#
+# Internal: the mtaconf-svc admin account lives under a synthetic service
+# domain (mtaconf.local). It exists only so mtaconf can authenticate to
+# the Stalwart management API; it must NOT be a real mail-receiving
+# domain, because Stalwart treats every registered Domain as
+# accept-locally and would bounce production mail to that domain.
+# Operators should never override this — that's why it's hardcoded here
+# instead of being exposed in customer-config.
+#
+# The provisional SystemSettings.defaultHostname is also synthetic
+# (mail.mtaconf.local). The real public mail hostname is set later via
+# mtaconf when the operator submits the dashboard form (intent.hostname
+# → SystemSettings.defaultHostname update).
 # =============================================================================
 set -eu
 export HOME=/tmp
@@ -30,9 +40,9 @@ CLI="${STALWART_CLI_PATH:-/opt/stalwart-cli}"
 URL="${STALWART_URL:-http://stalwart:8080}"
 : "${STALWART_RECOVERY_ADMIN:?STALWART_RECOVERY_ADMIN (admin:password) is required}"
 : "${MTACONF_SVC_PASSWORD:?MTACONF_SVC_PASSWORD is required}"
-SVC="${MTACONF_SVC_USER:-mtaconf-svc}"
-DOMAIN="${MTACONF_SVC_DOMAIN:?MTACONF_SVC_DOMAIN is required}"
-HOSTNAME="${STALWART_HOSTNAME:-mail.${DOMAIN}}"
+SVC="mtaconf-svc"
+DOMAIN="mtaconf.local"
+HOSTNAME="mail.${DOMAIN}"
 RETRIES="${STALWART_READY_RETRIES:-60}"
 
 AUSER="${STALWART_RECOVERY_ADMIN%%:*}"

@@ -216,12 +216,13 @@ load_customer_config() {
   OUTBOUND_SMTP_PORT="${OUTBOUND_SMTP_PORT:-10026}"
   MTACONF_VERSION="${MTACONF_VERSION:-dev}"
 
-  # Stalwart MTA
+  # Stalwart MTA. The mtaconf-svc user, its home domain, and the
+  # initial hostname are all hardcoded synthetic values inside
+  # provision.sh — they are deliberately not customer-config knobs.
+  # The operator's real mail hostname is set later via mtaconf when
+  # the dashboard form is submitted.
   STALWART_ADMIN_PASSWORD="${STALWART_ADMIN_PASSWORD:-$(generate_password)}"
-  MTACONF_SVC_USER="${MTACONF_SVC_USER:-mtaconf-svc}"
-  MTACONF_SVC_DOMAIN="${MTACONF_SVC_DOMAIN:-${OUTBOUND_SEALER_MX_DOMAIN:-hintest.ch}}"
   MTACONF_SVC_PASSWORD="${MTACONF_SVC_PASSWORD:-$(generate_password)}"
-  STALWART_HOSTNAME="${STALWART_HOSTNAME:-mail.${MTACONF_SVC_DOMAIN}}"
 
   LOKI_URL="${LOKI_URL:-}"
 
@@ -288,10 +289,7 @@ MTACONF_VERSION="$MTACONF_VERSION"
 
 # Stalwart MTA
 STALWART_ADMIN_PASSWORD="$STALWART_ADMIN_PASSWORD"
-MTACONF_SVC_USER="$MTACONF_SVC_USER"
-MTACONF_SVC_DOMAIN="$MTACONF_SVC_DOMAIN"
 MTACONF_SVC_PASSWORD="$MTACONF_SVC_PASSWORD"
-STALWART_HOSTNAME="$STALWART_HOSTNAME"
 
 # Mail Outbound Path
 SERVER_STATIC_IP="$SERVER_STATIC_IP"

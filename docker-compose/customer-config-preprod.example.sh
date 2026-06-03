@@ -158,13 +158,13 @@ DASHBOARD_ROOT_DOMAIN="hindev"
 # Recovery admin password (used for initial setup and CLI access)
 STALWART_ADMIN_PASSWORD=""  # Auto-generated if empty
 
-# Service account for mtaconf (the config daemon that manages Stalwart)
-MTACONF_SVC_USER="mtaconf-svc"
-MTACONF_SVC_DOMAIN=""  # Defaults to OUTBOUND_SEALER_MX_DOMAIN
+# Password for mtaconf's internal admin account (used to authenticate
+# against the Stalwart management API). Auto-generated if empty.
+# The account's username/domain are hardcoded synthetic values inside
+# provision.sh and intentionally not exposed here. The operator's real
+# mail hostname is set later via the dashboard form (mtaconf overwrites
+# SystemSettings.defaultHostname on apply).
 MTACONF_SVC_PASSWORD=""  # Auto-generated if empty
-
-# Stalwart hostname (appears in SMTP banners)
-STALWART_HOSTNAME=""  # Defaults to mail.<MTACONF_SVC_DOMAIN>
 
 # ==============================================================================
 # OPTIONAL: Dozzle - Real-time Log Viewer

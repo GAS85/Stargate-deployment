@@ -738,10 +738,7 @@ services:
     environment:
       STALWART_URL: "http://stalwart:8080"
       STALWART_RECOVERY_ADMIN: "admin:${STALWART_ADMIN_PASSWORD}"
-      MTACONF_SVC_USER: "${MTACONF_SVC_USER:-mtaconf-svc}"
-      MTACONF_SVC_DOMAIN: "${MTACONF_SVC_DOMAIN}"
       MTACONF_SVC_PASSWORD: "${MTACONF_SVC_PASSWORD}"
-      STALWART_HOSTNAME: "${STALWART_HOSTNAME:-mail.local}"
     networks:
       - stargate-network
 
@@ -759,7 +756,7 @@ services:
     environment:
       HOME: "/tmp"
       STALWART_URL: "http://stalwart:8080"
-      STALWART_USER: "${MTACONF_SVC_USER:-mtaconf-svc}@${MTACONF_SVC_DOMAIN}"
+      STALWART_USER: "mtaconf-svc@mtaconf.local"
       STALWART_PASSWORD: "${MTACONF_SVC_PASSWORD}"
       STALWART_CLI_PATH: "/opt/stalwart-cli"
       VAULT_ADDRESS: "http://vault:8200"
