@@ -1,6 +1,6 @@
 # Stargate mail relay setup
 
-## Create a stargate relay for a mail domain hosted in Microsoft Office 365
+## Create a Stargate relay for a mail domain hosted in Microsoft Office 365
 
 For the relay, we need a VM or a server with a real static IP address.
 
@@ -34,7 +34,7 @@ vrgnservices.eu mail is handled by 15 mail.vrgnservices.eu.
 vrgnservices.eu descriptive text "v=spf1 ip4:128.140.117.200 include:spf.protection.outlook.com -all"
 ```
 
-## Install the stargate docker compose containers
+## Install the Stargate docker compose containers
 
 [Stargate Deployment](./Docker-deploy.md)
 
@@ -45,7 +45,7 @@ vrgnservices.eu descriptive text "v=spf1 ip4:128.140.117.200 include:spf.protect
 * **20 GB storage** (minimum)
 * **Root access**: Must be run as root or with `sudo`
 * **Supported distributions**:
-    * RHEL 8, 9 and 10 compatible distributions such as Alma Linux, Rocky Linux, Centos Stream
+    * RHEL 8, 9 and 10 compatible distributions such as Alma Linux, Rocky Linux, CentOS Stream
     * Ubuntu 22 and 24
     * Debian 11, 12 and 13
 * **Real IPv4 address**
@@ -57,27 +57,27 @@ The script installs all components and starts them. Mail domains and the Postfix
 
 ## Set up Exchange
 
-We need to configure connectors and a transport rule in Exchange to relay all outgoing mail to the postfix relay and allow incoming mail from it.
+We need to configure connectors and a transport rule in Exchange to relay all outgoing mail to the Postfix relay and allow incoming mail from it.
 
 Navigate to [https://admin.exchange.microsoft.com/#/connectors](https://admin.exchange.microsoft.com/#/connectors)
 
 ### Outgoing connector
 
-Create outgoing mail connector, click"Add":
+Create an outgoing mail connector, click "Add":
 
-Select "Connection from": "Office 365" "Connection to": "your organization&#39;s email server, click "Next".
+Select "Connection from": "Office 365" "Connection to": "your organization's email server", click "Next".
 
 ![screenshot](./assets/new_connector_outgoing1.png)
 
-Name it something like "From Office 365 to postfix relay sever" and check "Retain Internal Exchange email headers", click "Next".
+Name it something like "From Office 365 to postfix relay server" and check "Retain internal Exchange email headers", click "Next".
 
 ![screenshot](./assets/new_connector_outgoing2.png)
 
-Select "Only when I have a transport rule set up that redirects messages to this connector", click Next,.
+Select "Only when I have a transport rule set up that redirects messages to this connector", click "Next".
 
 ![screenshot](./assets/new_connector_outgoing3.png)
 
-Enter the IP address of the postfix relay server, click "+", click "Next".
+Enter the IP address of the Postfix relay server, click "+", click "Next".
 
 ![screenshot](./assets/new_connector_outgoing4.png)
 
@@ -99,15 +99,15 @@ Click "Add another connector".
 
 ### Incoming connector
 
-Create incoming mail connector, choose "Connection from": "Your organization's email server", click "Next".
+Create an incoming mail connector, choose "Connection from": "Your organization's email server", click "Next".
 
 ![screenshot](./assets/new_connector_incoming1.png)
 
-Name it something like "Receive mail from postfix relay server" and check "Retain internal Exchange email headers", click "Next.
+Name it something like "Receive mail from postfix relay server" and check "Retain internal Exchange email headers", click "Next".
 
 ![screenshot](./assets/new_connector_incoming2.png)
 
-Select "By verifying that the IP address of the sending server matches one of the following IP addresses, type the IP address of postfix, click "+", click "Next".
+Select "By verifying that the IP address of the sending server matches one of the following IP addresses", type the IP address of Postfix, click "+", click "Next".
 
 ![screenshot](./assets/new_connector_incoming3.png)
 
@@ -125,7 +125,7 @@ This is how it looks when done:
 
 ### Transport Rule
 
-Create the transport rule, navigate to [https://admin.exchange.microsoft.com/#/transportrules](https://admin.exchange.microsoft.com/#/transportrules)
+Create the transport rule. Navigate to [https://admin.exchange.microsoft.com/#/transportrules](https://admin.exchange.microsoft.com/#/transportrules)
 
 Click "+Add a rule" --> "Create a new rule".
 
@@ -135,11 +135,11 @@ Name it something like "Relay all mail to postfix except mail coming from it", c
 
 ![screenshot](./assets/new_transport_rule2.png)
 
-Choose "Do the following" "Redirect message to the following connector" "From Office 365 to postfix relay server", click "Save".
+Choose "Do the following" "Redirect the message to the following connector" "From Office 365 to postfix relay server", click "Save".
 
 ![screenshot](./assets/new_transport_rule3.png)
 
-Choose "Except if The sender IP address is in any of these ranges" enter the IP address of the postfix server, click "Add", check the IP address and click "Save".
+Choose "Except if The sender IP address is in any of these ranges" enter the IP address of the Postfix server, click "Add", check the IP address and click "Save".
 
 This is needed to prevent mail loops, as this rule also applies to other domains hosted in Office 365.  
 
@@ -163,6 +163,6 @@ Click "Done".
 
 ![screenshot](./assets/new_transport_rule9.png)
 
-Click on the rule and set the "Enable or disable rule to "Enabled"  
+Click on the rule and set the "Enable or disable rule" to "Enabled"  
 
 ![screenshot](./assets/new_transport_rule10.png)

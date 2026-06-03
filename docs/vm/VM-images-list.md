@@ -1,12 +1,12 @@
 # VM Images list
 
-Here you can find an actual VM images list for different platforms. Please do not forget to check SHA-256 Hash of downloaded images. You can use a https://images.hin.ch/vm-images/SHA256SUMS file to compare it.
+Here you can find a current VM images list for different platforms. Please do not forget to check the SHA-256 hash of downloaded images. You can use the https://images.hin.ch/vm-images/SHA256SUMS file to compare it.
 
-??? info "How to perform SHA256 Hash check locally"
+??? info "How to perform SHA256 hash check locally"
 
-    You can calculate SHA256 Hash of downloaded files by following command and then compare it with values in a table below.
+    You can calculate the SHA256 hash of downloaded files with the following command and then compare it with the values in the table below.
 
-    === "Linux and MacOS"
+    === "Linux and macOS"
 
         Open Terminal and execute:
 
@@ -14,23 +14,23 @@ Here you can find an actual VM images list for different platforms. Please do no
         sha256sum <File Name>
         ```
 
-        As move advanced variant you can execute following command and paste predefined Checksum as `SHA256_VALUE` and File Name as `IMAGE_NAME`:
+        As a more advanced variant, you can execute the following command and paste the predefined checksum as `SHA256_VALUE` and the file name as `IMAGE_NAME`:
 
         ```bash
         SHA256_VALUE="" \
         IMAGE_NAME="" \
-        echo "$SHA256_VALUE  $IMAGE_NAME" | sudo sha1sum --check --status
+        echo "$SHA256_VALUE  $IMAGE_NAME" | sudo sha256sum --check --status
         ```
 
     === "Windows"
 
-        Open Powershell and execute:
+        Open PowerShell and execute:
 
         ```powershell
         Get-FileHash "<File Name>"
         ```
 
-        You can add `-Algorithm SHA256` argument to force SHA256 use.
+        You can add the `-Algorithm SHA256` argument to force SHA256 use.
 
 <!-- Script will replace everything AFTER this line -->
 | Image name | Image Type | Image Size | Link | SHA256 Checksum |

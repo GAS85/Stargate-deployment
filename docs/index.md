@@ -16,12 +16,12 @@
 
 * VM image installation:
     * [Azure VM image installation](vm/Azure-image-install.md)
-    * [Windows 11 pro (Hyper-V) image installation](vm/Windows11pro-image-install.md)
+    * [Windows 11 Pro (Hyper-V) image installation](vm/Windows11pro-image-install.md)
     * [VMware image installation](vm/VMware-image-install.md)
     * [Proxmox image installation](vm/Proxmox-image-install.md)
 
 !!! tip "🖨️"
-    You can get this documentation printed or saved as pdf, please visit our [Print page view](print_page).
+    You can get this documentation printed or saved as PDF, please visit our [Print page view](print_page).
 
 ### Exchange Integration
 
@@ -45,7 +45,7 @@
 
 * **Root access**: Must be run as root or with `sudo`
 * Supported distributions:
-    * RHEL 8, 9 and 10 compatible distributions such as Alma Linux, Rocky Linux, Centos Stream
+    * RHEL 8, 9 and 10 compatible distributions such as Alma Linux, Rocky Linux, CentOS Stream
     * Ubuntu 22 and 24
     * Debian 11, 12 and 13
 * **Real IPv4 address**
@@ -77,10 +77,10 @@
 
 ## Contact us
 
-[Contact us per mail](mailto:david.grabovac@hin.ch?subject=Stargate%20Support%20Question&body=Hello%20dear%20Mr%20Grabovac,%0A%0AI%20have%20a%20Question%20regarding%20Stargate%20and%20would%20like%20to%20ask%20you%20for%20support.%20DO%20NOT%20FORGET%20TO%20ADD%20YOUR%20QUESTION){ .md-button style="position:relative;left:50%;transform:translate(-50%,0%);" }
+[Contact us by email](mailto:david.grabovac@hin.ch?subject=Stargate%20Support%20Question&body=Hello%20dear%20Mr%20Grabovac,%0A%0AI%20have%20a%20Question%20regarding%20Stargate%20and%20would%20like%20to%20ask%20you%20for%20support.%20DO%20NOT%20FORGET%20TO%20ADD%20YOUR%20QUESTION){ .md-button style="position:relative;left:50%;transform:translate(-50%,0%);" }
 
 !!! tip "Support"
 
     For any questions or issues related to the deployment and operation of the Stargate appliance, please contact the Stargate Product Owner, David Grabovac, at david.grabovac@hin.ch.
 
-    Please include relevant information such as the customer name, appliance version, and screenshots/[logs](./Docker-advanced.md#provide-logs-to-support) where applicable, to help us process your request efficiently."
+    Please include relevant information such as the customer name, appliance version, and screenshots/[logs](./Docker-advanced.md#provide-logs-to-support) where applicable, to help us process your request efficiently.
