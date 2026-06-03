@@ -8,7 +8,7 @@ TAG="${2:?usage: generate-release-notes.sh <build|milestone> <tag>}"
 
 PROD_FILE="docker-compose/customer-config-prod.example.sh"
 PREPROD_FILE="docker-compose/customer-config-preprod.example.sh"
-IMAGES_PAGE="https://health-info-net-ag.github.io/stargate-deployment/vm/VM-images-list/"
+IMAGES_PAGE="https://health-info-net-ag.github.io/Stargate-deployment/vm/VM-images-list/"
 
 SEMVER_RE='^v[0-9]+\.[0-9]+\.[0-9]+$'              # v1.0.0 (manual milestones)
 CALVER_RE='^v[0-9]{4}\.[0-9]{2}\.[0-9]{2}-[0-9]{4}$' # v2026.06.03-1549 (auto builds)
