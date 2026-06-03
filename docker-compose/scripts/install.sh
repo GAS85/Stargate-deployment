@@ -710,6 +710,16 @@ if [ -f "$KEYS_FILE" ]; then
   # Wait for services to be ready
   sleep 5
 
+  # Stalwart binds network listeners only at process start; stalwart-provision
+  # creates the `reinject` listener (port 10026) via the management API, but
+  # `ReloadSettings` does not rebind sockets. Wait for provisioning to finish,
+  # then restart stalwart once so the newly-provisioned listeners actually come
+  # up. Safe to re-run.
+  echo "Waiting for Stalwart provisioning to complete..."
+  docker wait stargate-stalwart-provision >/dev/null 2>&1 || true
+  echo "Restarting Stalwart so provisioned listeners bind..."
+  docker compose restart stalwart
+
   # Onboarding (domains, S/MIME CSR, irisagent peer config) is now performed
   # via the dashboard at /installation, /onboarding, and /mail.
 
