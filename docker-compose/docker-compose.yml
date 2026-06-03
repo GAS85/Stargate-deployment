@@ -713,8 +713,13 @@ services:
       - ./config/stalwart/config.json:/etc/stalwart/config.json:ro
       - stalwart_data:/var/lib/stalwart
     ports:
+      # :25 is the public MX listener (external SMTP traffic arrives here).
+      # :10026 is the internal reinject port — mxengine reaches it via the
+      # docker bridge network at `stalwart:10026` and it MUST NOT be
+      # exposed on the host, or it becomes an open relay (the MtaStageRcpt
+      # rule for :10026 accepts any sender→any recipient as "trusted
+      # internal" traffic).
       - "25:25"
-      - "10026:10026"
     networks:
       - stargate-network
     healthcheck:
