@@ -528,7 +528,7 @@ services:
       - "8084:8080"
       - "2116:2112"
     tmpfs:
-      - /tmp:size=100M
+      - /tmp:size=100M,mode=1777,uid=1001,gid=1001
     networks:
       - stargate-network
     labels:
@@ -769,7 +769,7 @@ services:
       DASHBOARD_CONFIG_URL: "http://dashboard:3000/api/internal/installation-config?service=stalwart"
       LOG_LEVEL: "info"
     tmpfs:
-      - /tmp:size=10M
+      - /tmp:size=10M,mode=1777,uid=1001,gid=1001
     networks:
       - stargate-network
     labels:
