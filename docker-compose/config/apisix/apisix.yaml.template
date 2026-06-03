@@ -105,6 +105,7 @@ routes:
     uris:
       - "/smimekeys/v1/certs/peers/sync"
       - "/smimekeys/v1/rootca"
+      - "/smimekeys/v1/domains"
     upstream_id: "smimekeys"
     priority: 100
     plugins:
