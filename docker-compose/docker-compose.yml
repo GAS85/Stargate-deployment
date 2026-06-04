@@ -7,6 +7,7 @@ services:
   postgres:
     image: postgres:18-alpine
     container_name: stargate-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -40,6 +41,7 @@ services:
   vault:
     image: hashicorp/vault:1.19.0
     container_name: stargate-vault
+    restart: unless-stopped
     depends_on:
       vault-data-fixer:
         condition: service_completed_successfully
@@ -72,6 +74,7 @@ services:
   minio:
     image: minio/minio:latest
     container_name: stargate-minio
+    restart: unless-stopped
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
@@ -138,7 +141,8 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:26.5.3
     container_name: stargate-keycloak
-    # Intentionally depends only on the local postgres — no external DB or identity providers
+    restart: unless-stopped
+    # Intentionally depends only on the local postgres - no external DB or identity providers
     depends_on:
       postgres:
         condition: service_healthy
@@ -260,8 +264,9 @@ services:
   # ===================
 
   smimekeys-client:
-    image: healthinfonetag/smimekeys:${SMIMEKEYS_VERSION:-latest}
+    image: healthinfonetag/smimekeys:${SMIMEKEYS_VERSION:-dev}
     container_name: stargate-smimekeys-client
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
@@ -322,8 +327,9 @@ services:
       - autoheal=true
 
   policy:
-    image: healthinfonetag/policy:${POLICY_VERSION:-latest}
+    image: healthinfonetag/policy:${POLICY_VERSION:-dev}
     container_name: stargate-policy
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
@@ -360,7 +366,7 @@ services:
       - autoheal=true
 
   irisagent:
-    image: healthinfonetag/irisagent:${IRISAGENT_VERSION:-latest}
+    image: healthinfonetag/irisagent:${IRISAGENT_VERSION:-dev}
     container_name: stargate-irisagent
     restart: unless-stopped
     depends_on:
@@ -371,7 +377,7 @@ services:
       minio-init:
         condition: service_completed_successfully
       dashboard:
-        condition: service_started
+        condition: service_healthy
     environment:
       # HTTP Server
       HTTP_HOST: ""
@@ -426,7 +432,7 @@ services:
       - autoheal=true
 
   mxengine:
-    image: healthinfonetag/mxengine:${MXENGINE_VERSION:-latest}
+    image: healthinfonetag/mxengine:${MXENGINE_VERSION:-dev}
     container_name: stargate-mxengine
     restart: unless-stopped
     depends_on:
@@ -439,7 +445,7 @@ services:
       irisagent:
         condition: service_started
       dashboard:
-        condition: service_started
+        condition: service_healthy
     environment:
       # HTTP Server
       LOG_LEVEL: "info"
@@ -494,7 +500,7 @@ services:
       SEALER: "false"
       OUTBOUND_SEALER_MX_DOMAIN: "${OUTBOUND_SEALER_MX_DOMAIN}"
       OUTBOUND_SEAL_ADDR: ""
-      OUTBOUND_SMTP_HOST: "${OUTBOUND_SMTP_HOST:-postfixconf}"
+      OUTBOUND_SMTP_HOST: "${OUTBOUND_SMTP_HOST:-stalwart}"
       OUTBOUND_SMTP_PORT: "${OUTBOUND_SMTP_PORT:-10026}"
       OUTBOUND_SMIME_HOST: ""
       OUTBOUND_SMIME_PORT: ""
@@ -522,7 +528,7 @@ services:
       - "8084:8080"
       - "2116:2112"
     tmpfs:
-      - /tmp:size=100M
+      - /tmp:size=100M,mode=1777,uid=1001,gid=1001
     networks:
       - stargate-network
     labels:
@@ -531,6 +537,7 @@ services:
   apisix:
     image: apache/apisix:3.15.0-debian
     container_name: stargate-apisix
+    restart: unless-stopped
     depends_on:
       apisix-init:
         condition: service_completed_successfully
@@ -559,8 +566,9 @@ services:
       - autoheal=true
 
   dashboard:
-    image: healthinfonetag/dashboard:${DASHBOARD_VERSION:-latest}
+    image: healthinfonetag/dashboard:${DASHBOARD_VERSION:-dev}
     container_name: stargate-dashboard
+    restart: unless-stopped
     depends_on:
       keycloak:
         condition: service_healthy
@@ -598,10 +606,16 @@ services:
 
       VAULT_ADDRESS: "http://vault:8200"
       VAULT_TOKEN: "${VAULT_TOKEN}"
-      VAULT_MOUNT_PATH: "secret-postfixconf"
+      VAULT_MOUNT_PATH: "secret-mtaconf"
 
     networks:
       - stargate-network
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/api/liveness"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
     labels:
       - autoheal=true
 
@@ -610,11 +624,12 @@ services:
   caddy:
     image: caddy:2-alpine
     container_name: stargate-caddy
+    restart: unless-stopped
     depends_on:
       keycloak:
         condition: service_healthy
       dashboard:
-        condition: service_started
+        condition: service_healthy
     volumes:
       - ./config/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - ./config/caddy/ssl:/etc/caddy/ssl:ro
@@ -680,36 +695,83 @@ services:
     labels:
       - autoheal=true
 
-  postfixconf:
-    image: healthinfonetag/postfixconf:${POSTFIXCONF_VERSION:-latest}
-    container_name: stargate-postfixconf
+  # ===================
+  # Stalwart MTA (replaces postfixconf)
+  # ===================
+
+  stalwart:
+    image: stalwartlabs/stalwart:v0.16
+    container_name: stargate-stalwart
     restart: unless-stopped
     depends_on:
-      dashboard:
-        condition: service_started
+      postgres:
+        condition: service_healthy
+    environment:
+      STALWART_RECOVERY_ADMIN: "admin:${STALWART_ADMIN_PASSWORD}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-postgres}"
+    volumes:
+      - ./config/stalwart/config.json:/etc/stalwart/config.json:ro
+      - stalwart_data:/var/lib/stalwart
+    ports:
+      # :25 is the public MX listener (external SMTP traffic arrives here).
+      # :10026 is the internal reinject port — mxengine reaches it via the
+      # docker bridge network at `stalwart:10026` and it MUST NOT be
+      # exposed on the host, or it becomes an open relay (the MtaStageRcpt
+      # rule for :10026 accepts any sender→any recipient as "trusted
+      # internal" traffic).
+      - "25:25"
+    networks:
+      - stargate-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:8080/healthz/live || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    labels:
+      - autoheal=true
+
+  stalwart-provision:
+    build:
+      context: ./config/stalwart
+      dockerfile: Dockerfile.provision
+    container_name: stargate-stalwart-provision
+    restart: "no"
+    depends_on:
+      stalwart:
+        condition: service_healthy
+    environment:
+      STALWART_URL: "http://stalwart:8080"
+      STALWART_RECOVERY_ADMIN: "admin:${STALWART_ADMIN_PASSWORD}"
+      MTACONF_SVC_PASSWORD: "${MTACONF_SVC_PASSWORD}"
+    networks:
+      - stargate-network
+
+  mtaconf:
+    image: registry.vereign.io/svdh/mtaconf:${MTACONF_VERSION:-dev}
+    container_name: stargate-mtaconf
+    restart: unless-stopped
+    depends_on:
+      stalwart-provision:
+        condition: service_completed_successfully
       vault-init:
         condition: service_completed_successfully
-      smimekeys-client:
-        condition: service_started
+      dashboard:
+        condition: service_healthy
     environment:
-      # Required: smimekeys backend the daemon queries per recipient
-      SMIMEKEYS_ADDR: "http://smimekeys-client:8080"
-      # Required by boky/postfix base — sender domains are managed dynamically
-      # by the daemon at runtime, no static list at boot
-      ALLOW_EMPTY_SENDER_DOMAINS: "true"
-      # MXEngine integration (Docker service name and port)
-      MXENGINE_HOST: "${MXENGINE_HOST:-mxengine}"
-      MXENGINE_PORT: "${MXENGINE_PORT:-1587}"
-      DASHBOARD_CONFIG_URL: "http://dashboard:3000/api/internal/installation-config?service=postfix"
-      # Vault
+      HOME: "/tmp"
+      STALWART_URL: "http://stalwart:8080"
+      STALWART_USER: "mtaconf-svc@mtaconf.local"
+      STALWART_PASSWORD: "${MTACONF_SVC_PASSWORD}"
+      STALWART_CLI_PATH: "/opt/stalwart-cli"
       VAULT_ADDRESS: "http://vault:8200"
       VAULT_TOKEN: "${VAULT_TOKEN}"
-      VAULT_MOUNT_PATH: "secret-postfixconf"
-    volumes:
-      - postfix_spool:/var/spool/postfix
-    ports:
-      - "25:25"
-      - "10026:10026"
+      VAULT_MOUNT_PATH: "secret-mtaconf"
+      HTTP_ADDR: ":8080"
+      DASHBOARD_CONFIG_URL: "http://dashboard:3000/api/internal/installation-config?service=stalwart"
+      LOG_LEVEL: "info"
+    tmpfs:
+      - /tmp:size=10M,mode=1777,uid=1001,gid=1001
     networks:
       - stargate-network
     labels:
@@ -767,7 +829,7 @@ services:
   # Policy sync service - syncs policies from Git repository to database
   # Automatically syncs policies when POLICY_SYNC_REPO_URL is configured
   policy-sync:
-    image: healthinfonetag/policy-sync:${POLICY_SYNC_VERSION:-latest}
+    image: healthinfonetag/policy-sync:${POLICY_SYNC_VERSION:-dev}
     container_name: stargate-policy-sync
     restart: unless-stopped
     depends_on:
@@ -819,7 +881,7 @@ volumes:
   postgres_data:
   vault_data:
   minio_data:
-  postfix_spool:
+  stalwart_data:
   loki_data:
   alloy_data:
   textfile_collector:

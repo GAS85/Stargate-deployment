@@ -83,9 +83,9 @@ SMIMEKEYS_VERSION="6c60562a"
 POLICY_VERSION="v0.0.6"
 IRISAGENT_VERSION="v0.0.5"
 MXENGINE_VERSION="v0.0.42"
-POLICY_SYNC_VERSION="latest"
-DASHBOARD_VERSION="v0.0.36-test"
-POSTFIXCONF_VERSION="v0.0.14"
+POLICY_SYNC_VERSION="dev"
+DASHBOARD_VERSION="v0.0.11"
+MTACONF_VERSION="v0.0.3"
 
 # ==============================================================================
 # OPTIONAL: Advanced Mail Configuration
@@ -94,8 +94,8 @@ POSTFIXCONF_VERSION="v0.0.14"
 # Sealer MX domain for outbound seal delivery
 OUTBOUND_SEALER_MX_DOMAIN="hindev"
 
-# External SMTP host for outbound delivery (default: postfixconf)
-# Set if the customer uses an external Postfix server
+# SMTP host for outbound delivery (default: stalwart)
+# Override only if using an external MTA
 OUTBOUND_SMTP_HOST=""
 # External SMTP port for outbound delivery (default: 10026)
 OUTBOUND_SMTP_PORT=""
@@ -148,6 +148,23 @@ DASHBOARD_SHOW_DEV_PAGES="true"
 DASHBOARD_ROOT_URL="https://apisix.hindev.ch"
 # Root domain (used for cross-instance service discovery)
 DASHBOARD_ROOT_DOMAIN="hindev"
+
+# ==============================================================================
+# OPTIONAL: Stalwart MTA Configuration
+# ==============================================================================
+# Stalwart is the mail transfer agent (replaces postfixconf).
+# Credentials are auto-generated if left empty.
+
+# Recovery admin password (used for initial setup and CLI access)
+STALWART_ADMIN_PASSWORD=""  # Auto-generated if empty
+
+# Password for mtaconf's internal admin account (used to authenticate
+# against the Stalwart management API). Auto-generated if empty.
+# The account's username/domain are hardcoded synthetic values inside
+# provision.sh and intentionally not exposed here. The operator's real
+# mail hostname is set later via the dashboard form (mtaconf overwrites
+# SystemSettings.defaultHostname on apply).
+MTACONF_SVC_PASSWORD=""  # Auto-generated if empty
 
 # ==============================================================================
 # OPTIONAL: Dozzle - Real-time Log Viewer

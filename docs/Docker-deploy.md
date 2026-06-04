@@ -43,7 +43,7 @@ nano customer-config.sh
 | `CUSTOMER_NAME` | Customer/organization name (used for identification and logging). | `Acme Corp` |
 | `DEPLOYMENT_NAME` | Unique deployment identifier (used in log labels and Alloy hostname). | `stargate-acme` |
 
-Mail domains and the Postfix hostname are configured at runtime via the dashboard's `/postfix` page; they are not part of `customer-config.sh`.
+Mail domains and the Stalwart hostname are configured at runtime via the dashboard's `/mail` page; they are not part of `customer-config.sh`.
 
 **Auto-derived settings — leave empty unless you need to override:**
 
@@ -158,17 +158,17 @@ Performs the nonce/HIN handshake to establish a WireGuard peer connection, and s
 
 Generates the S/MIME signing key and CSR via the smimekeys service and submits the CSR to the CA over the now-established WireGuard tunnel. Replaces the previous `onboard.sh --regenerate-cert` flow.
 
-### `/postfix` — Mail domains and Postfix configuration
+### `/mail` — Mail domains and relay configuration
 
-Submits hostname and the list of relay domains to the `postfixconf` service over its REST API (`POST /v1/config`). The daemon applies the configuration via `postconf -e` and reloads Postfix.
+Submits hostname and the list of relay domains to the `mtaconf` service over its REST API. The daemon applies the configuration to Stalwart without restarting the container.
 
-> **Adding or changing domains** later: re-open the `/postfix` page in the dashboard, edit the domain list, and submit. The daemon applies the change at runtime — no script invocation, no `.env` edit, no service restart needed.
+> **Adding or changing domains** later: re-open the `/mail` page in the dashboard, edit the domain list, and submit. The daemon applies the change at runtime - no script invocation, no `.env` edit, no service restart needed.
 
 ## Step 5: WireGuard Peer Registration
 
 The S/MIME CSR submission on `/onboarding` will fail if your Stargate instance is not yet registered as a WireGuard peer on the HIN CA side. This is the most common issue during initial setup.
 
-**What you need to provide to HIN:**
+The dashboard's `/installation` page handles the WireGuard peer registration automatically via the nonce/HIN handshake. If the automatic registration fails, manual registration can be done by providing the following values to HIN:
 
 1. **WireGuard public key** — extract from irisagent logs:
 
@@ -180,9 +180,7 @@ The S/MIME CSR submission on `/onboarding` will fail if your Stargate instance i
 3. **`SERVER_STATIC_IP`** — the public IP of your Stargate server
 4. **`WG_INTERFACE_PORT`** — only if you changed it from the default `19818`
 
-Send these values to HIN so they can register your peer on the CA side.
-
-**After HIN confirms your peer is registered:**
+**After peer registration is confirmed:**
 
 Re-run the `/onboarding` page in the dashboard to regenerate the CSR and submit it through the now-up tunnel.
 
@@ -226,9 +224,9 @@ The recommended pattern is to **send the signed mail back through your M365 / Ex
 
 #### Stargate side — per-domain relay
 
-Configure per-domain relay through the dashboard's `/postfix` page. Each domain can be mapped to its own M365 / Exchange inbound endpoint; the dashboard sends the mapping to `postfixconf`'s REST API and Postfix is reconfigured at runtime.
+Configure per-domain relay through the dashboard's `/mail` page. Each domain can be mapped to its own M365 / Exchange inbound endpoint; the dashboard sends the mapping to mtaconf's REST API and Stalwart is reconfigured at runtime.
 
-After mxengine signs the mail, Postfix will hand it back to your tenant on port 25 with TLS instead of delivering directly to the recipient's MX. See `Exchange-integration.md` for the full per-domain syntax.
+After mxengine signs the mail, Stalwart will hand it back to your tenant on port 25 with TLS instead of delivering directly to the recipient's MX. See `Exchange-integration.md` for the full per-domain syntax.
 
 #### M365 / Exchange Online side
 
@@ -276,7 +274,7 @@ All data is stored in Docker volumes and **persists across restarts**.
 | PostgreSQL | `postgres_data` | All databases (smimekeys, policy, irisagent, mxengine) |
 | Vault | `vault_data` | Encryption keys, secrets, S/MIME keys |
 | MinIO | `minio_data` | Object storage (messages, attachments) |
-| Postfix | `postfix_spool` | Mail queue |
+| Stalwart | `stalwart_data` | Mail server state |
 
 ### Safe Operations (data preserved)
 
@@ -351,6 +349,6 @@ After any restart, run `./scripts/start.sh` to unseal Vault. The script uses the
 
 !!! tip "Support"
 
-    For any questions or issues related to the deployment and operation of the Stargate appliance, please contact the Stargate Product Owner, David Grabovac, at david.grabovac@hin.ch.
+    For any questions or issues related to the deployment and operation of the Stargate appliance, please contact HIN support.
 
     Please include relevant information such as the customer name, appliance version, and screenshots/[logs](./Docker-advanced.md#provide-logs-to-support) where applicable, to help us process your request efficiently.

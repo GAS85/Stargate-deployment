@@ -212,9 +212,17 @@ load_customer_config() {
   OUTBOUND_SEALER_MX_DOMAIN="${OUTBOUND_SEALER_MX_DOMAIN:-hintest.ch}"
   CERT_CA_IRISAGENT_DOMAIN="${CERT_CA_IRISAGENT_DOMAIN:-hintest.ch}"
 
-  OUTBOUND_SMTP_HOST="${OUTBOUND_SMTP_HOST:-postfixconf}"
+  OUTBOUND_SMTP_HOST="${OUTBOUND_SMTP_HOST:-stalwart}"
   OUTBOUND_SMTP_PORT="${OUTBOUND_SMTP_PORT:-10026}"
-  POSTFIXCONF_VERSION="${POSTFIXCONF_VERSION:-latest}"
+  MTACONF_VERSION="${MTACONF_VERSION:-dev}"
+
+  # Stalwart MTA. The mtaconf-svc user, its home domain, and the
+  # initial hostname are all hardcoded synthetic values inside
+  # provision.sh — they are deliberately not customer-config knobs.
+  # The operator's real mail hostname is set later via mtaconf when
+  # the dashboard form is submitted.
+  STALWART_ADMIN_PASSWORD="${STALWART_ADMIN_PASSWORD:-$(generate_password)}"
+  MTACONF_SVC_PASSWORD="${MTACONF_SVC_PASSWORD:-$(generate_password)}"
 
   LOKI_URL="${LOKI_URL:-}"
 
@@ -277,7 +285,11 @@ POLICY_VERSION="$POLICY_VERSION"
 IRISAGENT_VERSION="$IRISAGENT_VERSION"
 MXENGINE_VERSION="$MXENGINE_VERSION"
 DASHBOARD_VERSION="$DASHBOARD_VERSION"
-POSTFIXCONF_VERSION="$POSTFIXCONF_VERSION"
+MTACONF_VERSION="$MTACONF_VERSION"
+
+# Stalwart MTA
+STALWART_ADMIN_PASSWORD="$STALWART_ADMIN_PASSWORD"
+MTACONF_SVC_PASSWORD="$MTACONF_SVC_PASSWORD"
 
 # Mail Outbound Path
 SERVER_STATIC_IP="$SERVER_STATIC_IP"
@@ -696,8 +708,18 @@ if [ -f "$KEYS_FILE" ]; then
   # Wait for services to be ready
   sleep 5
 
+  # Stalwart binds network listeners only at process start; stalwart-provision
+  # creates the `reinject` listener (port 10026) via the management API, but
+  # `ReloadSettings` does not rebind sockets. Wait for provisioning to finish,
+  # then restart stalwart once so the newly-provisioned listeners actually come
+  # up. Safe to re-run.
+  echo "Waiting for Stalwart provisioning to complete..."
+  docker wait stargate-stalwart-provision >/dev/null 2>&1 || true
+  echo "Restarting Stalwart so provisioned listeners bind..."
+  docker compose restart stalwart
+
   # Onboarding (domains, S/MIME CSR, irisagent peer config) is now performed
-  # via the dashboard at /installation, /onboarding, and /postfix.
+  # via the dashboard at /installation, /onboarding, and /mail.
 
   # Setup backup cron job
   setup_backup_cron
@@ -756,7 +778,7 @@ echo ""
 echo "  Vault UI:          http://localhost:8200"
 echo "  MinIO Console:     http://localhost:9001"
 echo "  PostgreSQL:        localhost:5432"
-echo "  Postfix SMTP:      localhost:25"
+echo "  Stalwart SMTP:     localhost:25"
 echo ""
 echo "  Monitoring:"
 echo "  -----------"
@@ -804,36 +826,17 @@ echo "  update-ca-trust on RHEL/AlmaLinux). Firefox requires a separate import"
 echo "  under Settings -> Privacy -> Certificates."
 echo ""
 
-# ============================================
-# HIN WireGuard Peer Registration block
-# ============================================
-# Print the values HIN needs to register this Stargate as a WireGuard peer.
-# Without this registration the WG tunnel cannot be established and S/MIME
-# certificate issuance will keep failing.
-
-WG_PUBKEY_FOR_HIN="$(docker compose logs irisagent 2>/dev/null \
-  | grep -m1 'wireguard public key:' \
-  | sed 's/.*wireguard public key: //' \
-  | tr -d '[:space:]')"
-
+echo ""
 echo "============================================"
-echo "  HIN WireGuard Peer Registration"
+echo "  Next Steps"
 echo "============================================"
 echo ""
-echo "  Send the following values to HIN ([Contact us per mail](mailto:david.grabovac@hin.ch?subject=Stargate%20Support%20Question&body=Hello%20dear%20Mr%20Grabovac,%0A%0AI%20have%20a%20Question%20regarding%20Stargate%20and%20would%20like%20to%20ask%20you%20for%20support.%20DO%20NOT%20FORGET%20TO%20ADD%20YOUR%20QUESTION){ .md-button style=\"position:relative;left:50%;transform:translate(-50%,0%);\" }"
-echo "  so they can register this Stargate as a WireGuard peer."
-echo "  Until the peer is registered, S/MIME cert issuance will fail."
+echo "  1. Open the dashboard at https://<SERVER_STATIC_IP>"
+echo "  2. Complete the /installation page (WireGuard peer registration)"
+echo "  3. Complete the /onboarding page (S/MIME certificate)"
+echo "  4. Complete the /mail page (mail domains and relay config)"
 echo ""
-echo "  WireGuard Public Key: ${WG_PUBKEY_FOR_HIN:-<not yet available - run: docker compose logs irisagent | grep \"wireguard public key\">}"
-echo "  DEPLOYMENT_NAME:      $DEPLOYMENT_NAME"
-echo "  SERVER_STATIC_IP:     $SERVER_STATIC_IP"
-echo "  WG_INTERFACE_PORT:    $WG_INTERFACE_PORT"
-echo ""
-echo "  After HIN confirms registration, regenerate the certificate from the dashboard."
-echo ""
-echo "  Recommended next steps:"
+echo "  Recommended after onboarding:"
 echo "    - SPF / DKIM / DMARC for your sending domains"
-echo "      (see README.md → 'Post-Onboarding Recommendations')"
 echo "    - Microsoft 365 / Exchange Online relay-back connectors"
-echo "      (see Exchange-integration.md)"
 echo ""

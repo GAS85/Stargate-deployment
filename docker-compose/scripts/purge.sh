@@ -28,11 +28,12 @@ if [ "$confirmation" = "DELETE ALL DATA" ]; then
   "$SCRIPT_DIR/backup.sh" || echo "Backup failed, but continuing..."
   
   echo ""
-  echo "Stopping and removing all containers and volumes..."
+  echo "Stopping and removing all containers, volumes, and locally-built images..."
   # --remove-orphans removes containers from inactive profiles (e.g. dozzle,
   # which is profile-gated) and from older compose definitions that may have
   # been switched away from.
-  docker compose down -v --remove-orphans
+  # --rmi local removes images built by this compose project (e.g. stalwart-provision)
+  docker compose down -v --remove-orphans --rmi local
 
   # Belt-and-suspenders: if anything stargate-* survived (e.g. started
   # outside this compose project, or under a different project name),

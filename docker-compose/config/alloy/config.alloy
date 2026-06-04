@@ -100,7 +100,8 @@ loki.process "stargate" {
     values = { level = "level" }
   }
 
-  forward_to = [loki.write.local.receiver, dashboard.log_collection.default.receiver]
+  forward_to = concat([loki.write.local.receiver], dashboard.log_collection.default.receivers)
+
 }
 
 // Always write to local Loki (used by the dashboard for log export).
