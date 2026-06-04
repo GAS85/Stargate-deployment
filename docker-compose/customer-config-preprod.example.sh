@@ -84,8 +84,8 @@ POLICY_VERSION="v0.0.6"
 IRISAGENT_VERSION="v0.0.5"
 MXENGINE_VERSION="v0.0.42"
 POLICY_SYNC_VERSION="dev"
-DASHBOARD_VERSION="v0.0.36-test"
-MTACONF_VERSION="dev"
+DASHBOARD_VERSION="v0.0.11"
+MTACONF_VERSION="v0.0.3"
 
 # ==============================================================================
 # OPTIONAL: Advanced Mail Configuration
