@@ -38,7 +38,7 @@ release_build:
   variables:
     GIT_DEPTH: 0
   rules:
-    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_TAG
   script:
     - git fetch --tags --force --quiet origin || true
     # Derive the tag from the pipeline creation time so retries are idempotent.
