@@ -4,13 +4,13 @@ Deploy Stargate on VMware
 
 ## Get the image file
 
-- Download  the latest OVA(or OVF and VMDK if you prefer) image file. Please refer to [VM images list](VM-images-list.md?h=ova)
+- Download the latest OVA (or OVF and VMDK if you prefer) image file. Please refer to [VM images list](VM-images-list.md?h=ova)
 
 ## Navigate to the ESXi web UI
 
 - Click **Virtual Machines**
 - Click **Create/Register VM**
-- Choose Deploy a virtual machine from an OVF or OVA file
+- Choose "Deploy a virtual machine from an OVF or OVA file"
 - Click **Next**
 - Type a name for the VM
 - Click **Next**
@@ -22,9 +22,9 @@ Deploy Stargate on VMware
 - Click **Next**
 - Click **Finish**
 
-## Log in and initialize the stargate instance
+## Log in and initialize the Stargate instance
 
-- Log in to the VM console with the `hinadmin` user in order to configure and install the stargate components.
+- Log in to the VM console with the `hinadmin` user in order to configure and install the Stargate components.
 - To obtain the `hinadmin` password, send an email to <support@hin.ch> with the subject: **"Password required for VM installation."**
 
 [Click here to send an Email](mailto:support@hin.ch?subject=Password%20required%20for%20VM%20installation.&body=Hello%20dear%20Support,%0A%0AI%20would%20like%20to%20receive%20the%20password%20for%20a%20VM%20installation.%0A%0APLEASE%20PROVIDE%20YOUR%20CUSTOMER%20INFO%20HERE){ .md-button style="position:relative;left:50%;transform:translate(-50%,0%);" }

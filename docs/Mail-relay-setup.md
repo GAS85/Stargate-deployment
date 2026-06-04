@@ -1,6 +1,6 @@
 # Stargate mail relay setup
 
-## Create a stargate relay for a mail domain hosted in Microsoft Office 365
+## Create a Stargate relay for a mail domain hosted in Microsoft Office 365
 
 For the relay, we need a VM or a server with a real static IP address.
 
@@ -34,7 +34,7 @@ vrgnservices.eu mail is handled by 15 mail.vrgnservices.eu.
 vrgnservices.eu descriptive text "v=spf1 ip4:128.140.117.200 include:spf.protection.outlook.com -all"
 ```
 
-## Install the stargate docker compose containers
+## Install the Stargate docker compose containers
 
 [Stargate Deployment](./Docker-deploy.md)
 
@@ -45,7 +45,7 @@ vrgnservices.eu descriptive text "v=spf1 ip4:128.140.117.200 include:spf.protect
 * **20 GB storage** (minimum)
 * **Root access**: Must be run as root or with `sudo`
 * **Supported distributions**:
-    * RHEL 8, 9 and 10 compatible distributions such as Alma Linux, Rocky Linux, Centos Stream
+    * RHEL 8, 9 and 10 compatible distributions such as Alma Linux, Rocky Linux, CentOS Stream
     * Ubuntu 22 and 24
     * Debian 11, 12 and 13
 * **Real IPv4 address**
@@ -63,9 +63,9 @@ Navigate to [https://admin.exchange.microsoft.com/#/connectors](https://admin.ex
 
 ### Outgoing connector
 
-Create outgoing mail connector, click"Add":
+Create an outgoing mail connector, click "Add":
 
-Select "Connection from": "Office 365" "Connection to": "your organization&#39;s email server, click "Next".
+Select "Connection from": "Office 365" "Connection to": "your organization's email server", click "Next".
 
 ![screenshot](./assets/new_connector_outgoing1.png)
 
@@ -73,7 +73,7 @@ Name it something like "From Office 365 to Stargate relay server" and check "Ret
 
 ![screenshot](./assets/new_connector_outgoing2.png)
 
-Select "Only when I have a transport rule set up that redirects messages to this connector", click Next,.
+Select "Only when I have a transport rule set up that redirects messages to this connector", click "Next".
 
 ![screenshot](./assets/new_connector_outgoing3.png)
 
@@ -99,7 +99,7 @@ Click "Add another connector".
 
 ### Incoming connector
 
-Create incoming mail connector, choose "Connection from": "Your organization's email server", click "Next".
+Create an incoming mail connector, choose "Connection from": "Your organization's email server", click "Next".
 
 ![screenshot](./assets/new_connector_incoming1.png)
 
@@ -125,7 +125,7 @@ This is how it looks when done:
 
 ### Transport Rule
 
-Create the transport rule, navigate to [https://admin.exchange.microsoft.com/#/transportrules](https://admin.exchange.microsoft.com/#/transportrules)
+Create the transport rule. Navigate to [https://admin.exchange.microsoft.com/#/transportrules](https://admin.exchange.microsoft.com/#/transportrules)
 
 Click "+Add a rule" --> "Create a new rule".
 
@@ -163,6 +163,6 @@ Click "Done".
 
 ![screenshot](./assets/new_transport_rule9.png)
 
-Click on the rule and set the "Enable or disable rule to "Enabled"  
+Click on the rule and set the "Enable or disable rule" to "Enabled"  
 
 ![screenshot](./assets/new_transport_rule10.png)

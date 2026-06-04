@@ -8,7 +8,7 @@ Please refer to [Recommended Requirements](./index.md#recommended)
 
 * Docker will be installed automatically if missing
 * Ensure there is an internet connection on the machine where you are installing Stargate services
-* Ensure traffic is properly configured to reach Stargate instance
+* Ensure traffic is properly configured to reach the Stargate instance
 
 ## Step 1: Configure Customer Settings
 
@@ -19,7 +19,7 @@ Please refer to [Recommended Requirements](./index.md#recommended)
     git clone https://github.com/Health-Info-Net-AG/Stargate-deployment.git
     ```
 
-    If you do not have `git` installed, you can always get an Archive with all files inside. Download it via following link. [Download as ZIP](https://github.com/Health-Info-Net-AG/Stargate-deployment/archive/refs/heads/main.zip){ .md-button style="position:relative;left:50%;transform:translate(-50%,0%);" }
+    If you do not have `git` installed, you can always get an archive with all files inside. Download it via the following link. [Download as ZIP](https://github.com/Health-Info-Net-AG/Stargate-deployment/archive/refs/heads/main.zip){ .md-button style="position:relative;left:50%;transform:translate(-50%,0%);" }
 
 Before installation, create and fill in the customer configuration file:
 
@@ -58,7 +58,7 @@ Mail domains and the Stalwart hostname are configured at runtime via the dashboa
 | `CERT_CA_IRISAGENT_DOMAIN` | CA domain for certificate issuance via WireGuard tunnel | `hintest.ch` |
 
 !!! note
-    **WireGuard peer setup** is performed at runtime via the dashboard (`/installation` page). Peer details are configured per-deployment after the stack is up - they are not part of `customer-config.sh`.
+    **WireGuard peer setup** is performed at runtime via the dashboard (`/installation` page). Peer details are configured per deployment after the stack is up - they are not part of `customer-config.sh`.
 
 **WireGuard local settings (typically left at defaults):**
 
@@ -72,9 +72,9 @@ Mail domains and the Stalwart hostname are configured at runtime via the dashboa
 **Optional settings (have sensible defaults):**
 
 | Setting | Default | Description |
-|---------|---------|-------------|
-| `POSTGRES_PASSWORD` | *(auto-generated)* | Auto-generated 24-char random password if empty |
-| `MINIO_ROOT_PASSWORD` | *(auto-generated)* | Auto-generated 24-char random password if empty |
+|---------|-------------|---------|
+| `POSTGRES_PASSWORD` | *(auto-generated)* | Auto-generated 24-character random password if empty |
+| `MINIO_ROOT_PASSWORD` | *(auto-generated)* | Auto-generated 24-character random password if empty |
 | `OUTBOUND_SEALER_MX_DOMAIN` | `hintest.ch` | Sealer MX domain for outbound seal delivery |
 | `POLICY_SYNC_REPO_URL` | GitHub HIN Stargate policies | Git repo URL for OPA/Rego policy sync |
 | `LOKI_URL` | *(unset)* | Loki endpoint for centralized log shipping (e.g. `https://loki.example.com`) |
@@ -94,7 +94,7 @@ Mail domains and the Stalwart hostname are configured at runtime via the dashboa
       cd Stargate-deployment-main
     ```
 
-    If you do not have `git` installed, you can always get an Archive with all files inside and extract it:
+    If you do not have `git` installed, you can always get an archive with all files inside and extract it:
 
     ```bash 
     wget https://github.com/Health-Info-Net-AG/Stargate-deployment/archive/refs/heads/main.zip && \
@@ -103,7 +103,7 @@ Mail domains and the Stalwart hostname are configured at runtime via the dashboa
       cd Stargate-deployment-main
     ```
 
-Manual copy files to the server
+Manually copy files to the server
 
 ```bash
 scp -r docker-compose/* your-server:/path/to/stargate/
@@ -116,7 +116,7 @@ ssh your-server
 cd /path/to/stargate
 ```
 
-Create customer config from template and Fill in required settings ([see Step 1](#step-1-configure-customer-settings))
+Create customer config from template and fill in required settings ([see Step 1](#step-1-configure-customer-settings))
 
 ```bash
 cp customer-config.example customer-config.sh
@@ -218,7 +218,7 @@ At minimum, for each domain you route through the Stargate:
 
 ### Step 6.2 Relay outbound mail back through your mail platform (recommended for M365 / Exchange Online)
 
-By default, after the Stargate signs/encrypts an outbound mail it delivers directly to the recipient's MX. This works, but the connecting IP is your Stargate's IP - and unless that IP has years of warm reputation, it can end up on third-party blocklists (e.g. Barracuda, abusix), causing intermittent delivery failures.
+By default, after the Stargate signs/encrypts an outbound mail it delivers directly to the recipient's MX. This works, but the connecting IP is your Stargate's IP - and unless that IP has years of warm reputation, it can end up on third-party blocklists (e.g. Barracuda, Abusix), causing intermittent delivery failures.
 
 The recommended pattern is to **send the signed mail back through your M365 / Exchange tenant** so that the final hop to the internet is Microsoft's well-reputed infrastructure. The Stargate still signs and policy-checks every message; only the last hop changes. This mirrors the original HIN MGW "Send to MX" connector pattern.
 
@@ -230,7 +230,7 @@ After mxengine signs the mail, Stalwart will hand it back to your tenant on port
 
 #### M365 / Exchange Online side
 
-You essentially recreate the same connector + transport-rule set as the old HIN MGW (the original HIN MGW O365 manual is the reference - the same five rules apply). The minimum is:
+You essentially recreate the same connector + transport rule set as the old HIN MGW (the original HIN MGW O365 manual is the reference - the same five rules apply). The minimum is:
 
 1. **Inbound connector** - accept mail from the Stargate, identified by TLS certificate (the cert subject must match a domain accepted in your tenant). A self-signed cert on the Stargate will be rejected by this connector - use a valid CA-issued cert (Let's Encrypt is fine).
 2. **Outbound connector "Send to MX"** - delivers to the recipient's MX, activated only by transport rule.
@@ -304,7 +304,7 @@ After any restart, run `./scripts/start.sh` to unseal Vault. The script uses the
 !!! warning
     These commands **DELETE ALL DATA** - use with caution!
 
-    You can only restore data, if you perform [backup operations](./Docker-advanced.md#manual-backup) before and save backup in a safe place.
+    You can only restore data if you perform [backup operations](./Docker-advanced.md#manual-backup) before and save the backup in a safe place.
 
 !!! danger
     Delete everything (volumes, secrets, config)

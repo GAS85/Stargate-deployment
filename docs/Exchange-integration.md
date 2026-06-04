@@ -95,7 +95,7 @@ This connector routes outbound mail from Exchange Online to the Stargate relay s
    From Office 365 to Stargate relay server
    ```
 
-   - Check **"Retain Internal Exchange email headers"**
+   - Check **"Retain internal Exchange email headers"**
    - Click **"Next"**
 
 5. **Use of connector**: Select **"Only when I have a transport rule set up that redirects messages to this connector"**
@@ -348,7 +348,7 @@ docker logs stargate-stalwart --tail 50
 
 ### Mail not leaving Exchange Online
 
-- Verify the transport rule is **enabled** (it is created in disabled state)
+- Verify the transport rule is **enabled** (it is created in a disabled state)
 - Check the rule conditions - it should apply to recipients "Outside the organization"
 - Verify the outbound connector validation passed
 - Check Exchange message trace in the Admin Center for delivery status

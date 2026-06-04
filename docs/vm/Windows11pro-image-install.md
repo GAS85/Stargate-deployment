@@ -1,12 +1,12 @@
-# Windows 11 pro deployment using an image
+# Windows 11 Pro deployment using an image
 
-Deploy Stargate on Windows Pro(non-pro versions do not support Hyper-V)
+Deploy Stargate on Windows Pro (non-Pro versions do not support Hyper-V)
 
 ## Install Hyper-V
 
 - Click the Start button, then type "Turn Windows features on or off"
 - Click on that button
-- Mark Hyper-V and click "OK"
+- Check Hyper-V and click "OK"
 - After the installation completes, click "Restart now" and wait for Windows to boot again
 
 ## Get the image
@@ -28,9 +28,9 @@ Deploy Stargate on Windows Pro(non-pro versions do not support Hyper-V)
 - Click "Connect"
 - Click "Start"
 
-## Log in and initialize the stargate instance
+## Log in and initialize the Stargate instance
 
-- Log in to the VM console with the `hinadmin` user in order to configure and install the stargate components.
+- Log in to the VM console with the `hinadmin` user in order to configure and install the Stargate components.
 - To obtain the `hinadmin` password, send an email to <support@hin.ch> with the subject: **"Password required for VM installation."**
 
 [Click here to send an Email](mailto:support@hin.ch?subject=Password%20required%20for%20VM%20installation.&body=Hello%20dear%20Support,%0A%0AI%20would%20like%20to%20receive%20the%20password%20for%20a%20VM%20installation.%0A%0APLEASE%20PROVIDE%20YOUR%20CUSTOMER%20INFO%20HERE){ .md-button style="position:relative;left:50%;transform:translate(-50%,0%);" }

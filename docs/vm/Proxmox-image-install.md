@@ -10,7 +10,7 @@ Deploy Stargate on Proxmox
 ## Import the image file in Proxmox
 
 - In Proxmox WebUI, navigate to the Storage menu and click Import
-- Click **Download from URL**, paste the copied URL ang click "Query URL".
+- Click **Download from URL**, paste the copied URL and click "Query URL".
 - Click Download and wait for "TASK OK" to appear at the end of the output log.
 - Close the Task Viewer Download window.
 
@@ -22,19 +22,19 @@ Deploy Stargate on Proxmox
 - Choose "Do not use any media"
 - Click "Next"
 - Click "Next"
-- Click the "Thrash icon" next to "scsi0" to remove it.
+- Click the "Trash icon" next to "scsi0" to remove it.
 - Click "Import" and under "Select Image", choose the newly imported image file.
 - Click "Next"
-- Select 4 CPU cores and choose your CPU Type(or use "host")
+- Select 4 CPU cores and choose your CPU Type (or use "host")
 - Click "Next"
 - Select 8192 MiB Memory
 - Click "Next"
 - Click "Next"
-- Wait until the VM Create process finishes and then click on the new VM, click "Console" click "Start Now"
+- Wait until the VM creation process finishes and then click on the new VM, click "Console", click "Start Now"
 
-## Log in and initialize the stargate instance
+## Log in and initialize the Stargate instance
 
-- Log in to the VM console with the `hinadmin` user in order to configure and install the stargate components.
+- Log in to the VM console with the `hinadmin` user in order to configure and install the Stargate components.
 - To obtain the `hinadmin` password, send an email to <support@hin.ch> with the subject: **"Password required for VM installation."**
 
 [Click here to send an Email](mailto:support@hin.ch?subject=Password%20required%20for%20VM%20installation.&body=Hello%20dear%20Support,%0A%0AI%20would%20like%20to%20receive%20the%20password%20for%20a%20VM%20installation.%0A%0APLEASE%20PROVIDE%20YOUR%20CUSTOMER%20INFO%20HERE){ .md-button style="position:relative;left:50%;transform:translate(-50%,0%);" }
