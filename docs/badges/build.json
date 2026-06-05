@@ -1,0 +1,6 @@
+{
+"schemaVersion": 1,
+"label": "Build from commit",
+"message": "SHA",
+"color": "blue"
+}
