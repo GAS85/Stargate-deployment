@@ -140,6 +140,7 @@ nav:
   - Test Phase: Testing.md
   - Getting started with Stargate:
       - Applications overview: Applications.md
+      - Monitoring and Logs: Monitoring.md
       - Exchange Integration: Exchange-integration.md
       - Mail relay setup: Mail-relay-setup.md
       - DNS Setup: DNS-setup.md
