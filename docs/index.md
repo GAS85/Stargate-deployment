@@ -84,3 +84,8 @@
     For any questions or issues related to the deployment and operation of the Stargate appliance, please contact the Stargate Product Owner, David Grabovac, at david.grabovac@hin.ch.
 
     Please include relevant information such as the customer name, appliance version, and screenshots/[logs](./Docker-advanced.md#provide-logs-to-support) where applicable, to help us process your request efficiently.
+
+---
+
+[![documentation](https://img.shields.io/github/check-runs/Health-Info-Net-AG/Stargate-deployment/main?nameFilter=Build%20documentation&style=for-the-badge&label=Documentation%20Build)](https://github.com/Health-Info-Net-AG/Stargate-deployment/actions/workflows/documentation.yml)
+[![commit](https://img.shields.io/endpoint?style=for-the-badge&url=https://health-info-net-ag.github.io/Stargate-deployment/badges/build.json)](ttps://github.com/Health-Info-Net-AG/Stargate-deployment)
