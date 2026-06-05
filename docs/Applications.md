@@ -34,17 +34,7 @@
 * **Alloy** - Log collector for Loki (ships app logs)
 * **Dozzle** - Real-time container log viewer (port 8090)
 
----
-
-## Dozzle - Log Viewer
-
-Dozzle provides a web-based UI to view real-time logs from all Stargate containers.
-
-**Access:** From the local network, open `http://<SERVER_IP>:8090` in a browser.
-
-Logs are organized by service. By selecting a specific service, you can view its corresponding log entries and details.
-
-![Dozzle overview](./assets/dozzle-overview.png)
+See [Monitoring and Logs](Monitoring.md) for detailed configuration and usage.
 
 ## Architecture overview
 
