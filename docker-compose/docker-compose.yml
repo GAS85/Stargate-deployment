@@ -466,6 +466,8 @@ services:
       INBOUND_SMTP_MAX_SIZE: "20971520"
       INBOUND_SMTP_TLS: "false"
       INBOUND_SMTP_AUTH: "false"
+      INBOUND_SMTP_FORWARD_ENCRYPTED_ON_FAILURE: "false"
+      REMOTE_CONFIG_URL: "http://dashboard:3000/api/internal/installation-config?service=mxengine"
 
       # Database
       DB_URI: "postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/mxengine"
