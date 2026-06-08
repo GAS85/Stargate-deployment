@@ -608,10 +608,15 @@ services:
       VAULT_TOKEN: "${VAULT_TOKEN}"
       VAULT_MOUNT_PATH: "secret-mtaconf"
 
+      #monitoring
+      LOKI_URL: "http://loki:3100"
+      LOG_LEVEL: "info"
+
     networks:
       - stargate-network
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/api/liveness"]
+      test:
+        ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/api/liveness"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -723,7 +728,8 @@ services:
     networks:
       - stargate-network
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:8080/healthz/live || exit 1"]
+      test:
+        ["CMD-SHELL", "curl -sf http://127.0.0.1:8080/healthz/live || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
