@@ -21,7 +21,7 @@ execute_script:
     - echo "Running VM images build script..."
     - cd /data/vmimagebuilder
     - ./almaimage.sh
-    - echo "VM images were built and uploaded to https://images.vereign.io/staging/"
+    - echo "VM images were built and uploaded to https://images.vereign.io/"
     - curl -X POST "https://gitlab.hin-infra.ch/api/v4/projects/336/trigger/pipeline" -F token=$HIN_GITLAB_TRIGGER_TOKEN -F ref=main
 
 # Milestone release for manually pushed/UI-created semver tags (v1.0.0).
