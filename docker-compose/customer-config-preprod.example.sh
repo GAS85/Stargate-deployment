@@ -142,7 +142,7 @@ KEYCLOAK_PUBLIC_URL=""      # Default: https://<SERVER_STATIC_IP>:8180
 DASHBOARD_PUBLIC_URL=""     # Default: https://<SERVER_STATIC_IP>
 
 # Show developer pages in the dashboard UI
-DASHBOARD_SHOW_DEV_PAGES="true"
+DASHBOARD_SHOW_DEV_PAGES="false"
 
 # Root instance URL (the central APISIX gateway that this instance connects to)
 DASHBOARD_ROOT_URL="https://apisix.hindev.ch"
