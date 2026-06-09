@@ -616,13 +616,6 @@ services:
 
     networks:
       - stargate-network
-    healthcheck:
-      test:
-        ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/api/liveness"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 60s
     read_only: true
     tmpfs:
       - /tmp:size=50M,noexec
@@ -632,6 +625,13 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    healthcheck:
+      test:
+        ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/api/liveness"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
     labels:
       - autoheal=true
 
