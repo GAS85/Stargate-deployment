@@ -121,6 +121,19 @@ Ensure that the VM has a network connection with a static IP address.
 
 **Option B:** Log in locally via the VM console and manually configure a static IP address.
 
+!!! warning "Network must be configured before first boot"
+    The VM image runs an automatic installation on first boot. If the network is not yet configured (no IP address assigned via DHCP or static config), the installation will fail because the server IP cannot be detected.
+
+    If this happens, configure the network manually, then run:
+
+    ```bash
+    cd /root/stargate-deployment/docker-compose
+    ./scripts/purge.sh
+    ./scripts/install.sh
+    ```
+
+    The install script will auto-detect the server's IP from the default route. Any reachable IP (public or private) is sufficient - the actual public endpoint is configured later through the dashboard.
+
 !!! tip
     If you choose Option B, use the HIN Admin Credentials provided to you by your HIN contact at T-4 via email. You will be prompted to change the password when you log in for the first time.
     
