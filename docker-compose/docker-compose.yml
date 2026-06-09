@@ -623,6 +623,15 @@ services:
       timeout: 5s
       retries: 10
       start_period: 60s
+    read_only: true
+    tmpfs:
+      - /tmp:size=50M,noexec
+    volumes:
+      - dashboard_cache:/app/.next/cache
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     labels:
       - autoheal=true
 
@@ -893,6 +902,7 @@ volumes:
   loki_data:
   alloy_data:
   textfile_collector:
+  dashboard_cache:
 
 networks:
   stargate-network:
