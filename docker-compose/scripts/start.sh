@@ -51,20 +51,57 @@ fi
 echo "Starting infrastructure services..."
 docker compose up -d postgres vault seaweedfs
 
+# Wait for Vault to be ready and unseal it
 echo "Waiting for Vault to start..."
-sleep 5
-
-# Unseal Vault
-echo "Unsealing Vault..."
 UNSEAL_KEY_1=$(jq -r '.unseal_keys_b64[0]' "$KEYS_FILE")
 UNSEAL_KEY_2=$(jq -r '.unseal_keys_b64[1]' "$KEYS_FILE")
 UNSEAL_KEY_3=$(jq -r '.unseal_keys_b64[2]' "$KEYS_FILE")
 
-docker exec stargate-vault vault operator unseal "$UNSEAL_KEY_1" > /dev/null 2>&1 || true
-docker exec stargate-vault vault operator unseal "$UNSEAL_KEY_2" > /dev/null 2>&1 || true
-docker exec stargate-vault vault operator unseal "$UNSEAL_KEY_3" > /dev/null 2>&1 || true
+MAX_ATTEMPTS=30
+ATTEMPT=0
+VAULT_UNSEALED=false
 
-echo "Vault unsealed!"
+while [ "$ATTEMPT" -lt "$MAX_ATTEMPTS" ]; do
+  ATTEMPT=$((ATTEMPT + 1))
+
+  # Check if Vault container is running and responsive
+  # vault status exits 0=unsealed, 1=error, 2=sealed
+  docker exec stargate-vault vault status > /dev/null 2>&1
+  STATUS_EXIT=$?
+  if [ "$STATUS_EXIT" -eq 1 ] || [ "$STATUS_EXIT" -eq 125 ] || [ "$STATUS_EXIT" -eq 126 ] || [ "$STATUS_EXIT" -eq 127 ]; then
+    echo "  Vault not ready yet (attempt $ATTEMPT/$MAX_ATTEMPTS)..."
+    sleep 2
+    continue
+  fi
+
+  # Check if already unsealed
+  if docker exec stargate-vault vault status 2>/dev/null | grep -q "Sealed.*false"; then
+    VAULT_UNSEALED=true
+    break
+  fi
+
+  # Attempt unseal
+  echo "  Unsealing Vault (attempt $ATTEMPT/$MAX_ATTEMPTS)..."
+  docker exec stargate-vault vault operator unseal "$UNSEAL_KEY_1" > /dev/null 2>&1 || true
+  docker exec stargate-vault vault operator unseal "$UNSEAL_KEY_2" > /dev/null 2>&1 || true
+  docker exec stargate-vault vault operator unseal "$UNSEAL_KEY_3" > /dev/null 2>&1 || true
+
+  # Verify unseal succeeded
+  if docker exec stargate-vault vault status 2>/dev/null | grep -q "Sealed.*false"; then
+    VAULT_UNSEALED=true
+    break
+  fi
+
+  sleep 2
+done
+
+if [ "$VAULT_UNSEALED" = true ]; then
+  echo "Vault unsealed successfully!"
+else
+  echo "ERROR: Failed to unseal Vault after $MAX_ATTEMPTS attempts."
+  echo "Check Vault logs: docker compose logs vault"
+  exit 1
+fi
 
 # Start application services
 echo "Starting application services..."
