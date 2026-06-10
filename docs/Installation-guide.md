@@ -41,14 +41,14 @@ HIN's objective in this process is to ensure a secure, smooth and fully validate
 | 4 | Load VM image | Customer |
 | 5 | Network connection to the VM | Customer |
 | 6 | Access via the browser | Customer |
-| 7 | Enter setup key | Customer |
-| 8 | Initial Configuration and Domain Setup | Customer |
-| 9 | Configure Mail Transport | Customer |
-| 10 | Backend Service Health Check | Customer |
-| 11 | Log in to the dashboard | Customer |
-| 12 | Enter Keycloak credentials | Customer |
-| 13 | Check domains | Customer |
-| 14 | Activate domains | Customer |
+| 7 | Enter activation code | Customer |
+| 8 | Mesh network setup | Customer |
+| 9 | Establishing secure mesh network | Customer |
+| 10 | Login to Keycloak | Customer |
+| 11 | Update password | Customer |
+| 12 | Update account information | Customer |
+| 13 | Initial configuration and domain setup | Customer |
+| 14 | Configure mail transport | Customer |
 | 15 | Peer certificates | HIN |
 | 16 | Validate peer certificates | Customer |
 | 17 | Configure mail server | Customer |
@@ -152,33 +152,92 @@ Open a browser and enter the IP address and port configured for the VM. You shou
 https://<VM IP address>
 ```
 
-### Step 7 - Enter setup key
+### Step 7 - Enter activation code
 
 ![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
 
-Enter the setup key that you received via email from your HIN contact person in T-4. Click on "Next".
+Select your preferred language and enter the activation code that you received via email from your HIN contact person in T-4. Click on "Next".
 
-![Setup key entry screen](assets/installation-guide/step7-setup-key.png)
+![Activation code entry screen](assets/installation-guide/step7-activation-code.png)
 
 !!! question
-    If you do not have the setup key, please contact HIN Support via email.
+    If you do not have the activation code, please contact HIN Support via email.
     
     [Click here to send an Email](mailto:support@hin.ch?subject=Password%20required%20for%20VM%20installation.&body=Hello%20dear%20Support,%0A%0AI%20would%20like%20to%20receive%20the%20password%20for%20a%20VM%20installation.%0A%0APLEASE%20PROVIDE%20YOUR%20CUSTOMER%20INFO%20HERE){ .md-button style="position:relative;left:50%;transform:translate(-50%,0%);" }
 
-### Step 8 - Initial Configuration and Domain Setup
+### Step 8 - Mesh network setup
+
+![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
+
+Verify the mesh network configuration:
+
+- **IP address** - The public IP of the server (auto-detected).
+- **Transport** - The transport protocol (default: `tcp`).
+- **Port** - The WireGuard port (default: `10080`).
+
+Confirm that the values are correct and click "Next".
+
+![Mesh network setup screen](assets/installation-guide/step8-mesh-network.png)
+
+### Step 9 - Establishing secure mesh network
+
+![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
+
+The system will now establish the secure mesh network connection. This step connects the HIN Gateway to the Iris Agent and synchronises certificates.
+
+Wait until the process completes. The status indicators will show "Up" when the connection is successfully established.
+
+![Establishing secure mesh network](assets/installation-guide/step9-mesh-connecting.png)
+
+!!! failure "If the connection fails"
+    If the Iris Agent or certificate synchronisation status remains "Down":
+
+    - Verify that port 19818 (TCP/UDP) is open in your firewall (see Step 2).
+    - Verify that the IP address in Step 8 is correct and reachable from the internet.
+    - Restart the process or contact HIN Support.
+
+### Step 10 - Login to Keycloak
+
+![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
+
+Once the mesh network is established, you will be redirected to the Keycloak login page. Enter the username and password received in T-4.
+
+![Keycloak login page](assets/installation-guide/step10-keycloak-login.png)
+
+!!! question
+    If you do not have these login details, please contact HIN Support via email.
+    
+    [Click here to send an Email](mailto:support@hin.ch?subject=Password%20required%20for%20VM%20installation.&body=Hello%20dear%20Support,%0A%0AI%20would%20like%20to%20receive%20the%20password%20for%20a%20VM%20installation.%0A%0APLEASE%20PROVIDE%20YOUR%20CUSTOMER%20INFO%20HERE){ .md-button style="position:relative;left:50%;transform:translate(-50%,0%);" }
+
+### Step 11 - Update password
+
+![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
+
+On first login, you will be prompted to change your password. Enter a new secure password and confirm it.
+
+![Update password screen](assets/installation-guide/step11-update-password.png)
+
+### Step 12 - Update account information
+
+![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
+
+Complete your account profile by entering your first name and last name. The email address is pre-filled. Click "Submit" to continue.
+
+![Update account information screen](assets/installation-guide/step12-account-info.png)
+
+### Step 13 - Initial configuration and domain setup
 
 ![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
 
 On this screen, configure your initial settings:
 
-- Select your preferred language.
 - Verify that all your current trusted domains within the HIN Community are displayed correctly.
 - Select which trusted domain(s) should be **Enabled** to obtain peer certificates from the HIN Certification Authority (HIN CA).
 - Indicate for which domain(s) the `sec.<domain>` prefix is already configured ("Use sec-prefix").
 - Verify that the organisation name and domain owners are correct.
 - Optionally import an existing S/MIME certificate (`.p12`/`.pfx`) from the old MGW. If no certificate is imported, a new one will be generated and signed by the HIN CA.
 
-![Initial setup screen](assets/installation-guide/step8-initial-setup.png)
+![Initial setup screen](assets/installation-guide/step13-initial-setup.png)
 
 !!! warning
     - At least one domain must be enabled in order to continue with the onboarding process. The "Save configuration" button will only become active once this requirement is met.
@@ -186,13 +245,13 @@ On this screen, configure your initial settings:
 
 Click on "Save configuration".
 
-### Step 9 - Configure Mail Transport
+### Step 14 - Configure mail transport
 
 ![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
 
 On this screen, configure your mail transport settings for the secure mail relay setup.
 
-![Mail transport configuration screen](assets/installation-guide/step9-mail-transport.png)
+![Mail transport configuration screen](assets/installation-guide/step14-mail-transport.png)
 
 The following settings are available:
 
@@ -222,74 +281,15 @@ Additional actions:
 
 Once the configuration has been reviewed and completed, click "Apply configuration" to continue.
 
-### Step 10 - Backend Service Health Check
-
-![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
-
-Once the installation is complete, the system will display the status "Up" for all backend services.
-
-![Backend service health check](assets/installation-guide/step10-health-check.png)
-
-Check that all services can be accessed successfully. Click on "Finish".
-
-!!! failure "If the installation fails"
-    If the installation fails, the affected services will be displayed with a red status.
-
-    Options in the event of an error:
-
-    - Restart the installation from step 5.
-    - Contact HIN Support.
-
-### Step 11 - Log in to the dashboard
-
-![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
-
-Click on "Sign in with Keycloak".
-
-![Dashboard login screen](assets/installation-guide/step11-login.png)
-
-### Step 12 - Enter Keycloak credentials
-
-![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
-
-Enter the Keycloak username and password received in T-4.
-
-![Keycloak login page](assets/installation-guide/step12-keycloak-login.png)
-
-!!! question
-    If you do not have these login details, please contact HIN Support via email.
-    
-    [Click here to send an Email](mailto:support@hin.ch?subject=Password%20required%20for%20VM%20installation.&body=Hello%20dear%20Support,%0A%0AI%20would%20like%20to%20receive%20the%20password%20for%20a%20VM%20installation.%0A%0APLEASE%20PROVIDE%20YOUR%20CUSTOMER%20INFO%20HERE){ .md-button style="position:relative;left:50%;transform:translate(-50%,0%);" }
-
-After logging in, check the following:
-
-- Contact name
-- Address
-- Email
-- List of trusted domains
-
-!!! info
-    At this stage, customers can only enable, disable or remove domains. To add new domains, please follow the existing CSR process.
-
-### Step 13 - Verify domains
-
-![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
-
-Check the list of trusted domains. If there are any errors, contact HIN Support.
-
-![Manage domains screen](assets/installation-guide/step13-manage-domains.png)
-
-### Step 14 - Activate domains
-
-![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
-
-Select the domain(s) and enable them so that traffic is routed via the HIN Gateway. Click "Finish".
-
 ### Step 15 - Peer certificates
 
 ![Responsibility HIN](https://img.shields.io/badge/Responsibility-HIN-orange)
 
 Peer certificates are issued by the HIN Certification Authority (HIN CA) for activated domains.
+
+Once the onboarding is complete, navigate to the **Peer certificates** section in the dashboard and click the **"Sync certificates"** button to synchronise your peer certificates from the HIN CA.
+
+![Peer certificates screen](assets/installation-guide/step15-peer-certificates.png)
 
 ### Step 16 - Validate peer certificates
 
