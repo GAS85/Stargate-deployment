@@ -43,7 +43,7 @@ HIN's objective in this process is to ensure a secure, smooth and fully validate
 | 6 | Access via the browser | Customer |
 | 7 | Enter setup key | Customer |
 | 8 | Initial Configuration and Domain Setup | Customer |
-| 9 | Configure Mail Relay | Customer |
+| 9 | Configure Mail Transport | Customer |
 | 10 | Backend Service Health Check | Customer |
 | 11 | Log in to the dashboard | Customer |
 | 12 | Enter Keycloak credentials | Customer |
@@ -169,15 +169,16 @@ Enter the setup key that you received via email from your HIN contact person in 
 
 ![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
 
-Check that the public IP address displayed in the "Endpoint" field is correct. If it is incorrect, update it accordingly. On this screen, you can now:
+On this screen, configure your initial settings:
 
 - Select your preferred language.
 - Verify that all your current trusted domains within the HIN Community are displayed correctly.
-- Verify that all organisational information is displayed correctly.
-- Select which trusted domain(s) should be enabled to obtain peer certificates from the HIN Certification Authority (HIN CA).
-- Indicate for which domain(s) the `sec.<domain>` is already configured.
+- Select which trusted domain(s) should be **Enabled** to obtain peer certificates from the HIN Certification Authority (HIN CA).
+- Indicate for which domain(s) the `sec.<domain>` prefix is already configured ("Use sec-prefix").
+- Verify that the organisation name and domain owners are correct.
+- Optionally import an existing S/MIME certificate (`.p12`/`.pfx`) from the old MGW. If no certificate is imported, a new one will be generated and signed by the HIN CA.
 
-![Domain configuration screen](assets/installation-guide/step8-domain-config.png)
+![Initial setup screen](assets/installation-guide/step8-initial-setup.png)
 
 !!! warning
     - At least one domain must be enabled in order to continue with the onboarding process. The "Save configuration" button will only become active once this requirement is met.
@@ -185,27 +186,36 @@ Check that the public IP address displayed in the "Endpoint" field is correct. I
 
 Click on "Save configuration".
 
-### Step 9 - Configure Mail Relay
+### Step 9 - Configure Mail Transport
 
 ![Responsibility Customer](https://img.shields.io/badge/Responsibility-Customer-success)
 
-On this screen, configure your mail relay settings for the secure mail relay setup.
+On this screen, configure your mail transport settings for the secure mail relay setup.
 
-![Mail configuration screen](assets/installation-guide/step9-postfix-config.png)
+![Mail transport configuration screen](assets/installation-guide/step9-mail-transport.png)
 
-The following options are available:
+The following settings are available:
 
-| Option | Description |
-|--------|-------------|
-| **Include SPF** | The system reads the SPF record from DNS, extracts the defined networks, and automatically adds them to the allowed relay networks. This allows messages originating from those networks to be accepted. |
-| **Include Docker** | Similar to the previous option, this applies predefined settings intended for VM and Docker installations. For Kubernetes installations, this option must remain disabled. |
-| **Hostname** | If multiple domains are configured, the first domain in the list is automatically used as the hostname. This setting only defines the hostname of the instance. |
-| **Domain** | The system reads the configured domain and its MX records. Based on this information, the relay configuration is automatically created. When a message is received for processing, the system determines to which SMTP server the message must be forwarded for final delivery. |
+| Setting | Description |
+|---------|-------------|
+| **Mail server host name** | The FQDN of this mail gateway instance (e.g. `mail.example.com`). |
+| **Mail server IP addresses** | The public IP address(es) of this server. Add additional IPs if the server is reachable on multiple addresses. |
+| **Domains** | Each domain that this gateway handles, along with its relay host (the internal mail server to which inbound mail is delivered). |
+
+Under the **Advanced** section, you can optionally configure:
+
+| Setting | Description |
+|---------|-------------|
+| **Configure TLS** | TLS certificate settings for SMTP connections. |
+| **Content filter** | The internal content filter endpoint (default: `mxengine:1587`). |
+| **Default relay host** | The default SMTP relay for outbound delivery. |
+| **Trusted networks** | Additional networks allowed to relay through this gateway. |
+| **Routes** | Custom routing rules for specific domains. |
 
 Additional actions:
 
 - Add additional domains by clicking "Add domain", if required.
-- Optionally expand the Advanced section to configure additional mail relay parameters.
+- Expand the Advanced section to fine-tune mail transport parameters.
 
 !!! note
     Ensure that all relay host and domain configurations are correct before proceeding.

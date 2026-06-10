@@ -17,18 +17,18 @@ if [ -f "$PROJECT_DIR/.env" ]; then
   POSTGRES_USER=$(read_env_var POSTGRES_USER "$PROJECT_DIR/.env")
   POSTGRES_PASSWORD=$(read_env_var POSTGRES_PASSWORD "$PROJECT_DIR/.env")
   VAULT_TOKEN=$(read_env_var VAULT_TOKEN "$PROJECT_DIR/.env")
-  MINIO_ROOT_USER=$(read_env_var MINIO_ROOT_USER "$PROJECT_DIR/.env")
-  MINIO_ROOT_PASSWORD=$(read_env_var MINIO_ROOT_PASSWORD "$PROJECT_DIR/.env")
+  S3_ACCESS_KEY=$(read_env_var S3_ACCESS_KEY "$PROJECT_DIR/.env")
+  S3_SECRET_KEY=$(read_env_var S3_SECRET_KEY "$PROJECT_DIR/.env")
   S3_BUCKET_NAME=$(read_env_var S3_BUCKET_NAME "$PROJECT_DIR/.env")
 fi
 
 POSTGRES_USER="${POSTGRES_USER:-postgres}"
 POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-postgres}"
-MINIO_ROOT_USER="${MINIO_ROOT_USER:-minioadmin}"
-MINIO_ROOT_PASSWORD="${MINIO_ROOT_PASSWORD:-minioadmin}"
+S3_ACCESS_KEY="${S3_ACCESS_KEY:-minioadmin}"
+S3_SECRET_KEY="${S3_SECRET_KEY:-minioadmin}"
 S3_BUCKET_NAME="${S3_BUCKET_NAME:-stargate-bucket}"
-# Pinned mc image used for MinIO object backup/restore (matches docker-compose).
-MC_IMAGE="minio/mc:RELEASE.2025-08-13T08-35-41Z"
+# Pinned aws-cli image used for S3 object backup/restore.
+AWS_CLI_IMAGE="amazon/aws-cli:2.27.31"
 
 echo "============================================"
 echo "  Stargate Full Backup"
@@ -253,30 +253,31 @@ fi
 # ==============================================================================
 echo ""
 echo "============================================"
-echo "  6. Backing up MinIO objects"
+echo "  6. Backing up S3 objects"
 echo "============================================"
 echo ""
 
-MINIO_OBJ_COUNT=0
-mkdir -p "$BACKUP_SUBDIR/minio"
-if docker ps --format '{{.Names}}' | grep -q "stargate-minio"; then
-  # Mirror the bucket out via a throwaway mc container that shares the minio
-  # container's network namespace, so 127.0.0.1:9000 reaches it without
-  # depending on the bridge-network name. MC_HOST_local carries the credentials.
-  if docker run --rm --network "container:stargate-minio" \
-      -e "MC_HOST_local=http://${MINIO_ROOT_USER}:${MINIO_ROOT_PASSWORD}@127.0.0.1:9000" \
-      -v "$BACKUP_SUBDIR/minio:/backup" \
-      "$MC_IMAGE" mirror --quiet --overwrite "local/${S3_BUCKET_NAME}" "/backup/${S3_BUCKET_NAME}"; then
-    # Count under the always-present minio/ dir (an empty bucket leaves no
-    # bucket subdir, and `find` on a missing path exits non-zero -> would abort
-    # the script under `set -eo pipefail`).
-    MINIO_OBJ_COUNT=$(find "$BACKUP_SUBDIR/minio" -type f 2>/dev/null | wc -l)
-    echo "  ✓ MinIO bucket '${S3_BUCKET_NAME}' backed up ($MINIO_OBJ_COUNT objects)"
+S3_OBJ_COUNT=0
+mkdir -p "$BACKUP_SUBDIR/s3"
+if docker ps --format '{{.Names}}' | grep -q "stargate-seaweedfs"; then
+  # Sync the bucket out via a throwaway aws-cli container that shares the
+  # seaweedfs container's network namespace, so 127.0.0.1:8333 reaches it
+  # without depending on the bridge-network name.
+  if docker run --rm --network "container:stargate-seaweedfs" \
+      -e "AWS_ACCESS_KEY_ID=${S3_ACCESS_KEY}" \
+      -e "AWS_SECRET_ACCESS_KEY=${S3_SECRET_KEY}" \
+      -e "AWS_DEFAULT_REGION=us-east-1" \
+      -v "$BACKUP_SUBDIR/s3:/backup" \
+      "$AWS_CLI_IMAGE" s3 sync --quiet \
+      --endpoint-url http://127.0.0.1:8333 \
+      "s3://${S3_BUCKET_NAME}" "/backup/${S3_BUCKET_NAME}"; then
+    S3_OBJ_COUNT=$(find "$BACKUP_SUBDIR/s3" -type f 2>/dev/null | wc -l)
+    echo "  ✓ S3 bucket '${S3_BUCKET_NAME}' backed up ($S3_OBJ_COUNT objects)"
   else
-    echo "  ✗ WARNING: MinIO backup failed (objects will not be in this archive)"
+    echo "  ✗ WARNING: S3 backup failed (objects will not be in this archive)"
   fi
 else
-  echo "  - MinIO container not running; skipping object backup"
+  echo "  - SeaweedFS container not running; skipping object backup"
 fi
 
 # ==============================================================================
@@ -304,7 +305,7 @@ cat > "$BACKUP_SUBDIR/manifest.json" << EOF
     "customer_config": $([ -f "$BACKUP_SUBDIR/config/customer-config.sh" ] && echo "true" || echo "false"),
     "smime_csr": $([ -f "$BACKUP_SUBDIR/secrets/signing-key.csr" ] && echo "true" || echo "false"),
     "certificates": $CERT_COUNT,
-    "minio_objects": ${MINIO_OBJ_COUNT:-0}
+    "s3_objects": ${S3_OBJ_COUNT:-0}
   }
 }
 EOF

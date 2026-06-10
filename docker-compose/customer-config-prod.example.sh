@@ -65,12 +65,12 @@ POSTGRES_USER=""
 POSTGRES_PASSWORD=""
 
 # ==============================================================================
-# OPTIONAL: Object Storage Configuration
+# OPTIONAL: Object Storage Configuration (SeaweedFS)
 # ==============================================================================
 # Leave empty to auto-generate secure passwords
 
-MINIO_ROOT_USER=""
-MINIO_ROOT_PASSWORD=""
+S3_ACCESS_KEY=""
+S3_SECRET_KEY=""
 S3_BUCKET_NAME="stargate-bucket"
 
 # ==============================================================================

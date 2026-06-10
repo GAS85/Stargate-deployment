@@ -48,14 +48,14 @@ This document lists the licenses of third-party software components used in the 
 
 ---
 
-## MinIO
+## SeaweedFS
 
-- **Component:** MinIO - S3-compatible object storage
-- **Image:** `minio/minio:latest`
-- **License:** GNU Affero General Public License v3.0 (AGPL v3)
-- **Copyright:** Copyright (c) 2015-2024 MinIO, Inc.
-- **Source:** https://github.com/minio/minio
-- **License Text:** https://github.com/minio/minio/blob/master/LICENSE
+- **Component:** SeaweedFS - S3-compatible distributed object storage
+- **Image:** `chrislusf/seaweedfs:4.32`
+- **License:** Apache License 2.0
+- **Copyright:** Copyright (c) 2019 Chris Lu
+- **Source:** https://github.com/seaweedfs/seaweedfs
+- **License Text:** https://github.com/seaweedfs/seaweedfs/blob/master/LICENSE
 
 ---
 

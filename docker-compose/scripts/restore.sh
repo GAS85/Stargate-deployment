@@ -258,8 +258,8 @@ echo ""
 # Set defaults for optional fields (same as install.sh)
 POSTGRES_USER="${POSTGRES_USER:-postgres}"
 POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-postgres}"
-MINIO_ROOT_USER="${MINIO_ROOT_USER:-minioadmin}"
-MINIO_ROOT_PASSWORD="${MINIO_ROOT_PASSWORD:-minioadmin}"
+S3_ACCESS_KEY="${S3_ACCESS_KEY:-minioadmin}"
+S3_SECRET_KEY="${S3_SECRET_KEY:-minioadmin}"
 S3_BUCKET_NAME="${S3_BUCKET_NAME:-stargate-bucket}"
 
 SMIMEKEYS_VERSION="${SMIMEKEYS_VERSION:-dev}"
@@ -308,12 +308,21 @@ WG_PRIVATE_KEY="${WG_PRIVATE_KEY:-}"
 # abort the restore under `set -eo pipefail`.
 BACKUP_ENV="$BACKUP_CONTENT/config/.env"
 if [ -f "$BACKUP_ENV" ]; then
-  for _k in POSTGRES_USER POSTGRES_PASSWORD MINIO_ROOT_USER MINIO_ROOT_PASSWORD \
+  for _k in POSTGRES_USER POSTGRES_PASSWORD S3_ACCESS_KEY S3_SECRET_KEY \
             STALWART_ADMIN_PASSWORD MTACONF_SVC_PASSWORD KEYCLOAK_ADMIN_PASSWORD \
             KEYCLOAK_APISIX_CLIENT_SECRET KEYCLOAK_DASHBOARD_CLIENT_SECRET APISIX_ADMIN_KEY; do
     _v=$(read_env_var "$_k" "$BACKUP_ENV")
     if [ -n "$_v" ]; then printf -v "$_k" '%s' "$_v"; fi
   done
+  # Backward compat: old backups stored credentials as MINIO_ROOT_USER/PASSWORD
+  if [ -z "$S3_ACCESS_KEY" ] || [ "$S3_ACCESS_KEY" = "minioadmin" ]; then
+    _v=$(read_env_var MINIO_ROOT_USER "$BACKUP_ENV")
+    if [ -n "$_v" ]; then S3_ACCESS_KEY="$_v"; fi
+  fi
+  if [ -z "$S3_SECRET_KEY" ] || [ "$S3_SECRET_KEY" = "minioadmin" ]; then
+    _v=$(read_env_var MINIO_ROOT_PASSWORD "$BACKUP_ENV")
+    if [ -n "$_v" ]; then S3_SECRET_KEY="$_v"; fi
+  fi
   echo "  ✓ Loaded credentials from backup .env"
 fi
 
@@ -333,9 +342,9 @@ POSTGRES_PASSWORD=$POSTGRES_PASSWORD
 # Vault
 VAULT_TOKEN=${ROOT_TOKEN:-}
 
-# MinIO (S3)
-MINIO_ROOT_USER=$MINIO_ROOT_USER
-MINIO_ROOT_PASSWORD=$MINIO_ROOT_PASSWORD
+# S3 (SeaweedFS)
+S3_ACCESS_KEY=$S3_ACCESS_KEY
+S3_SECRET_KEY=$S3_SECRET_KEY
 S3_BUCKET_NAME=$S3_BUCKET_NAME
 
 # Application Versions
@@ -408,8 +417,8 @@ echo "  7. Starting Infrastructure Services"
 echo "============================================"
 echo ""
 
-echo "Starting PostgreSQL, Vault, MinIO..."
-docker compose up -d postgres vault minio
+echo "Starting PostgreSQL, Vault, SeaweedFS..."
+docker compose up -d postgres vault seaweedfs
 
 echo "Waiting for PostgreSQL to be ready..."
 # Probe over TCP (-h 127.0.0.1), NOT the Unix socket. On a fresh data volume the
@@ -569,25 +578,37 @@ echo ""
 # 9b. Restore MinIO objects (message archives, irisagent objects)
 # ==============================================================================
 echo "============================================"
-echo "  Restoring MinIO objects"
+echo "  Restoring S3 objects"
 echo "============================================"
 echo ""
 
-MC_IMAGE="minio/mc:RELEASE.2025-08-13T08-35-41Z"
-if [ -d "$BACKUP_CONTENT/minio/${S3_BUCKET_NAME}" ]; then
-  # Mirror objects back via a throwaway mc container sharing minio's network
-  # namespace; mc mirror recreates the destination bucket if needed. (minio-init
-  # in section 10 re-applies the bucket's anonymous-download policy afterwards.)
-  if docker run --rm --network "container:stargate-minio" \
-      -e "MC_HOST_local=http://${MINIO_ROOT_USER}:${MINIO_ROOT_PASSWORD}@127.0.0.1:9000" \
-      -v "$BACKUP_CONTENT/minio:/backup" \
-      "$MC_IMAGE" mirror --quiet --overwrite "/backup/${S3_BUCKET_NAME}" "local/${S3_BUCKET_NAME}"; then
-    echo "  ✓ MinIO objects restored"
+AWS_CLI_IMAGE="amazon/aws-cli:2.27.31"
+# Support both new (s3/) and legacy (minio/) backup directory layouts
+if [ -d "$BACKUP_CONTENT/s3/${S3_BUCKET_NAME}" ]; then
+  S3_BACKUP_DIR="$BACKUP_CONTENT/s3"
+elif [ -d "$BACKUP_CONTENT/minio/${S3_BUCKET_NAME}" ]; then
+  S3_BACKUP_DIR="$BACKUP_CONTENT/minio"
+else
+  S3_BACKUP_DIR=""
+fi
+
+if [ -n "$S3_BACKUP_DIR" ]; then
+  # Sync objects back via a throwaway aws-cli container sharing seaweedfs's
+  # network namespace. The bucket is created by seaweedfs-init beforehand.
+  if docker run --rm --network "container:stargate-seaweedfs" \
+      -e "AWS_ACCESS_KEY_ID=${S3_ACCESS_KEY}" \
+      -e "AWS_SECRET_ACCESS_KEY=${S3_SECRET_KEY}" \
+      -e "AWS_DEFAULT_REGION=us-east-1" \
+      -v "$S3_BACKUP_DIR:/backup" \
+      "$AWS_CLI_IMAGE" s3 sync --quiet \
+      --endpoint-url http://127.0.0.1:8333 \
+      "/backup/${S3_BUCKET_NAME}" "s3://${S3_BUCKET_NAME}"; then
+    echo "  ✓ S3 objects restored"
   else
-    echo "  ✗ WARNING: MinIO restore failed (archived objects may be missing)"
+    echo "  ✗ WARNING: S3 restore failed (archived objects may be missing)"
   fi
 else
-  echo "  - No MinIO objects in backup; skipping"
+  echo "  - No S3 objects in backup; skipping"
 fi
 echo ""
 

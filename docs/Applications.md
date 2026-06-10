@@ -24,7 +24,7 @@
 ## Init Containers
 
 * **vault-init** - Initializes and unseals Vault on first run
-* **minio-init** - Creates the S3 bucket
+* **seaweedfs-init** - Creates the S3 bucket
 * **apisix-init** - Generates APISIX config from template
 * **keycloak-init** - Sets initial admin password
 
