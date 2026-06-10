@@ -74,7 +74,7 @@ Mail domains and the Stalwart hostname are configured at runtime via the dashboa
 | Setting | Default | Description |
 |---------|-------------|---------|
 | `POSTGRES_PASSWORD` | *(auto-generated)* | Auto-generated 24-character random password if empty |
-| `MINIO_ROOT_PASSWORD` | *(auto-generated)* | Auto-generated 24-character random password if empty |
+| `S3_SECRET_KEY` | *(auto-generated)* | S3 secret key for object storage |
 | `OUTBOUND_SEALER_MX_DOMAIN` | `hintest.ch` | Sealer MX domain for outbound seal delivery |
 | `POLICY_SYNC_REPO_URL` | GitHub HIN Stargate policies | Git repo URL for OPA/Rego policy sync |
 | `LOKI_URL` | *(unset)* | Loki endpoint for centralized log shipping (e.g. `https://loki.example.com`) |
@@ -281,7 +281,7 @@ All data is stored in Docker volumes and **persists across restarts**.
 |---------|--------|------|
 | PostgreSQL | `postgres_data` | All databases (smimekeys, policy, irisagent, mxengine) |
 | Vault | `vault_data` | Encryption keys, secrets, S/MIME keys |
-| MinIO | `minio_data` | Object storage (messages, attachments) |
+| SeaweedFS | `seaweedfs_data` | Object storage (messages, attachments) |
 | Stalwart | `stalwart_data` | Mail server state |
 
 ### Safe Operations (data preserved)

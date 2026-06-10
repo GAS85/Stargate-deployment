@@ -65,12 +65,12 @@ POSTGRES_USER=""
 POSTGRES_PASSWORD=""
 
 # ==============================================================================
-# OPTIONAL: Object Storage Configuration
+# OPTIONAL: Object Storage Configuration (SeaweedFS)
 # ==============================================================================
 # Leave empty to auto-generate secure passwords
 
-MINIO_ROOT_USER=""
-MINIO_ROOT_PASSWORD=""
+S3_ACCESS_KEY=""
+S3_SECRET_KEY=""
 S3_BUCKET_NAME="stargate-bucket"
 
 # ==============================================================================
@@ -142,7 +142,7 @@ KEYCLOAK_PUBLIC_URL=""      # Default: https://<SERVER_STATIC_IP>:8180
 DASHBOARD_PUBLIC_URL=""     # Default: https://<SERVER_STATIC_IP>
 
 # Show developer pages in the dashboard UI
-DASHBOARD_SHOW_DEV_PAGES="true"
+DASHBOARD_SHOW_DEV_PAGES="false"
 
 # Root instance URL (the central APISIX gateway that this instance connects to)
 DASHBOARD_ROOT_URL="https://apisix.hindev.ch"

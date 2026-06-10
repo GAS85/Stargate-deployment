@@ -34,7 +34,7 @@ echo "--- Containers ---"
 EXPECTED_RUNNING=(
   stargate-postgres
   stargate-vault
-  stargate-minio
+  stargate-seaweedfs
   stargate-smimekeys-client
   stargate-policy
   stargate-irisagent
@@ -140,14 +140,14 @@ done
 echo ""
 
 # ------------------------------------------------------------------
-# 5. MinIO
+# 5. SeaweedFS (S3)
 # ------------------------------------------------------------------
-echo "--- MinIO ---"
+echo "--- SeaweedFS ---"
 
-if curl -sf --max-time 5 "http://localhost:9000/minio/health/live" >/dev/null 2>&1; then
-  pass "MinIO live"
+if curl -sf --max-time 5 "http://localhost:8333/status" >/dev/null 2>&1; then
+  pass "SeaweedFS S3 live"
 else
-  fail "MinIO health check failed"
+  fail "SeaweedFS health check failed"
 fi
 
 echo ""

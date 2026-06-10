@@ -49,7 +49,7 @@ fi
 
 # Start infrastructure first
 echo "Starting infrastructure services..."
-docker compose up -d postgres vault minio
+docker compose up -d postgres vault seaweedfs
 
 echo "Waiting for Vault to start..."
 sleep 5

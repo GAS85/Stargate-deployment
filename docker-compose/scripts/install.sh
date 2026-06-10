@@ -92,8 +92,9 @@ load_customer_config() {
   # Set defaults for optional fields
   POSTGRES_USER="${POSTGRES_USER:-postgres}"
   POSTGRES_PASSWORD="$(resolve_secret "$POSTGRES_PASSWORD" POSTGRES_PASSWORD)"
-  MINIO_ROOT_USER="${MINIO_ROOT_USER:-minioadmin}"
-  MINIO_ROOT_PASSWORD="$(resolve_secret "$MINIO_ROOT_PASSWORD" MINIO_ROOT_PASSWORD)"
+  # S3 credentials: support legacy MINIO_ROOT_USER/PASSWORD for existing customer-configs
+  S3_ACCESS_KEY="${S3_ACCESS_KEY:-${MINIO_ROOT_USER:-minioadmin}}"
+  S3_SECRET_KEY="$(resolve_secret "${S3_SECRET_KEY:-$MINIO_ROOT_PASSWORD}" S3_SECRET_KEY)"
   S3_BUCKET_NAME="${S3_BUCKET_NAME:-stargate-bucket}"
 
   SMIMEKEYS_VERSION="${SMIMEKEYS_VERSION:-dev}"
@@ -203,9 +204,9 @@ POSTGRES_PASSWORD="$POSTGRES_PASSWORD"
 # Vault (auto-populated after initialization)
 VAULT_TOKEN=
 
-# MinIO (S3)
-MINIO_ROOT_USER="$MINIO_ROOT_USER"
-MINIO_ROOT_PASSWORD="$MINIO_ROOT_PASSWORD"
+# S3 (SeaweedFS)
+S3_ACCESS_KEY="$S3_ACCESS_KEY"
+S3_SECRET_KEY="$S3_SECRET_KEY"
 S3_BUCKET_NAME="$S3_BUCKET_NAME"
 
 # Application Versions
@@ -563,7 +564,7 @@ generate_keycloak_realm
 # application services can use the token).
 echo ""
 echo "Starting infrastructure services..."
-docker compose up -d postgres vault vault-data-fixer minio minio-init
+docker compose up -d postgres vault vault-data-fixer seaweedfs seaweedfs-init
 
 echo ""
 echo "Waiting for Vault initialization..."
