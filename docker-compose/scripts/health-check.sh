@@ -5,10 +5,6 @@
 # Performs a comprehensive health check of all Stargate services.
 # Exit code: 0 = all healthy, 1 = one or more issues found.
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
-ENV_FILE="$PROJECT_DIR/.env"
-
 PASS=0
 WARN=0
 FAIL=0
@@ -107,12 +103,6 @@ echo ""
 # ------------------------------------------------------------------
 echo "--- Vault ---"
 
-# Load VAULT_TOKEN from .env
-VAULT_TOKEN=""
-if [ -f "$ENV_FILE" ]; then
-  VAULT_TOKEN=$(grep "^VAULT_TOKEN=" "$ENV_FILE" | cut -d= -f2-)
-fi
-
 vault_status=$(docker exec stargate-vault vault status -format=json 2>/dev/null)
 if [ $? -eq 0 ] || [ -n "$vault_status" ]; then
   sealed=$(echo "$vault_status" | grep '"sealed"' | grep -o 'true\|false')
@@ -132,8 +122,7 @@ echo ""
 # ------------------------------------------------------------------
 echo "--- PostgreSQL ---"
 
-pg_ready=$(docker exec stargate-postgres pg_isready -U postgres 2>/dev/null)
-if [ $? -eq 0 ]; then
+if docker exec stargate-postgres pg_isready -U postgres >/dev/null 2>&1; then
   pass "PostgreSQL accepting connections"
 else
   fail "PostgreSQL not ready"
@@ -155,8 +144,7 @@ echo ""
 # ------------------------------------------------------------------
 echo "--- MinIO ---"
 
-minio_health=$(curl -sf --max-time 5 "http://localhost:9000/minio/health/live" 2>/dev/null)
-if [ $? -eq 0 ]; then
+if curl -sf --max-time 5 "http://localhost:9000/minio/health/live" >/dev/null 2>&1; then
   pass "MinIO live"
 else
   fail "MinIO health check failed"
@@ -198,25 +186,30 @@ echo ""
 # ------------------------------------------------------------------
 echo "--- Stalwart MTA ---"
 
-# Check management API reachable
-stalwart_health=$(docker exec stargate-stalwart curl -sf http://127.0.0.1:8080/healthz 2>/dev/null)
-if [ $? -eq 0 ]; then
+# Check management API reachable (matches the container's own healthcheck path)
+if docker exec stargate-stalwart curl -sf http://127.0.0.1:8080/healthz/live >/dev/null 2>&1; then
   pass "Stalwart management API reachable"
 else
   fail "Stalwart management API unreachable"
 fi
 
-# Check port 25 is listening
-port25=$(docker exec stargate-stalwart sh -c 'ss -tlnp 2>/dev/null || netstat -tlnp 2>/dev/null' | grep ":25 ")
-if [ -n "$port25" ]; then
+# Check the SMTP listeners. The stalwart image has no ss/netstat, so read
+# /proc/net/tcp{,6} inside the container (always present) and look for a socket
+# in LISTEN state (st=0A) on the port in hex. 25=0x0019, 10026=0x272A.
+stalwart_listening() {  # $1 = decimal port
+  local hexport
+  hexport=$(printf ':%04X' "$1")
+  docker exec stargate-stalwart sh -c 'cat /proc/net/tcp /proc/net/tcp6 2>/dev/null' \
+    | awk '$4 == "0A" { print $2 }' | grep -qi "$hexport\$"
+}
+
+if stalwart_listening 25; then
   pass "Port 25 listening"
 else
   fail "Port 25 not listening (provision may not have run yet)"
 fi
 
-# Check reinjection port 10026
-port10026=$(docker exec stargate-stalwart sh -c 'ss -tlnp 2>/dev/null || netstat -tlnp 2>/dev/null' | grep ":10026 ")
-if [ -n "$port10026" ]; then
+if stalwart_listening 10026; then
   pass "Port 10026 (reinjection) listening"
 else
   fail "Port 10026 (reinjection) not listening (provision may not have run yet)"
