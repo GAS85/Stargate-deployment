@@ -286,26 +286,28 @@ All data is stored in Docker volumes and **persists across restarts**.
 
 ### Safe Operations (data preserved)
 
-Stop and start - data safe
+Stop and start:
+
+```bash
+sudo systemctl stop stargate
+sudo systemctl start stargate
+```
+
+Or using the scripts directly:
 
 ```bash
 ./scripts/stop.sh
 ./scripts/start.sh
 ```
 
-Using docker compose directly
-
-```bash
-docker compose down      # Stops containers, KEEPS volumes
-docker compose up -d     # Restarts containers
-./scripts/start.sh       # Unseals Vault
-```
+!!! warning "Do not use `docker compose` commands directly"
+    Always use `systemctl` or the provided scripts (`start.sh` / `stop.sh`) to manage the deployment. Running `docker compose up`, `docker compose down`, or `docker compose restart` directly **will not unseal Vault**, leaving dependent services unable to start. The `start.sh` script handles the Vault unseal procedure automatically.
 
 ### Vault Sealing Behavior
 
 **Vault becomes sealed** when its container restarts. This is a security feature.
 
-After any restart, run `./scripts/start.sh` to unseal Vault. The script uses the keys stored in `secrets/vault-keys.json`.
+The `start.sh` script (and the systemd service) automatically unseal Vault using the keys stored in `secrets/vault-keys.json`. This is why you must always use the provided scripts or systemd service to manage the stack.
 
 ## :warning: Destructive Operations (data deleted)
 
