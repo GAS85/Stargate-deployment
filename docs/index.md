@@ -19,6 +19,7 @@
     * [Windows 11 Pro (Hyper-V) image installation](vm/Windows11pro-image-install.md)
     * [VMware image installation](vm/VMware-image-install.md)
     * [Proxmox image installation](vm/Proxmox-image-install.md)
+    * [Cloudscale.ch](vm/Cloudscale-image-install.md)
 
 !!! tip "🖨️"
     You can get this documentation printed or saved as PDF, please visit our [Print page view](print_page).

@@ -52,7 +52,7 @@ Reference: [Troubleshoot outbound SMTP connectivity in Azure](https://learn.micr
 - Choose the VM size.
 - Choose authentication type.
 - Click **Next: Disks**
-- Select OS disk size at least 20 GiB
+- Select OS disk size at least 20 GiB. Please refer to [Server Requirements](../index.md#server-requirements).
 - Click **Review + create**
 - Click **Create**
 

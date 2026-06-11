@@ -22,8 +22,8 @@ Deploy Stargate on Windows Pro (non-Pro versions do not support Hyper-V)
 - Click "Change installation source", navigate to the downloaded .VHDX image and click on it
 - Click "Create virtual machine"
 - Click "Edit settings"
-- Under "Memory", choose "RAM" 8192 MB
-- Under "Processor", choose "Number of virtual processors" 4
+- Under "Memory", choose "RAM" 8192 MB. Please refer to [Server Requirements](../index.md#server-requirements).
+- Under "Processor", choose "Number of virtual processors" 4. Please refer to [Server Requirements](../index.md#server-requirements).
 - Click "OK"
 - Click "Connect"
 - Click "Start"

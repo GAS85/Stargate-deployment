@@ -25,9 +25,9 @@ Deploy Stargate on Proxmox
 - Click the "Trash icon" next to "scsi0" to remove it.
 - Click "Import" and under "Select Image", choose the newly imported image file.
 - Click "Next"
-- Select 4 CPU cores and choose your CPU Type (or use "host")
+- Select 4 CPU cores and choose your CPU Type (or use "host"). Please refer to [Server Requirements](../index.md#server-requirements).
 - Click "Next"
-- Select 8192 MiB Memory
+- Select 8192 MiB Memory. Please refer to [Server Requirements](../index.md#server-requirements).
 - Click "Next"
 - Click "Next"
 - Wait until the VM creation process finishes and then click on the new VM, click "Console", click "Start Now"
