@@ -21,7 +21,7 @@
 - Enter your preferred **FQDN** or hostname.
 - Under **Operating System**, select **Custom Images** and choose your imported image.
 - Under **Compute Flavor**, select **Flex-4-2** or **Flex-8-2** depending on expected load (can be adjusted later). See [Server Requirements](../index.md#server-requirements) for details.
-- Under **Storage Capacity**, set at least **10 GB**. Please refer to [Server Requirements](../index.md#server-requirements).
+- Under **Storage Capacity**, set at least **20 GB**. Please refer to [Server Requirements](../index.md#server-requirements).
 - Under **Server Location**, select your preferred zone.
 - Under **Network Management**, enable only **IPv4** if the Stargate instance must be internet-accessible (e.g., for Office 365).
 - Under **Access Security**, select your SSH key (usable with the `almalinux` user).
