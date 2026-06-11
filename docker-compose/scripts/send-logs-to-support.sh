@@ -38,7 +38,7 @@ echo -e "\n# RAM\n" >> "$TEMP_FILE"
 free -h >> "$TEMP_FILE"
 
 echo -e "\n# Disk: size and type (rotational=1 means HDD, 0 means SSD)\n" >> "$TEMP_FILE"
-df -h /  >> "$TEMP_FILE"
+df -hT /  >> "$TEMP_FILE"
 lsblk -d -o NAME,SIZE,ROTA,MODEL  >> "$TEMP_FILE"
 echo -e "\n######\n" >> "$TEMP_FILE"
 
