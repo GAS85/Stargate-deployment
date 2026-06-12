@@ -672,7 +672,7 @@ docker compose ps
 
 echo ""
 echo "============================================"
-echo "  Installation Complete!"
+echo "  Installation Complete! ($APP_VERSION)"
 echo "============================================"
 echo ""
 echo "  Customer: $CUSTOMER_NAME"
