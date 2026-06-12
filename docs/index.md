@@ -33,7 +33,7 @@
 | :--- | :-----: | :---------: |
 | CPU, Cores| 2 | 4 |
 | RAM, GB | 4 | 8 |
-| SSD, GB | 20 | 30 |
+| SSD, GB | 30 | 60 |
 
 #### Common Requirements
 
@@ -61,11 +61,11 @@
 
 | Destination | Port | Purpose |
 |-------------|------|---------|
-| hub.docker.com | `433`| Docker image registry |
-| mxengine-dev.k8s.vereign-cdn.com | `433`| Remote sealer service |
-| smimekeys-ca-dev.k8s.vereign-cdn.com | `433`| S/MIME CA service |
-| loki.example.com | `433`| Log shipping (Alloy → Loki, optional) |
-| vereign-issuer.vrgnservices.eu | `433`| Issuer service |
+| hub.docker.com | `443`| Docker image registry |
+| mxengine-dev.k8s.vereign-cdn.com | `443`| Remote sealer service |
+| smimekeys-ca-dev.k8s.vereign-cdn.com | `443`| S/MIME CA service |
+| loki.example.com | `443`| Log shipping (Alloy → Loki, optional) |
+| vereign-issuer.vrgnservices.eu | `443`| Issuer service |
 | vereign-verifier.vrgnservices.eu | `4433` | Verifier service |
 | Destination mail servers | `25` | Outbound mail delivery (via MX lookup) |
 
