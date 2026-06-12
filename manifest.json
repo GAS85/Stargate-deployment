@@ -4,7 +4,7 @@
     "SMIMEKEYS_VERSION": "v0.0.19",
     "POLICY_VERSION": "v0.0.7",
     "IRISAGENT_VERSION": "v0.0.5",
-    "MXENGINE_VERSION": "v0.0.45-test",
+    "MXENGINE_VERSION": "v0.0.46",
     "POLICY_SYNC_VERSION": "dev",
     "DASHBOARD_VERSION": "v0.0.75-test",
     "MTACONF_VERSION": "v0.0.5"
