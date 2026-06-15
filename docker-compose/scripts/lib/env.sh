@@ -44,3 +44,27 @@ read_env_var() {
   fi
   printf '%s' "$value"
 }
+
+# -----------------------------------------------------------------------------
+# Ensure HOME (and XDG_CACHE_HOME) are set -- runs on source, before any script
+# touches docker.
+#
+# rc.local, systemd units (e.g. the stargate ExecStart -> start.sh) and bare
+# cron launch these scripts with an empty environment -- in particular no $HOME.
+# Anything that resolves a cache/config dir from $XDG_CACHE_HOME or $HOME then
+# fails: Go-based CLIs abort with "Could not find environment variable
+# XDG_CACHE_HOME or HOME ...", and the docker CLI cannot read
+# ~/.docker/config.json, so the authenticated Docker Hub pulls these scripts
+# rely on break. Restore a sane HOME (the invoking user's, falling back to
+# /root) when it is missing. Idempotent -- a no-op for interactive runs where
+# HOME is already set.
+# -----------------------------------------------------------------------------
+if [ -z "${HOME:-}" ]; then
+  # `|| true`: this is a bare assignment, so its exit status is the pipeline's.
+  # Under `set -eo pipefail`, a uid with no passwd entry makes getent exit
+  # non-zero (cut still exits 0) and would abort here -- on exactly the path
+  # the /root fallback below exists to handle. Neutralize it so the fallback runs.
+  HOME="$(getent passwd "$(id -u)" 2>/dev/null | cut -d: -f6)" || true
+  export HOME="${HOME:-/root}"
+fi
+export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"

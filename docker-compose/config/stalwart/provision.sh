@@ -158,6 +158,50 @@ log "enabling spam filter at DATA stage on the SMTP listeners"
 cli update MtaStageData singleton --field "enableSpamFilter=${SMTP_LISTENERS}"
 
 # =============================================================================
+# 2d. Rate limiting: global inbound + outbound throttles (5000/hour each)
+# =============================================================================
+# Each throttle is global (no `key` => applies server-wide). When the limit is
+# exceeded Stalwart rejects further inbound mail with `451 4.4.5 Rate limit
+# exceeded` and defers outbound delivery until the rate drops below 5000/1h.
+# `rate` is a {count, period} object (count 1..1000000, period a Duration like
+# "1h"). The throttle id is server-assigned, so we identify an existing one by
+# its operator-set `description`.
+#
+# Idempotency matches SERVER-SIDE: `query --where description=<desc>` filters on
+# the exact value, and `--json` with no `--fields` emits id-only records (one
+# JSON-encoded id string per line). We never depend on the description column
+# surviving in the human-readable table -- a long value can't be truncated out
+# of an id-only match.
+#
+# A throttle failure is non-fatal: mtaconf gates on this one-shot completing
+# (docker-compose: service_completed_successfully), so an aborted `cli create`
+# under `set -eu` would block the whole mail stack from starting. We'd rather
+# ship loudly-logged-unthrottled than not ship at all -- the WARNING surfaces in
+# `docker logs stargate-stalwart-provision`.
+RATE='{"count":5000,"period":"1h"}'
+
+ensure_throttle() {
+  local type="$1" desc="$2"
+  local id
+  id=$(cli query "$type" --where "description=${desc}" --json 2>/dev/null | head -n1 | tr -d '"') || true
+  if [ -n "$id" ]; then
+    log "${type} '${desc}' exists (id=${id}); reconciling rate to 5000/1h"
+    cli update "$type" "$id" --field "rate=${RATE}" --field "enable=true" \
+      || log "WARNING: failed to update ${type} ${id}; rate limit may be stale"
+  else
+    log "creating ${type} '${desc}': 5000/1h (global)"
+    cli create "$type" \
+      --field "description=${desc}" \
+      --field "rate=${RATE}" \
+      --field "enable=true" \
+      || log "WARNING: failed to create ${type} '${desc}'; mail is NOT rate-limited"
+  fi
+}
+
+ensure_throttle MtaInboundThrottle "Global inbound rate limit"
+ensure_throttle MtaOutboundThrottle "Global outbound rate limit"
+
+# =============================================================================
 # 3. Ensure the domain exists
 # =============================================================================
 DID=$(cli query domain 2>/dev/null | awk -v d="$DOMAIN" 'NR>1 && index($0, d) {print $1; exit}') || true
