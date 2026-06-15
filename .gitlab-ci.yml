@@ -36,7 +36,7 @@ generate_manifest:
   script:
     - |
       CONFIG="docker-compose/customer-config-prod.example.sh"
-      KEYS="SMIMEKEYS_VERSION POLICY_VERSION IRISAGENT_VERSION MXENGINE_VERSION POLICY_SYNC_VERSION DASHBOARD_VERSION MTACONF_VERSION"
+      KEYS="SMIMEKEYS_VERSION POLICY_VERSION IRISAGENT_VERSION MXENGINE_VERSION POLICY_SYNC_VERSION DASHBOARD_VERSION MTACONF_VERSION OPS_AGENT_VERSION DOZZLE_VERSION"
       echo "{" > manifest.json
       echo "  \"version\": \"${CI_COMMIT_TAG}\"," >> manifest.json
       echo "  \"images\": {" >> manifest.json
