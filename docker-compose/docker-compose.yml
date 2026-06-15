@@ -549,6 +549,10 @@ services:
       PENDING_WATCHER_INTERVAL: "20s"
       PENDING_MESSAGE_EXPIRATION: "1m"
 
+      # Forbidden SMTP for members in the list
+      MEMBERS_URL: "https://app.hin.ch/mgw/maildomains"
+      MEMBERS_SYNC_INTERVAL: "1h"
+
       # Archive
       ARCHIVE_INTERVAL: "30m"
       ARCHIVE_RETENTION_PERIOD: "87672h"
