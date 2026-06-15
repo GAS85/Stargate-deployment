@@ -937,6 +937,7 @@ services:
     image: registry.vereign.io/svdh/stargate-ops:${OPS_AGENT_VERSION:-dev}
     container_name: stargate-ops-agent
     restart: unless-stopped
+    pid: host
     depends_on:
       nats:
         condition: service_healthy
