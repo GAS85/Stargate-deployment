@@ -5,6 +5,7 @@ set -euo pipefail
 #   --tail 500 - last 500 lines of logs for each container
 #   --since 1h - all logs since 1 hour
 #   --until 5m - Show logs before a timestamp or relative (e.g. 42m for 42 minutes)
+#   --all      - all logs, could be too big to upload
 # Please refer to https://docs.docker.com/reference/cli/docker/container/logs/#options
 
 if [[ " $* " == *" --all "* ]]; then
@@ -26,6 +27,19 @@ echo "We will collect logs now with following arguments: ${args[*]}"
 echo -e "$(date -Ins)\n\n######\n" > "$TEMP_FILE"
 # Add Information about current version and containers
 echo "$(docker ps -a)" >> "$TEMP_FILE"
+echo -e "\n######\n" >> "$TEMP_FILE"
+
+# Add Information about host machine
+echo -e "\n# CPU\n" >> "$TEMP_FILE"
+echo "nproc output: $(nproc)" >> "$TEMP_FILE"
+lscpu | grep -E "Model name|CPU MHz|CPU\(s\)|Thread" >> "$TEMP_FILE"
+
+echo -e "\n# RAM\n" >> "$TEMP_FILE"
+free -h >> "$TEMP_FILE"
+
+echo -e "\n# Disk: size and type (rotational=1 means HDD, 0 means SSD)\n" >> "$TEMP_FILE"
+df -hT /  >> "$TEMP_FILE"
+lsblk -d -o NAME,SIZE,ROTA,MODEL  >> "$TEMP_FILE"
 echo -e "\n######\n" >> "$TEMP_FILE"
 
 while IFS= read -r container; do
