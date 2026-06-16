@@ -23,6 +23,7 @@ ENV_FILE="$PROJECT_DIR/.env"
 # Source install.sh for shared functions (load_customer_config, generate_env_file, etc.)
 STARGATE_SOURCE_ONLY=1 source "$SCRIPT_DIR/install.sh"
 . "$SCRIPT_DIR/lib/env.sh"
+. "$SCRIPT_DIR/lib/config-sync.sh"
 
 # Parse arguments
 ENV_ONLY=false
@@ -76,6 +77,14 @@ fi
 
 # Load customer config (validates required fields, derives defaults)
 load_customer_config
+
+# Sync new variables from the example template into customer-config.sh
+# (append-only - never overwrites existing values)
+EXAMPLE_FILE="$(detect_example_file "$PROJECT_DIR" "$CONFIG_FILE")"
+sync_customer_config "$EXAMPLE_FILE" "$CONFIG_FILE"
+
+# Re-source config to pick up any newly added variables with their defaults
+source "$CONFIG_FILE"
 
 # Regenerate .env
 generate_env_file
