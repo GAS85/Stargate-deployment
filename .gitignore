@@ -13,3 +13,5 @@ docs/dashboard-installation-guide.md
 support/.claude/settings.local.json
 /support/
 docker-compose/customer-config-alpha-new
+
+.DS_Store
