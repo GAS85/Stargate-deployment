@@ -764,7 +764,7 @@ services:
       # Persist the virus signature DB so it is not re-downloaded on every restart (freshclam keeps it current in the background).
       - clamav_data:/var/lib/clamav
       - ./config/clamav/clamav-milter.conf:/etc/clamav/clamav-milter.conf:ro
-    mem_limit: 3g
+    mem_limit: 1536m
     healthcheck:
       # clamdcheck.sh pings clamd; only healthy once the signature DB is loaded.
       test: ["CMD", "clamdcheck.sh"]
