@@ -230,11 +230,11 @@ All application services expose Prometheus metrics on port 2112 (internally), ma
 
 | Service | Metrics Port | Metrics URL |
 |---------|--------------|-------------|
-| smimekeys-client | 2113 | <http://localhost:2113/metrics> |
-| irisagent | 2114 | <http://localhost:2114/metrics> |
-| policy | 2115 | <http://localhost:2115/metrics> |
-| mxengine | 2116 | <http://localhost:2116/metrics> |
-| node-exporter | 9100 | <http://localhost:9100/metrics> |
+| smimekeys-client | `2113` | <http://localhost:2113/metrics> |
+| irisagent | `2114` | <http://localhost:2114/metrics> |
+| policy | `2115` | <http://localhost:2115/metrics> |
+| mxengine | `2116` | <http://localhost:2116/metrics> |
+| node-exporter | `9100` | <http://localhost:9100/metrics> |
 
 ### Prometheus Scrape Config Example
 
@@ -416,10 +416,10 @@ For relay-back through M365 / Exchange Online, configure per-domain relay target
 
 | Port | Purpose |
 |------|---------|
-| 25 | Main SMTP listener (external connections) |
-| 10026 | Reinjection port (mxengine → stalwart, internal only) |
-| 1587 | MXEngine SMTP input (stalwart → mxengine, internal only) |
-| 8080 | Stalwart management API + mtaconf REST API (internal only) |
+| `25` | Main SMTP listener (external connections) |
+| `10026` | Reinjection port (mxengine → stalwart, internal only) |
+| `1587` | MXEngine SMTP input (stalwart → mxengine, internal only) |
+| `8080` | Stalwart management API + mtaconf REST API (internal only) |
 
 !!! question "Using Exchange?"
     See [Exchange-integration](Exchange-integration.md) for the full Exchange Online / On-Premises connector and transport rule setup.

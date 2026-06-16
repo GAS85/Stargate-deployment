@@ -6,11 +6,11 @@ Stargate includes built-in monitoring and log collection services that run along
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| node-exporter | 9100 | Host-level metrics (CPU, memory, disk, network) for Prometheus |
+| node-exporter | `9100` | Host-level metrics (CPU, memory, disk, network) for Prometheus |
 | version-collector | - | Collects app versions from `/liveness` endpoints |
-| Alloy | 12345 | Docker log collector - ships container logs to Loki |
-| Loki | 3100 (internal) | Local log aggregation backend |
-| Dozzle | 8090 | Real-time web-based container log viewer |
+| Alloy | `12345` | Docker log collector - ships container logs to Loki |
+| Loki | `3100` (internal) | Local log aggregation backend |
+| Dozzle | `8090` | Real-time web-based container log viewer |
 
 ---
 
@@ -67,12 +67,12 @@ Stargate exposes Prometheus-compatible metrics endpoints from its application co
 
 | Service | Port | Path |
 |---------|------|------|
-| smimekeys-client | 2113 | `/metrics` |
-| irisagent | 2114 | `/metrics` |
-| policy | 2115 | `/metrics` |
-| mxengine | 2116 | `/metrics` |
-| node-exporter | 9100 | `/metrics` |
-| APISIX | 9091 | `/apisix/prometheus/metrics` |
+| smimekeys-client | `2113` | `/metrics` |
+| irisagent | `2114` | `/metrics` |
+| policy | `2115` | `/metrics` |
+| mxengine | `2116` | `/metrics` |
+| node-exporter | `9100` | `/metrics` |
+| APISIX | `9091` | `/apisix/prometheus/metrics` |
 
 ### Scrape configuration
 
@@ -142,10 +142,10 @@ The node-exporter service exposes standard host-level metrics (CPU, memory, disk
 
 | Port | Service | Protocol | Purpose |
 |------|---------|----------|---------|
-| 8090 | Dozzle | HTTP | Local log viewer UI |
-| 9100 | node-exporter | HTTP | Host metrics (Prometheus) |
-| 2113 | smimekeys-client | HTTP | App metrics (Prometheus) |
-| 2114 | irisagent | HTTP | App metrics (Prometheus) |
-| 2115 | policy | HTTP | App metrics (Prometheus) |
-| 2116 | mxengine | HTTP | App metrics (Prometheus) |
-| 9091 | APISIX | HTTP | Gateway metrics (Prometheus) |
+| `8090` | Dozzle | HTTP | Local log viewer UI |
+| `9100` | node-exporter | HTTP | Host metrics (Prometheus) |
+| `2113` | smimekeys-client | HTTP | App metrics (Prometheus) |
+| `2114` | irisagent | HTTP | App metrics (Prometheus) |
+| `2115` | policy | HTTP | App metrics (Prometheus) |
+| `2116` | mxengine | HTTP | App metrics (Prometheus) |
+| `9091` | APISIX | HTTP | Gateway metrics (Prometheus) |
