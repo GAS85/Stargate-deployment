@@ -94,13 +94,13 @@ if [ "$ENV_ONLY" = true ]; then
   exit 0
 fi
 
-# Restart services
-echo "Stopping services..."
-docker compose down
+# Pull new images and restart changed services
+echo "Pulling updated images..."
+docker compose pull --quiet
 
 echo ""
 echo "Starting services with updated configuration..."
-docker compose up -d
+docker compose up -d --remove-orphans
 
 # Handle Dozzle enable/disable and credential updates
 update_dozzle() {
