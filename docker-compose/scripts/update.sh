@@ -166,6 +166,13 @@ update_dozzle() {
 
 update_dozzle
 
+# Clean up stale Docker resources (old images, orphaned volumes, build cache)
+echo ""
+echo "Cleaning up unused Docker resources..."
+docker image prune -af --filter "until=24h" 2>/dev/null | tail -1 || true
+docker volume prune -f 2>/dev/null | tail -1 || true
+docker builder prune -af --keep-storage=1GB 2>/dev/null | tail -1 || true
+
 echo ""
 echo "============================================"
 echo "  Update Complete"
