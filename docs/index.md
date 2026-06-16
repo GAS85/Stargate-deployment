@@ -34,7 +34,7 @@
 | :--- | :-----: | :---------: |
 | CPU, Cores| 4 | 6 |
 | RAM, GB | 8 | 12 |
-| SSD, GB | 30 | 30 |
+| SSD, GB | 60 | 60 |
 
 #### Common Requirements
 
