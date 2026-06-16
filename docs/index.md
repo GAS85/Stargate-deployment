@@ -31,9 +31,9 @@
 
 |      | Minimum | Recommended |
 | :--- | :-----: | :---------: |
-| CPU, Cores| 2 | 4 |
-| RAM, GB | 4 | 8 |
-| SSD, GB | 30 | 60 |
+| CPU, Cores| 4 | 6 |
+| RAM, GB | 8 | 12 |
+| SSD, GB | 30 | 30 |
 
 #### Common Requirements
 
