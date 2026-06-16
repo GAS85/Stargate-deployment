@@ -87,7 +87,7 @@ create_listener() {
 }
 
 # Content-filtering scope for the two SMTP listeners ('smtp' :25, 'reinject'
-# :10026). Stalwart's enable/enableSpamFilter take an Expression: yield "true"
+# :10026). Stalwart's milter `enable` field takes an Expression: yield "true"
 # on a match, else "false". NOTE: 'match' is a Stalwart List, patched as an
 # integer-keyed object ({"0": ...}) and NOT a JSON array -- an array is rejected
 # with `invalidPatch: Invalid value for object property`.
@@ -144,18 +144,18 @@ if ! cli query Tracer 2>/dev/null | grep -Fq "Stdout"; then
 fi
 
 # =============================================================================
-# 2c. Content filtering: anti-virus (ClamAV milter) + anti-spam (built-in)
+# 2c. Content filtering: anti-virus (ClamAV milter)
 # =============================================================================
 # Anti-virus: ClamAV rejects infected mail at SMTP (OnInfected Reject in clamav-milter.conf); tempFailOnError defers mail if ClamAV is down instead of passing it unscanned (fail-closed).
 create_milter "clamav" "${CLAMAV_MILTER_HOST:-clamav}" "${CLAMAV_MILTER_PORT:-7357}"
 
-# Anti-spam: Stalwart's builtin in tag-only mode. scoreReject and scoreDiscard are 0 so the filter never rejects or drops mail, only annotates messages with X-Spam-* headers, you can raise scoreReject for hard rejection.
-log "enabling built-in spam filter (tag-only: scoreReject=0, scoreDiscard=0)"
-cli update SpamSettings singleton --field "enable=true" --field "scoreReject=0" --field "scoreDiscard=0"
-
-# The spam filter engages at the DATA stage, for the SMTP listeners.
-log "enabling spam filter at DATA stage on the SMTP listeners"
-cli update MtaStageData singleton --field "enableSpamFilter=${SMTP_LISTENERS}"
+# Anti-spam: disabled. Stalwart's built-in spam filter is explicitly turned off
+# here (rather than left unconfigured) so that re-running provision reconciles a
+# previously-enabled install back to disabled: no X-Spam-* tagging and no spam
+# scan at the DATA stage.
+log "disabling built-in spam filter"
+cli update SpamSettings singleton --field "enable=false"
+cli update MtaStageData singleton --field "enableSpamFilter=false"
 
 # =============================================================================
 # 2d. Rate limiting: global inbound + outbound throttles (5000/hour each)
