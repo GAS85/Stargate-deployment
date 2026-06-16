@@ -155,7 +155,7 @@ create_milter "clamav" "${CLAMAV_MILTER_HOST:-clamav}" "${CLAMAV_MILTER_PORT:-73
 # scan at the DATA stage.
 log "disabling built-in spam filter"
 cli update SpamSettings singleton --field "enable=false"
-cli update MtaStageData singleton --field "enableSpamFilter=false"
+#cli update MtaStageData singleton --field "enableSpamFilter=false"
 
 # =============================================================================
 # 2d. Rate limiting: global inbound + outbound throttles (5000/hour each)
