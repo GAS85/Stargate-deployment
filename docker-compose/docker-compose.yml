@@ -952,6 +952,7 @@ services:
       NATS_URL: "nats://nats:4222"
       COMPOSE_PROJECT_DIR: "/stargate"
       COMPOSE_PROJECT_NAME: "docker-compose"
+      HOST_INSTALL_DIR: "${HOST_INSTALL_DIR:-/root/stargate-deployment}"
       LOG_LEVEL: "info"
     networks:
       - stargate-network
