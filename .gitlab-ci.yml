@@ -53,6 +53,26 @@ generate_manifest:
       echo "  }" >> manifest.json
       echo "}" >> manifest.json
     - cat manifest.json
+    # Commit manifest to repo so it's accessible as a raw file
+    - |
+      echo "Committing manifest to manifests/${CI_COMMIT_TAG}.json on main..."
+      ENCODED=$(base64 -w0 manifest.json)
+      HTTP_STATUS=$(curl --silent --show-error --output commit_response.json --write-out "%{http_code}" \
+        --request POST \
+        --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+        --header "Content-Type: application/json" \
+        --data "$(jq -n \
+          --arg branch "main" \
+          --arg msg "chore: add manifest for ${CI_COMMIT_TAG} [skip ci]" \
+          --arg path "manifests/${CI_COMMIT_TAG}.json" \
+          --arg content "$ENCODED" \
+          '{branch: $branch, commit_message: $msg, actions: [{action: "create", file_path: $path, content: $content, encoding: "base64"}]}')" \
+        "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/repository/commits")
+      case "$HTTP_STATUS" in
+        201) echo "Manifest committed to main." ;;
+        400) echo "Manifest may already exist, skipping."; cat commit_response.json ;;
+        *)   echo "WARNING: Failed to commit manifest (HTTP ${HTTP_STATUS}):"; cat commit_response.json ;;
+      esac
   artifacts:
     paths:
       - manifest.json
