@@ -160,40 +160,52 @@ cli update SpamSettings singleton --field "enable=false"
 # =============================================================================
 # 2d. Rate limiting: global inbound + outbound throttles (5000/hour each)
 # =============================================================================
-# Each throttle is global (no `key` => applies server-wide). When the limit is
-# exceeded Stalwart rejects further inbound mail with `451 4.4.5 Rate limit
-# exceeded` and defers outbound delivery until the rate drops below 5000/1h.
-# `rate` is a {count, period} object (count 1..1000000, period a Duration like
-# "1h"). The throttle id is server-assigned, so we identify an existing one by
-# its operator-set `description`.
+# Each throttle is global (no `key` => applies server-wide; `match` defaults to
+# {"else":"true"} so it fires on every message). When the limit is exceeded
+# Stalwart rejects further inbound mail with `451 4.4.5 Rate limit exceeded` and
+# defers outbound delivery until the rate drops below 5000/1h.
 #
-# Idempotency matches SERVER-SIDE: `query --where description=<desc>` filters on
-# the exact value, and `--json` with no `--fields` emits id-only records (one
-# JSON-encoded id string per line). We never depend on the description column
-# surviving in the human-readable table -- a long value can't be truncated out
-# of an id-only match.
+# CRITICAL -- `rate` is a nested Rate object {count, period}. Two things bite:
+#   1. `period` is an INTEGER OF MILLISECONDS, not a Duration string. Sending
+#      "1h"/"3600s" is rejected with `invalidPatch: Invalid path for Duration
+#      (rate/period)` (the Duration leaf wants a number, not a string). 1h =
+#      3600 * 1000 = 3600000. Verified against a built-in throttle, whose wire
+#      form is {"count":25,"period":3600000}.
+#   2. `rate` must be an OBJECT -- the string form "5000/1h" is rejected with
+#      `Invalid value type for object`.
+# The object is sent with `--json` (complete object); a populated nested object
+# via `--field rate={...}` is unreliable, so we always use `--json`.
+#
+# Both MtaInboundThrottle and MtaOutboundThrottle REQUIRE a writable
+# `description` on create (the schema docs label inbound's as read-only, but this
+# build validates `description: required` and accepts the value), so we key
+# idempotency on it for both. We match the description CLIENT-SIDE against the
+# full row set rather than trusting `--where`, so we never accidentally reconcile
+# one of Stalwart's built-in scoped throttles (e.g. "Sender IP throttle").
 #
 # A throttle failure is non-fatal: mtaconf gates on this one-shot completing
 # (docker-compose: service_completed_successfully), so an aborted `cli create`
 # under `set -eu` would block the whole mail stack from starting. We'd rather
 # ship loudly-logged-unthrottled than not ship at all -- the WARNING surfaces in
 # `docker logs stargate-stalwart-provision`.
-RATE='{"count":5000,"period":"1h"}'
+RATE='{"count":5000,"period":3600000}'  # 5000 per hour; period in milliseconds
 
 ensure_throttle() {
   local type="$1" desc="$2"
   local id
-  id=$(cli query "$type" --where "description=${desc}" --json 2>/dev/null | head -n1 | tr -d '"') || true
+  # `--fields id,description --json` emits one JSON object per row; match our
+  # exact description and pull its id (skips the built-in scoped throttles).
+  id=$(cli query "$type" --fields id,description --json 2>/dev/null \
+        | grep -F "\"description\":\"${desc}\"" \
+        | sed -n 's/.*"id":"\([^"]*\)".*/\1/p' | head -n1) || true
   if [ -n "$id" ]; then
     log "${type} '${desc}' exists (id=${id}); reconciling rate to 5000/1h"
-    cli update "$type" "$id" --field "rate=${RATE}" --field "enable=true" \
+    cli update "$type" "$id" --json "{\"rate\":${RATE},\"enable\":true}" \
       || log "WARNING: failed to update ${type} ${id}; rate limit may be stale"
   else
     log "creating ${type} '${desc}': 5000/1h (global)"
     cli create "$type" \
-      --field "description=${desc}" \
-      --field "rate=${RATE}" \
-      --field "enable=true" \
+      --json "{\"description\":\"${desc}\",\"rate\":${RATE},\"enable\":true}" \
       || log "WARNING: failed to create ${type} '${desc}'; mail is NOT rate-limited"
   fi
 }
