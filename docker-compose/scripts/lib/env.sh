@@ -34,13 +34,12 @@ read_env_var() {
   line=$(grep -E "^${key}=" "$file" 2>/dev/null | tail -1) || return 0
   [ -n "$line" ] || return 0
   value="${line#"${key}"=}"
-  # Strip a single pair of surrounding double or single quotes if present.
-  if [[ "$value" =~ ^\".*\"$ ]]; then
-    value="${value#\"}"
-    value="${value%\"}"
-  elif [[ "$value" =~ ^\'.*\'$ ]]; then
-    value="${value#\'}"
-    value="${value%\'}"
+  # Strip a single pair of surrounding double or single quotes if present,
+  # ignoring any trailing inline comment (e.g. KEY=""  # comment).
+  if [[ "$value" =~ ^\"([^\"]*)\" ]]; then
+    value="${BASH_REMATCH[1]}"
+  elif [[ "$value" =~ ^\'([^\']*)\' ]]; then
+    value="${BASH_REMATCH[1]}"
   fi
   printf '%s' "$value"
 }
