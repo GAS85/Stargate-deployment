@@ -8,6 +8,11 @@ services:
     image: postgres:18-alpine
     container_name: stargate-postgres
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -32,6 +37,11 @@ services:
     image: hashicorp/vault:1.19.0
     container_name: stargate-vault-data-fixer
     user: root
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
     entrypoint: /bin/sh -c "chown -R vault:vault /vault/data && echo 'Vault data permissions fixed'"
     volumes:
       - vault_data:/vault/data
@@ -42,6 +52,11 @@ services:
     image: hashicorp/vault:1.19.0
     container_name: stargate-vault
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
     depends_on:
       vault-data-fixer:
         condition: service_completed_successfully
@@ -75,6 +90,11 @@ services:
     image: chrislusf/seaweedfs:4.34
     container_name: stargate-seaweedfs
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
     entrypoint: /bin/sh
     command:
       - -c
@@ -133,6 +153,11 @@ services:
   seaweedfs-init:
     image: amazon/aws-cli:2.27.31
     container_name: stargate-seaweedfs-init
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
     depends_on:
       seaweedfs:
         condition: service_healthy
@@ -155,6 +180,11 @@ services:
     image: hashicorp/vault:1.19.0
     container_name: stargate-vault-init
     user: root
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
     depends_on:
       vault:
         condition: service_healthy
@@ -173,6 +203,11 @@ services:
     image: quay.io/keycloak/keycloak:26.5.3
     container_name: stargate-keycloak
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
     # Intentionally depends only on the local postgres - no external DB or identity providers
     depends_on:
       postgres:
@@ -214,6 +249,11 @@ services:
   keycloak-init:
     image: alpine:3.22
     container_name: stargate-keycloak-init
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
     depends_on:
       keycloak:
         condition: service_healthy
@@ -231,6 +271,11 @@ services:
   apisix-init:
     image: alpine:3.22
     container_name: stargate-apisix-init
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
     volumes:
       - ./config/apisix/apisix.yaml.template:/templates/apisix.yaml.template:ro
       - ./config/apisix/generated:/output
@@ -249,6 +294,11 @@ services:
     image: nats:2.14-alpine
     container_name: stargate-nats
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
     command:
       - "-m"
       - "8222"
@@ -269,6 +319,11 @@ services:
   autoheal:
     container_name: autoheal
     restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
     # Version 1.2.0
     image: willfarrell/autoheal@sha256:a2e5e76d239b127081f8f96041a21f9747015b23af439c23ee60de0350c06880
     network_mode: none
@@ -298,6 +353,11 @@ services:
     image: healthinfonetag/smimekeys:${SMIMEKEYS_VERSION:-dev}
     container_name: stargate-smimekeys-client
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
     depends_on:
       postgres:
         condition: service_healthy
@@ -361,6 +421,11 @@ services:
     image: healthinfonetag/policy:${POLICY_VERSION:-dev}
     container_name: stargate-policy
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
     depends_on:
       postgres:
         condition: service_healthy
@@ -400,6 +465,11 @@ services:
     image: healthinfonetag/irisagent:${IRISAGENT_VERSION:-dev}
     container_name: stargate-irisagent
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
     depends_on:
       postgres:
         condition: service_healthy
@@ -466,6 +536,11 @@ services:
     image: healthinfonetag/mxengine:${MXENGINE_VERSION:-dev}
     container_name: stargate-mxengine
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
     depends_on:
       postgres:
         condition: service_healthy
@@ -575,6 +650,11 @@ services:
     image: apache/apisix:3.15.0-debian
     container_name: stargate-apisix
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
     depends_on:
       apisix-init:
         condition: service_completed_successfully
@@ -606,6 +686,11 @@ services:
     image: healthinfonetag/dashboard:${DASHBOARD_VERSION:-dev}
     container_name: stargate-dashboard
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
     depends_on:
       keycloak:
         condition: service_healthy
@@ -679,6 +764,11 @@ services:
     image: caddy:2-alpine
     container_name: stargate-caddy
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
     depends_on:
       keycloak:
         condition: service_healthy
@@ -704,6 +794,11 @@ services:
     image: prom/node-exporter:v1.11.1
     container_name: stargate-node-exporter
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
@@ -727,6 +822,11 @@ services:
     image: alpine:3.22
     container_name: stargate-version-collector
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
     depends_on:
       - smimekeys-client
       - policy
@@ -757,6 +857,11 @@ services:
     image: clamav/clamav:${CLAMAV_VERSION:-1.4}
     container_name: stargate-clamav
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
     environment:
       # Start clamav-milter (disabled by default in this image).
       CLAMAV_NO_MILTERD: "false"
@@ -782,6 +887,11 @@ services:
     image: stalwartlabs/stalwart:v0.16
     container_name: stargate-stalwart
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
     depends_on:
       postgres:
         condition: service_healthy
@@ -817,6 +927,11 @@ services:
       dockerfile: Dockerfile.provision
     container_name: stargate-stalwart-provision
     restart: "no"
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
     depends_on:
       stalwart:
         condition: service_healthy
@@ -835,6 +950,11 @@ services:
     image: registry.vereign.io/svdh/mtaconf:${MTACONF_VERSION:-dev}
     container_name: stargate-mtaconf
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
     depends_on:
       stalwart-provision:
         condition: service_completed_successfully
@@ -865,6 +985,11 @@ services:
     image: grafana/loki:3.4.3
     container_name: stargate-loki
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
     command: -config.file=/etc/loki/loki.yaml
     volumes:
       - ./config/loki/loki.yaml:/etc/loki/loki.yaml:ro
@@ -889,6 +1014,11 @@ services:
     image: grafana/alloy:v1.16.1
     container_name: stargate-alloy
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
     depends_on:
       loki:
         condition: service_healthy
@@ -916,6 +1046,11 @@ services:
     image: healthinfonetag/policy-sync:${POLICY_SYNC_VERSION:-dev}
     container_name: stargate-policy-sync
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
     depends_on:
       policy:
         condition: service_started
@@ -941,6 +1076,11 @@ services:
     image: registry.vereign.io/svdh/stargate-ops:${OPS_AGENT_VERSION:-dev}
     container_name: stargate-ops-agent
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
     pid: host
     privileged: true
     depends_on:
@@ -972,6 +1112,11 @@ services:
     image: amir20/dozzle:${DOZZLE_VERSION:-v10.5.0}
     container_name: stargate-dozzle
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
     environment:
       DOZZLE_FILTER: "name=stargate"
       DOZZLE_HOSTNAME: "${DEPLOYMENT_NAME:-stargate}"
