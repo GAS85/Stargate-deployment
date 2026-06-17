@@ -83,8 +83,12 @@ load_customer_config
 EXAMPLE_FILE="$(detect_example_file "$PROJECT_DIR" "$CONFIG_FILE")"
 sync_customer_config "$EXAMPLE_FILE" "$CONFIG_FILE"
 
-# Re-source config to pick up any newly added variables with their defaults
-source "$CONFIG_FILE"
+# Re-load config: sync_customer_config may have appended new variables from
+# the template; load_customer_config re-sources the file AND re-derives
+# defaults (e.g. KEYCLOAK_PUBLIC_URL from SERVER_STATIC_IP). A bare
+# `source "$CONFIG_FILE"` would overwrite those derived values with the
+# empty strings still in customer-config.sh.
+load_customer_config
 
 # Regenerate .env
 generate_env_file
