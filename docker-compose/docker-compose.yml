@@ -942,6 +942,7 @@ services:
     container_name: stargate-ops-agent
     restart: unless-stopped
     pid: host
+    privileged: true
     depends_on:
       nats:
         condition: service_healthy

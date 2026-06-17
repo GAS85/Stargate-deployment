@@ -59,6 +59,25 @@ resolve_secret() {
   generate_password "$len"
 }
 
+# Persist a generated secret back to customer-config.sh so that update.sh
+# (which re-sources customer-config.sh) preserves the same value. Only writes
+# if the key is currently empty or missing in the file. Idempotent.
+# Usage: persist_secret KEY VALUE FILE
+persist_secret() {
+  local key="$1" value="$2" file="$3"
+  [ -n "$value" ] || return 0
+  [ -f "$file" ] || return 0
+  local current
+  current="$(read_env_var "$key" "$file")"
+  [ -z "$current" ] || return 0
+  # Key exists but is empty -> update in place; key missing -> append
+  if grep -q "^${key}=" "$file"; then
+    sed -i "s|^${key}=.*|${key}=\"${value}\"|" "$file"
+  else
+    echo "${key}=\"${value}\"" >> "$file"
+  fi
+}
+
 # ==============================================================================
 # Customer Configuration Loading
 # ==============================================================================
@@ -172,6 +191,18 @@ load_customer_config() {
   WG_INTERFACE_PORT="${WG_INTERFACE_PORT:-19818}"
   WG_TRANSPORT_MODE="${WG_TRANSPORT_MODE:-tcp}"
   WG_PRIVATE_KEY="${WG_PRIVATE_KEY:-}"  # Optional - if empty, irisagent will generate
+
+  # Persist generated secrets back to customer-config.sh so that update.sh
+  # preserves them across re-installs and updates. Only writes values that
+  # are currently empty or missing in the file.
+  persist_secret POSTGRES_PASSWORD "$POSTGRES_PASSWORD" "$CONFIG_FILE"
+  persist_secret S3_SECRET_KEY "$S3_SECRET_KEY" "$CONFIG_FILE"
+  persist_secret STALWART_ADMIN_PASSWORD "$STALWART_ADMIN_PASSWORD" "$CONFIG_FILE"
+  persist_secret MTACONF_SVC_PASSWORD "$MTACONF_SVC_PASSWORD" "$CONFIG_FILE"
+  persist_secret KEYCLOAK_ADMIN_PASSWORD "$KEYCLOAK_ADMIN_PASSWORD" "$CONFIG_FILE"
+  persist_secret KEYCLOAK_APISIX_CLIENT_SECRET "$KEYCLOAK_APISIX_CLIENT_SECRET" "$CONFIG_FILE"
+  persist_secret KEYCLOAK_DASHBOARD_CLIENT_SECRET "$KEYCLOAK_DASHBOARD_CLIENT_SECRET" "$CONFIG_FILE"
+  persist_secret APISIX_ADMIN_KEY "$APISIX_ADMIN_KEY" "$CONFIG_FILE"
 
   echo "Customer: $CUSTOMER_NAME"
   echo "Deployment: $DEPLOYMENT_NAME"
