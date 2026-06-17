@@ -202,6 +202,16 @@ ensure_throttle MtaInboundThrottle "Global inbound rate limit"
 ensure_throttle MtaOutboundThrottle "Global outbound rate limit"
 
 # =============================================================================
+# 2e. Data retention: hourly cleanup
+# =============================================================================
+# Hourly cleanup of the data store and the (reference-counted) blob store.
+# Offset so the two purges don't compete for I/O. blob @ :05, data @ :15.
+log "setting DataRetention cleanup schedules (blob hourly @ :05, data hourly @ :15)"
+cli update DataRetention singleton \
+  --field 'blobCleanupSchedule={"@type":"Hourly","minute":5}' \
+  --field 'dataCleanupSchedule={"@type":"Hourly","minute":15}'
+
+# =============================================================================
 # 3. Ensure the domain exists
 # =============================================================================
 DID=$(cli query domain 2>/dev/null | awk -v d="$DOMAIN" 'NR>1 && index($0, d) {print $1; exit}') || true
