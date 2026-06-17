@@ -7,7 +7,7 @@
     "IRISAGENT_VERSION": "v0.0.6",
     "MXENGINE_VERSION": "v0.0.45",
     "POLICY_SYNC_VERSION": "dev",
-    "DASHBOARD_VERSION": "v0.0.81-test",
+    "DASHBOARD_VERSION": "v0.0.83-test",
     "MTACONF_VERSION": "v0.0.5",
     "OPS_AGENT_VERSION": "dev",
     "DOZZLE_VERSION": "v10.5.0"
