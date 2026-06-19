@@ -158,60 +158,45 @@ cli update SpamSettings singleton --field "enable=false"
 #cli update MtaStageData singleton --field "enableSpamFilter=false"
 
 # =============================================================================
-# 2d. Rate limiting: global inbound + outbound throttles (5000/hour each)
+# 2d. Rate limiting: DISABLED (unlimited inbound + outbound)
 # =============================================================================
-# Each throttle is global (no `key` => applies server-wide; `match` defaults to
-# {"else":"true"} so it fires on every message). When the limit is exceeded
-# Stalwart rejects further inbound mail with `451 4.4.5 Rate limit exceeded` and
-# defers outbound delivery until the rate drops below 5000/1h.
+# This deployment runs with NO SMTP rate limiting in either direction. There is
+# no "unlimited" rate VALUE (the `rate` field is required and `count` is bounded
+# 1..1000000), so "unlimited" means every throttle is switched off via its
+# `enable` boolean. We disable rather than delete so the change is reversible and
+# idempotent (a re-run re-asserts disabled; built-ins reappear on a fresh DB).
 #
-# CRITICAL -- `rate` is a nested Rate object {count, period}. Two things bite:
-#   1. `period` is an INTEGER OF MILLISECONDS, not a Duration string. Sending
-#      "1h"/"3600s" is rejected with `invalidPatch: Invalid path for Duration
-#      (rate/period)` (the Duration leaf wants a number, not a string). 1h =
-#      3600 * 1000 = 3600000. Verified against a built-in throttle, whose wire
-#      form is {"count":25,"period":3600000}.
-#   2. `rate` must be an OBJECT -- the string form "5000/1h" is rejected with
-#      `Invalid value type for object`.
-# The object is sent with `--json` (complete object); a populated nested object
-# via `--field rate={...}` is unreliable, so we always use `--json`.
+# We disable ALL throttles of each type, not just our own -- Stalwart ships
+# built-in scoped defaults (e.g. "Sender IP throttle" 5/s per remote IP,
+# "Sender address to recipient throttle" 25/h per pair). Leaving those enabled
+# would NOT be unlimited, so they get disabled too.
 #
-# Both MtaInboundThrottle and MtaOutboundThrottle REQUIRE a writable
-# `description` on create (the schema docs label inbound's as read-only, but this
-# build validates `description: required` and accepts the value), so we key
-# idempotency on it for both. We match the description CLIENT-SIDE against the
-# full row set rather than trusting `--where`, so we never accidentally reconcile
-# one of Stalwart's built-in scoped throttles (e.g. "Sender IP throttle").
+# `query --fields id --json` emits one JSON object per row ({"id":"..."}); we
+# extract every id and patch each with {"enable":false}.
 #
-# A throttle failure is non-fatal: mtaconf gates on this one-shot completing
-# (docker-compose: service_completed_successfully), so an aborted `cli create`
-# under `set -eu` would block the whole mail stack from starting. We'd rather
-# ship loudly-logged-unthrottled than not ship at all -- the WARNING surfaces in
+# A failure here is non-fatal: mtaconf gates on this one-shot completing
+# (docker-compose: service_completed_successfully), so an aborted `cli update`
+# under `set -eu` would block the whole mail stack from starting. A throttle that
+# fails to disable just keeps limiting -- the WARNING surfaces in
 # `docker logs stargate-stalwart-provision`.
-RATE='{"count":5000,"period":3600000}'  # 5000 per hour; period in milliseconds
-
-ensure_throttle() {
-  local type="$1" desc="$2"
-  local id
-  # `--fields id,description --json` emits one JSON object per row; match our
-  # exact description and pull its id (skips the built-in scoped throttles).
-  id=$(cli query "$type" --fields id,description --json 2>/dev/null \
-        | grep -F "\"description\":\"${desc}\"" \
-        | sed -n 's/.*"id":"\([^"]*\)".*/\1/p' | head -n1) || true
-  if [ -n "$id" ]; then
-    log "${type} '${desc}' exists (id=${id}); reconciling rate to 5000/1h"
-    cli update "$type" "$id" --json "{\"rate\":${RATE},\"enable\":true}" \
-      || log "WARNING: failed to update ${type} ${id}; rate limit may be stale"
-  else
-    log "creating ${type} '${desc}': 5000/1h (global)"
-    cli create "$type" \
-      --json "{\"description\":\"${desc}\",\"rate\":${RATE},\"enable\":true}" \
-      || log "WARNING: failed to create ${type} '${desc}'; mail is NOT rate-limited"
+disable_throttles() {
+  local type="$1"
+  local ids id
+  ids=$(cli query "$type" --fields id --json 2>/dev/null \
+        | sed -n 's/.*"id":"\([^"]*\)".*/\1/p') || true
+  if [ -z "$ids" ]; then
+    log "no ${type} present; nothing to disable"
+    return 0
   fi
+  for id in $ids; do
+    log "disabling ${type} ${id} (unlimited)"
+    cli update "$type" "$id" --json '{"enable":false}' \
+      || log "WARNING: failed to disable ${type} ${id}; it may still rate-limit"
+  done
 }
 
-ensure_throttle MtaInboundThrottle "Global inbound rate limit"
-ensure_throttle MtaOutboundThrottle "Global outbound rate limit"
+disable_throttles MtaInboundThrottle
+disable_throttles MtaOutboundThrottle
 
 # =============================================================================
 # 2e. Data retention: hourly cleanup
