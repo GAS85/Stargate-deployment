@@ -158,6 +158,7 @@ load_customer_config() {
   MXENGINE_PUBLIC_ADDRESS="${MXENGINE_PUBLIC_ADDRESS:-http://${SERVER_STATIC_IP}:8084}"
   KEYCLOAK_PUBLIC_URL="${KEYCLOAK_PUBLIC_URL:-https://${SERVER_STATIC_IP}:8180}"
   DASHBOARD_PUBLIC_URL="${DASHBOARD_PUBLIC_URL:-https://${SERVER_STATIC_IP}}"
+  DOZZLE_PUBLIC_URL="${DOZZLE_PUBLIC_URL:-https://${SERVER_STATIC_IP}:8190}"
 
   OUTBOUND_SEALER_MX_DOMAIN="${OUTBOUND_SEALER_MX_DOMAIN:-hintest.ch}"
   CERT_CA_IRISAGENT_DOMAIN="${CERT_CA_IRISAGENT_DOMAIN:-hintest.ch}"
@@ -184,6 +185,9 @@ load_customer_config() {
   KEYCLOAK_ADMIN_PASSWORD="$(resolve_secret "$KEYCLOAK_ADMIN_PASSWORD" KEYCLOAK_ADMIN_PASSWORD)"
   KEYCLOAK_APISIX_CLIENT_SECRET="$(resolve_secret "$KEYCLOAK_APISIX_CLIENT_SECRET" KEYCLOAK_APISIX_CLIENT_SECRET 32)"
   KEYCLOAK_DASHBOARD_CLIENT_SECRET="$(resolve_secret "$KEYCLOAK_DASHBOARD_CLIENT_SECRET" KEYCLOAK_DASHBOARD_CLIENT_SECRET 32)"
+  KEYCLOAK_DOZZLE_CLIENT_SECRET="$(resolve_secret "$KEYCLOAK_DOZZLE_CLIENT_SECRET" KEYCLOAK_DOZZLE_CLIENT_SECRET 32)"
+  # oauth2-proxy cookie secret must be exactly 16, 24, or 32 bytes -> 32 chars.
+  OAUTH2_PROXY_COOKIE_SECRET="$(resolve_secret "$OAUTH2_PROXY_COOKIE_SECRET" OAUTH2_PROXY_COOKIE_SECRET 32)"
   APISIX_ADMIN_KEY="$(resolve_secret "$APISIX_ADMIN_KEY" APISIX_ADMIN_KEY 32)"
   DASHBOARD_SHOW_DEV_PAGES="${DASHBOARD_SHOW_DEV_PAGES:-false}"
 
@@ -202,6 +206,8 @@ load_customer_config() {
   persist_secret KEYCLOAK_ADMIN_PASSWORD "$KEYCLOAK_ADMIN_PASSWORD" "$CONFIG_FILE"
   persist_secret KEYCLOAK_APISIX_CLIENT_SECRET "$KEYCLOAK_APISIX_CLIENT_SECRET" "$CONFIG_FILE"
   persist_secret KEYCLOAK_DASHBOARD_CLIENT_SECRET "$KEYCLOAK_DASHBOARD_CLIENT_SECRET" "$CONFIG_FILE"
+  persist_secret KEYCLOAK_DOZZLE_CLIENT_SECRET "$KEYCLOAK_DOZZLE_CLIENT_SECRET" "$CONFIG_FILE"
+  persist_secret OAUTH2_PROXY_COOKIE_SECRET "$OAUTH2_PROXY_COOKIE_SECRET" "$CONFIG_FILE"
   persist_secret APISIX_ADMIN_KEY "$APISIX_ADMIN_KEY" "$CONFIG_FILE"
 
   echo "Customer: $CUSTOMER_NAME"
@@ -286,9 +292,12 @@ KEYCLOAK_ADMIN_USER="$KEYCLOAK_ADMIN_USER"
 KEYCLOAK_ADMIN_PASSWORD="$KEYCLOAK_ADMIN_PASSWORD"
 KEYCLOAK_APISIX_CLIENT_SECRET="$KEYCLOAK_APISIX_CLIENT_SECRET"
 KEYCLOAK_DASHBOARD_CLIENT_SECRET="$KEYCLOAK_DASHBOARD_CLIENT_SECRET"
+KEYCLOAK_DOZZLE_CLIENT_SECRET="$KEYCLOAK_DOZZLE_CLIENT_SECRET"
+OAUTH2_PROXY_COOKIE_SECRET="$OAUTH2_PROXY_COOKIE_SECRET"
 APISIX_ADMIN_KEY="$APISIX_ADMIN_KEY"
 KEYCLOAK_PUBLIC_URL="$KEYCLOAK_PUBLIC_URL"
 DASHBOARD_PUBLIC_URL="$DASHBOARD_PUBLIC_URL"
+DOZZLE_PUBLIC_URL="$DOZZLE_PUBLIC_URL"
 DASHBOARD_SHOW_DEV_PAGES="$DASHBOARD_SHOW_DEV_PAGES"
 DASHBOARD_ROOT_URL="$DASHBOARD_ROOT_URL"
 DASHBOARD_ROOT_DOMAIN="$DASHBOARD_ROOT_DOMAIN"
@@ -376,7 +385,9 @@ generate_keycloak_realm() {
   sed \
     -e "s|\${KEYCLOAK_APISIX_CLIENT_SECRET}|${KEYCLOAK_APISIX_CLIENT_SECRET}|g" \
     -e "s|\${KEYCLOAK_DASHBOARD_CLIENT_SECRET}|${KEYCLOAK_DASHBOARD_CLIENT_SECRET}|g" \
+    -e "s|\${KEYCLOAK_DOZZLE_CLIENT_SECRET}|${KEYCLOAK_DOZZLE_CLIENT_SECRET}|g" \
     -e "s|\${DASHBOARD_PUBLIC_URL}|${DASHBOARD_PUBLIC_URL}|g" \
+    -e "s|\${DOZZLE_PUBLIC_URL}|${DOZZLE_PUBLIC_URL}|g" \
     "$PROJECT_DIR/config/keycloak/realm-stargate.json" \
     > "$out_dir/realm-stargate.json"
 
@@ -508,57 +519,17 @@ setup_dozzle() {
   echo "============================================"
   echo ""
 
-  # Generate password if not set
-  DOZZLE_USERNAME="${DOZZLE_USERNAME:-admin}"
-  if [ -z "$DOZZLE_PASSWORD" ]; then
-    DOZZLE_PASSWORD=$(generate_password 16)
-    # Save generated password to customer-config.sh
-    if grep -q '^DOZZLE_PASSWORD=' "$CONFIG_FILE"; then
-      sed -i "s|^DOZZLE_PASSWORD=.*|DOZZLE_PASSWORD=\"$DOZZLE_PASSWORD\"|" "$CONFIG_FILE"
-    else
-      echo "DOZZLE_PASSWORD=\"$DOZZLE_PASSWORD\"" >> "$CONFIG_FILE"
-    fi
-  fi
-
-  # Generate bcrypt hash for the password using Dozzle's built-in generator
-  echo "Generating Dozzle authentication..."
-  DOZZLE_DATA_DIR="$PROJECT_DIR/dozzle"
-  mkdir -p "$DOZZLE_DATA_DIR"
-
-  DOZZLE_GEN_ERROR=""
-  DOZZLE_GEN_OK=false
-  DOZZLE_IMAGE="amir20/dozzle:${DOZZLE_VERSION:-v10.5.0}"
-  if docker run --rm "$DOZZLE_IMAGE" generate \
-    "$DOZZLE_USERNAME" \
-    --password "$DOZZLE_PASSWORD" \
-    --name "Stargate Admin" \
-    --user-filter "name=stargate" \
-    > "$DOZZLE_DATA_DIR/users.yml" 2>"$DOZZLE_DATA_DIR/.gen-error.tmp"; then
-    DOZZLE_GEN_OK=true
-  else
-    DOZZLE_GEN_ERROR=$(cat "$DOZZLE_DATA_DIR/.gen-error.tmp" 2>/dev/null || true)
-    DOZZLE_GEN_ERROR="${DOZZLE_GEN_ERROR:-unknown error}"
-  fi
-  rm -f "$DOZZLE_DATA_DIR/.gen-error.tmp"
-
-  if [ "$DOZZLE_GEN_OK" = true ] && [ -f "$DOZZLE_DATA_DIR/users.yml" ]; then
-    echo "Dozzle authentication configured successfully"
-    echo ""
-    echo "  Username: $DOZZLE_USERNAME"
-    echo "  Password: $DOZZLE_PASSWORD"
-    echo ""
-    echo "  IMPORTANT: Save these credentials - they are also stored in customer-config.sh"
-    echo "  Dozzle will be available at: http://localhost:8090"
-  else
-    echo "WARNING: Failed to generate Dozzle users.yml"
-    echo "  Error: $DOZZLE_GEN_ERROR"
-    echo "  Dozzle will still work but without authentication."
-  fi
-
-  # Start Dozzle
-  echo "Starting Dozzle..."
+  # Authentication is handled by oauth2-proxy in front of Dozzle, against the
+  # same Keycloak realm as the dashboard (client "dozzle"). The client/cookie
+  # secrets and DOZZLE_PUBLIC_URL are resolved in load_customer_config and
+  # written to .env, so there is nothing to generate here -- just start the
+  # "dozzle" profile (dozzle + oauth2-proxy).
+  echo "Starting Dozzle (behind oauth2-proxy -> Keycloak)..."
   docker compose --profile dozzle up -d
   echo "Dozzle started."
+  echo ""
+  echo "  Dozzle (logs): $DOZZLE_PUBLIC_URL"
+  echo "  Log in with any user from the 'stargate' Keycloak realm (e.g. sg-admin)."
 }
 
 # ============================================
@@ -771,7 +742,7 @@ echo "  -----------"
 echo "  Node Exporter:     http://localhost:9100/metrics"
 echo "  Alloy:             Logs -> $LOKI_URL"
 if [ "${DOZZLE_ENABLED:-false}" = "true" ]; then
-  echo "  Dozzle (logs):     http://localhost:8090"
+  echo "  Dozzle (logs):     $DOZZLE_PUBLIC_URL  (Keycloak login, realm 'stargate')"
 fi
 echo ""
 echo "  Scripts:"

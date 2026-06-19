@@ -46,3 +46,18 @@
 	}
 }
 
+# TLS termination for Dozzle (log viewer). Auth is enforced by oauth2-proxy,
+# which sits between Caddy and Dozzle and runs the Keycloak OIDC login.
+# Only started when DOZZLE_ENABLED=true (compose profile "dozzle"); if disabled,
+# this listener simply has no backend.
+:8190 {
+	tls /etc/caddy/ssl/server.crt /etc/caddy/ssl/server.key
+
+	reverse_proxy oauth2-proxy:4180 {
+		header_up Host              {host}
+		header_up X-Real-IP         {remote_host}
+		header_up X-Forwarded-Proto https
+		header_up X-Forwarded-Port  8190
+	}
+}
+

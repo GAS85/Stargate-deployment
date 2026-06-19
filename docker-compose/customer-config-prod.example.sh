@@ -136,6 +136,8 @@ KEYCLOAK_ADMIN_PASSWORD=""  # Auto-generated if empty
 # IMPORTANT: change from defaults before exposing Keycloak to any network.
 KEYCLOAK_APISIX_CLIENT_SECRET=""    # Auto-generated if empty
 KEYCLOAK_DASHBOARD_CLIENT_SECRET="" # Auto-generated if empty
+KEYCLOAK_DOZZLE_CLIENT_SECRET=""    # Auto-generated if empty (Dozzle login via oauth2-proxy)
+OAUTH2_PROXY_COOKIE_SECRET=""       # Auto-generated if empty (oauth2-proxy session cookie)
 
 # APISIX admin API key (for the debug admin endpoint on port 9180)
 APISIX_ADMIN_KEY=""  # Auto-generated if empty
@@ -143,6 +145,7 @@ APISIX_ADMIN_KEY=""  # Auto-generated if empty
 # Public-facing URLs (must be reachable from the end-user's browser)
 KEYCLOAK_PUBLIC_URL=""      # Default: https://<SERVER_STATIC_IP>:8180
 DASHBOARD_PUBLIC_URL=""     # Default: https://<SERVER_STATIC_IP>
+DOZZLE_PUBLIC_URL=""        # Default: https://<SERVER_STATIC_IP>:8190
 
 # Show developer pages in the dashboard UI
 DASHBOARD_SHOW_DEV_PAGES="false"
@@ -173,15 +176,14 @@ MTACONF_SVC_PASSWORD=""  # Auto-generated if empty
 # OPTIONAL: Dozzle - Real-time Log Viewer
 # ==============================================================================
 # Dozzle provides a web UI to view live logs from all Stargate containers.
-# Access at: http://localhost:8090
+# When enabled it is published at DOZZLE_PUBLIC_URL (default
+# https://<SERVER_STATIC_IP>:8190) behind oauth2-proxy, which authenticates
+# against the same Keycloak realm as the dashboard. Log in with any user from
+# the "stargate" realm (e.g. sg-admin) - there are no separate Dozzle credentials.
 # Set to "true" to enable, "false" to disable.
-# When enabled, a users.yml is auto-generated during install with the
-# credentials below. Change the password after first login if desired.
 
 DOZZLE_ENABLED="true"
 DOZZLE_VERSION="v10.5.0"
-DOZZLE_USERNAME="admin"
-DOZZLE_PASSWORD=""
 
 # ==============================================================================
 # REQUIRED: WireGuard Configuration
