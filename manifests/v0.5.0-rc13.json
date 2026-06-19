@@ -1,0 +1,15 @@
+{
+  "version": "v0.5.0-rc13",
+  "deployment_tag": "v0.5.0-rc13",
+  "images": {
+    "SMIMEKEYS_VERSION": "v0.0.22",
+    "POLICY_VERSION": "v0.0.8",
+    "IRISAGENT_VERSION": "v0.0.7",
+    "MXENGINE_VERSION": "v0.0.48",
+    "POLICY_SYNC_VERSION": "dev",
+    "DASHBOARD_VERSION": "v0.0.21",
+    "MTACONF_VERSION": "v0.0.5",
+    "OPS_AGENT_VERSION": "dev",
+    "DOZZLE_VERSION": "v10.5.0"
+  }
+}
