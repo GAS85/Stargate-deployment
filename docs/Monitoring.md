@@ -10,15 +10,21 @@ Stargate includes built-in monitoring and log collection services that run along
 | version-collector | - | Collects app versions from `/liveness` endpoints |
 | Alloy | `12345` | Docker log collector - ships container logs to Loki |
 | Loki | `3100` (internal) | Local log aggregation backend |
-| Dozzle | `8090` | Real-time web-based container log viewer |
+| Dozzle | `8190` | Web-based container log viewer (HTTPS, Keycloak SSO; optional) |
+| oauth2-proxy | `8190` | OIDC relying party that authenticates Dozzle access (with Dozzle) |
 
 ---
 
 ## Dozzle - Local Log Viewer
 
-Dozzle provides a web-based UI to view real-time logs from all Stargate containers.
+Dozzle provides a web-based UI to view real-time logs from all Stargate containers. It is optional and enabled by setting `DOZZLE_ENABLED="true"` in `customer-config.sh`.
 
-**Access:** From the local network, open `http://<SERVER_IP>:8090` in a browser.
+Access is protected by **Keycloak**: an `oauth2-proxy` sits in front of Dozzle and requires the same login as the dashboard (the `stargate` realm). Dozzle itself is not exposed directly.
+
+**Access:** open `https://<SERVER_IP>:8190` in a browser and sign in with your HIN Gateway (Keycloak) credentials.
+
+!!! note
+    Port `8190` (HTTPS) must be reachable from your network. If you restrict access by IP or firewall, allow `8190/tcp` as you do for the dashboard and Keycloak.
 
 Logs are organized by service. By selecting a specific service, you can view its corresponding log entries and details.
 
@@ -142,7 +148,7 @@ The node-exporter service exposes standard host-level metrics (CPU, memory, disk
 
 | Port | Service | Protocol | Purpose |
 |------|---------|----------|---------|
-| `8090` | Dozzle | HTTP | Local log viewer UI |
+| `8190` | Dozzle (via oauth2-proxy) | HTTPS | Authenticated log viewer UI (Keycloak SSO) |
 | `9100` | node-exporter | HTTP | Host metrics (Prometheus) |
 | `2113` | smimekeys-client | HTTP | App metrics (Prometheus) |
 | `2114` | irisagent | HTTP | App metrics (Prometheus) |
