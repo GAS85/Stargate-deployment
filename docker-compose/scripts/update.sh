@@ -132,39 +132,10 @@ update_dozzle() {
     return 0
   fi
 
-  # Dozzle is enabled - regenerate users.yml if credentials changed
-  local dozzle_username dozzle_password
-  dozzle_username=$(read_env_var DOZZLE_USERNAME "$CONFIG_FILE")
-  dozzle_password=$(read_env_var DOZZLE_PASSWORD "$CONFIG_FILE")
-  dozzle_username="${dozzle_username:-admin}"
-
-  if [ -z "$dozzle_password" ]; then
-    dozzle_password=$(generate_password 16)
-    if grep -q '^DOZZLE_PASSWORD=' "$CONFIG_FILE"; then
-      sed -i "s|^DOZZLE_PASSWORD=.*|DOZZLE_PASSWORD=\"$dozzle_password\"|" "$CONFIG_FILE"
-    else
-      echo "DOZZLE_PASSWORD=\"$dozzle_password\"" >> "$CONFIG_FILE"
-    fi
-  fi
-
-  local dozzle_data_dir="$PROJECT_DIR/dozzle"
-  mkdir -p "$dozzle_data_dir"
-
-  local dozzle_image="amir20/dozzle:${DOZZLE_VERSION:-v10.5.0}"
+  # Dozzle is enabled - authentication is handled by oauth2-proxy -> Keycloak
+  # (no local users.yml). Just (re)start the "dozzle" profile.
   echo ""
-  echo "Updating Dozzle credentials..."
-  if docker run --rm "$dozzle_image" generate \
-    "$dozzle_username" \
-    --password "$dozzle_password" \
-    --name "Stargate Admin" \
-    --user-filter "name=stargate" \
-    > "$dozzle_data_dir/users.yml" 2>/dev/null; then
-    echo "  Dozzle credentials updated (user: $dozzle_username)"
-  else
-    echo "  WARNING: Failed to regenerate Dozzle users.yml"
-  fi
-
-  echo "Starting Dozzle..."
+  echo "Starting Dozzle (behind oauth2-proxy -> Keycloak)..."
   docker compose --profile dozzle up -d
 }
 

@@ -57,6 +57,21 @@
       "webOrigins": ["${DASHBOARD_PUBLIC_URL}"]
     },
     {
+      "clientId": "dozzle",
+      "name": "Dozzle",
+      "description": "Confidential client for the Dozzle log viewer (fronted by oauth2-proxy)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${KEYCLOAK_DOZZLE_CLIENT_SECRET}",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": ["${DOZZLE_PUBLIC_URL}/oauth2/callback"],
+      "webOrigins": ["${DOZZLE_PUBLIC_URL}"]
+    },
+    {
       "clientId": "app",
       "name": "Application",
       "description": "Public PKCE client for frontend SPA usage",

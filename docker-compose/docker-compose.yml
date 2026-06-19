@@ -781,6 +781,7 @@ services:
       - "80:80"
       - "443:443"
       - "8180:8180"
+      - "8190:8190" # Dozzle (via oauth2-proxy), only backed when DOZZLE_ENABLED=true
     networks:
       - stargate-network
     labels:
@@ -1112,6 +1113,7 @@ services:
     image: amir20/dozzle:${DOZZLE_VERSION:-v10.5.0}
     container_name: stargate-dozzle
     restart: unless-stopped
+    profiles: [dozzle]
     logging:
       driver: json-file
       options:
@@ -1121,10 +1123,16 @@ services:
       DOZZLE_FILTER: "name=stargate"
       DOZZLE_HOSTNAME: "${DEPLOYMENT_NAME:-stargate}"
       DOZZLE_NO_ANALYTICS: "true"
+      # Authentication is delegated to oauth2-proxy (OIDC -> Keycloak), which
+      # injects the identity headers below. Dozzle is intentionally NOT published
+      # to the host: it is reachable only via oauth2-proxy on the internal
+      # network, so these trusted headers cannot be spoofed from outside.
+      DOZZLE_AUTH_PROVIDER: forward-proxy
+      DOZZLE_AUTH_HEADER_USER: X-Forwarded-User
+      DOZZLE_AUTH_HEADER_EMAIL: X-Forwarded-Email
+      DOZZLE_AUTH_HEADER_NAME: X-Forwarded-Preferred-Username
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    ports:
-      - "8090:8080"
     networks:
       - stargate-network
     healthcheck:
@@ -1133,6 +1141,54 @@ services:
       timeout: 30s
       retries: 2
       start_period: 30s
+    labels:
+      - autoheal=true
+
+  # oauth2-proxy — OIDC relying party that puts Dozzle behind Keycloak.
+  # Runs the browser auth-code flow against Keycloak (realm "stargate", client
+  # "dozzle"), then proxies authenticated requests to Dozzle with X-Forwarded-*
+  # identity headers. Caddy terminates TLS in front of it on :8190.
+  # Any authenticated realm user is allowed (no email-domain restriction).
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.13.0
+    container_name: stargate-oauth2-proxy
+    restart: unless-stopped
+    profiles: [dozzle]
+    logging:
+      driver: json-file
+      options:
+        max-size: "100m"
+        max-file: "5"
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      dozzle:
+        condition: service_started
+    environment:
+      OAUTH2_PROXY_PROVIDER: keycloak-oidc
+      OAUTH2_PROXY_OIDC_ISSUER_URL: "${KEYCLOAK_PUBLIC_URL}/realms/stargate"
+      OAUTH2_PROXY_CLIENT_ID: dozzle
+      OAUTH2_PROXY_CLIENT_SECRET: "${KEYCLOAK_DOZZLE_CLIENT_SECRET}"
+      OAUTH2_PROXY_COOKIE_SECRET: "${OAUTH2_PROXY_COOKIE_SECRET}"
+      OAUTH2_PROXY_REDIRECT_URL: "${DOZZLE_PUBLIC_URL}/oauth2/callback"
+      OAUTH2_PROXY_UPSTREAMS: "http://dozzle:8080"
+      OAUTH2_PROXY_HTTP_ADDRESS: "0.0.0.0:4180"
+      # Behind Caddy, which sets X-Forwarded-Proto/-Host so redirects use https.
+      OAUTH2_PROXY_REVERSE_PROXY: "true"
+      # Allow any authenticated user; Keycloak users may not have a verified email.
+      OAUTH2_PROXY_EMAIL_DOMAINS: "*"
+      OAUTH2_PROXY_INSECURE_OIDC_ALLOW_UNVERIFIED_EMAIL: "true"
+      # Pass identity to Dozzle as X-Forwarded-User / -Email / -Preferred-Username.
+      OAUTH2_PROXY_PASS_USER_HEADERS: "true"
+      # Keycloak presents a self-signed cert on the VM IP; skip TLS verify for the
+      # discovery/token calls (mirrors the dashboard's NODE_TLS_REJECT_UNAUTHORIZED=0).
+      OAUTH2_PROXY_SSL_INSECURE_SKIP_VERIFY: "true"
+      # Host-only secure cookie (no Domain attribute -> valid for a bare IP host).
+      OAUTH2_PROXY_COOKIE_SECURE: "true"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - stargate-network
     labels:
       - autoheal=true
 
