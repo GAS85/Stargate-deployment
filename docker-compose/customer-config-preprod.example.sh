@@ -79,14 +79,16 @@ S3_BUCKET_NAME="stargate-bucket"
 # Use "dev" for the latest development builds,
 # or specify exact versions like "v0.0.3"
 
-SMIMEKEYS_VERSION="v0.0.22"
+SMIMEKEYS_VERSION="v0.0.23"
 POLICY_VERSION="v0.0.8"
 IRISAGENT_VERSION="v0.0.7"
 MXENGINE_VERSION="v0.0.48"
 POLICY_SYNC_VERSION="latest"
-DASHBOARD_VERSION="v0.0.21"
+DASHBOARD_VERSION="v0.0.24"
 MTACONF_VERSION="v0.0.5"
 OPS_AGENT_VERSION="dev"
+
+CLAMAV_VERSION="1.5.2"
 
 # ==============================================================================
 # OPTIONAL: Advanced Mail Configuration
