@@ -91,6 +91,27 @@ OPS_AGENT_VERSION="dev"
 CLAMAV_VERSION="1.5.2"
 
 # ==============================================================================
+# OPTIONAL: Infrastructure Versions
+# ==============================================================================
+# Image tags for the supporting infrastructure services. Defaults match the
+# versions shipped with this release; override only to pin a specific tag.
+# NOTE: Stateful services (postgres, vault, keycloak) should be changed
+# deliberately - bumping them recreates the container against existing data.
+
+POSTGRES_VERSION="18-alpine"
+KEYCLOAK_VERSION="26.5.3"
+VAULT_VERSION="1.19.0"
+APISIX_VERSION="3.15.0-debian"
+NATS_VERSION="2.14-alpine"
+SEAWEEDFS_VERSION="4.34"
+CADDY_VERSION="2-alpine"
+LOKI_VERSION="3.4.3"
+ALLOY_VERSION="v1.16.1"
+NODE_EXPORTER_VERSION="v1.11.1"
+STALWART_VERSION="v0.16"
+OAUTH2_PROXY_VERSION="v7.13.0"
+
+# ==============================================================================
 # OPTIONAL: Advanced Mail Configuration
 # ==============================================================================
 
