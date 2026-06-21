@@ -33,7 +33,8 @@
 * **node-exporter** - Host metrics for Prometheus (port `9100`)
 * **version-collector** - Collects app versions from `/liveness` endpoints for node-exporter
 * **Alloy** - Log collector for Loki (ships app logs)
-* **Dozzle** - Real-time container log viewer (port `8090`)
+* **Dozzle** - Real-time container log viewer (port `8190`, HTTPS, behind Keycloak SSO via oauth2-proxy; optional, enabled with `DOZZLE_ENABLED`)
+* **oauth2-proxy** - OIDC relying party that authenticates Dozzle access against Keycloak (starts together with Dozzle)
 
 See [Monitoring and Logs](Monitoring.md) for detailed configuration and usage.
 
