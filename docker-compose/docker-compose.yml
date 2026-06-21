@@ -5,7 +5,7 @@ services:
   # ===================
 
   postgres:
-    image: postgres:18-alpine
+    image: postgres:${POSTGRES_VERSION:-18-alpine}
     container_name: stargate-postgres
     restart: unless-stopped
     logging:
@@ -34,7 +34,7 @@ services:
 
   # Fix vault data volume permissions
   vault-data-fixer:
-    image: hashicorp/vault:1.19.0
+    image: hashicorp/vault:${VAULT_VERSION:-1.19.0}
     container_name: stargate-vault-data-fixer
     user: root
     logging:
@@ -49,7 +49,7 @@ services:
       - stargate-network
 
   vault:
-    image: hashicorp/vault:1.19.0
+    image: hashicorp/vault:${VAULT_VERSION:-1.19.0}
     container_name: stargate-vault
     restart: unless-stopped
     logging:
@@ -87,7 +87,7 @@ services:
       - autoheal=true
 
   seaweedfs:
-    image: chrislusf/seaweedfs:4.34
+    image: chrislusf/seaweedfs:${SEAWEEDFS_VERSION:-4.34}
     container_name: stargate-seaweedfs
     restart: unless-stopped
     logging:
@@ -177,7 +177,7 @@ services:
 
   # Vault initialization container
   vault-init:
-    image: hashicorp/vault:1.19.0
+    image: hashicorp/vault:${VAULT_VERSION:-1.19.0}
     container_name: stargate-vault-init
     user: root
     logging:
@@ -200,7 +200,7 @@ services:
       - stargate-network
 
   keycloak:
-    image: quay.io/keycloak/keycloak:26.5.3
+    image: quay.io/keycloak/keycloak:${KEYCLOAK_VERSION:-26.5.3}
     container_name: stargate-keycloak
     restart: unless-stopped
     logging:
@@ -291,7 +291,7 @@ services:
       - autoheal=true
 
   nats:
-    image: nats:2.14-alpine
+    image: nats:${NATS_VERSION:-2.14-alpine}
     container_name: stargate-nats
     restart: unless-stopped
     logging:
@@ -647,7 +647,7 @@ services:
       - autoheal=true
 
   apisix:
-    image: apache/apisix:3.15.0-debian
+    image: apache/apisix:${APISIX_VERSION:-3.15.0-debian}
     container_name: stargate-apisix
     restart: unless-stopped
     logging:
@@ -761,7 +761,7 @@ services:
   # Caddy reverse proxy — terminates TLS for Keycloak (:8180) and the
   # dashboard (:443), and redirects plain HTTP (:80) to HTTPS.
   caddy:
-    image: caddy:2-alpine
+    image: caddy:${CADDY_VERSION:-2-alpine}
     container_name: stargate-caddy
     restart: unless-stopped
     logging:
@@ -792,7 +792,7 @@ services:
   # ===================
 
   node-exporter:
-    image: prom/node-exporter:v1.11.1
+    image: prom/node-exporter:${NODE_EXPORTER_VERSION:-v1.11.1}
     container_name: stargate-node-exporter
     restart: unless-stopped
     logging:
@@ -885,7 +885,7 @@ services:
       - autoheal=true
 
   stalwart:
-    image: stalwartlabs/stalwart:v0.16
+    image: stalwartlabs/stalwart:${STALWART_VERSION:-v0.16}
     container_name: stargate-stalwart
     restart: unless-stopped
     logging:
@@ -983,7 +983,7 @@ services:
       - autoheal=true
 
   loki:
-    image: grafana/loki:3.4.3
+    image: grafana/loki:${LOKI_VERSION:-3.4.3}
     container_name: stargate-loki
     restart: unless-stopped
     logging:
@@ -1012,7 +1012,7 @@ services:
       - autoheal=true
 
   alloy:
-    image: grafana/alloy:v1.16.1
+    image: grafana/alloy:${ALLOY_VERSION:-v1.16.1}
     container_name: stargate-alloy
     restart: unless-stopped
     logging:
@@ -1096,6 +1096,12 @@ services:
       COMPOSE_PROJECT_NAME: "docker-compose"
       HOST_INSTALL_DIR: "${HOST_INSTALL_DIR:-/root/stargate-deployment}"
       LOG_LEVEL: "info"
+      # Version keys the dashboard update flow is allowed to change. Must list
+      # every *_VERSION present in the release manifest, otherwise the ops-agent
+      # rejects the update. App + infra services (overrides the Go default).
+      # Stateful services (POSTGRES/VAULT/KEYCLOAK) are updatable but should be
+      # bumped deliberately - a recreate runs against the existing data volume.
+      ALLOWED_VERSION_KEYS: "SMIMEKEYS_VERSION,POLICY_VERSION,IRISAGENT_VERSION,MXENGINE_VERSION,POLICY_SYNC_VERSION,DASHBOARD_VERSION,MTACONF_VERSION,OPS_AGENT_VERSION,DOZZLE_VERSION,CLAMAV_VERSION,POSTGRES_VERSION,KEYCLOAK_VERSION,VAULT_VERSION,APISIX_VERSION,NATS_VERSION,SEAWEEDFS_VERSION,CADDY_VERSION,LOKI_VERSION,ALLOY_VERSION,NODE_EXPORTER_VERSION,STALWART_VERSION,OAUTH2_PROXY_VERSION"
     networks:
       - stargate-network
     healthcheck:
@@ -1150,7 +1156,7 @@ services:
   # identity headers. Caddy terminates TLS in front of it on :8190.
   # Any authenticated realm user is allowed (no email-domain restriction).
   oauth2-proxy:
-    image: quay.io/oauth2-proxy/oauth2-proxy:v7.13.0
+    image: quay.io/oauth2-proxy/oauth2-proxy:${OAUTH2_PROXY_VERSION:-v7.13.0}
     container_name: stargate-oauth2-proxy
     restart: unless-stopped
     profiles: [dozzle]
