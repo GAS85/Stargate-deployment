@@ -134,16 +134,23 @@ load_customer_config() {
 
   # Auto-detect SERVER_STATIC_IP if still unset.
   # Uses the source IP of the default route (the VM's primary interface IP).
-  # This can be a private IP if the VM is behind NAT - that's fine.
+  # This can be a private IP if the VM is behind NAT - that's fine for
+  # WG_LOCAL_IP, but the *_PUBLIC_URL values below also derive from it. If the
+  # box is reached via a different public/floating IP, set SERVER_STATIC_IP (or
+  # the individual *_PUBLIC_URL values) explicitly in customer-config.sh.
+  #
+  # The detected value is deliberately NOT written back to customer-config.sh.
+  # Persisting it would freeze the first-detected IP: changing the VM's IP and
+  # re-running purge+install would keep using the stale IP (and Keycloak login
+  # would redirect to the old address). Leaving SERVER_STATIC_IP empty in the
+  # config means every run re-detects and tracks the live interface IP. An
+  # operator who wants a fixed value sets it explicitly, in which case the
+  # branch above honors it and detection is skipped.
   if [ -z "$SERVER_STATIC_IP" ]; then
     SERVER_STATIC_IP=$(ip -4 route get 1.1.1.1 2>/dev/null \
       | awk '{for(i=1;i<=NF;i++) if($i=="src"){print $(i+1); exit}}' || true)
     if [ -n "$SERVER_STATIC_IP" ]; then
-      echo "Auto-detected SERVER_STATIC_IP=$SERVER_STATIC_IP"
-      # Persist back to customer-config.sh so subsequent runs are idempotent.
-      if [ -f "$CONFIG_FILE" ] && grep -q '^SERVER_STATIC_IP=' "$CONFIG_FILE"; then
-        sed -i "s|^SERVER_STATIC_IP=.*|SERVER_STATIC_IP=\"$SERVER_STATIC_IP\"|" "$CONFIG_FILE"
-      fi
+      echo "Auto-detected SERVER_STATIC_IP=$SERVER_STATIC_IP (primary interface IP; override in customer-config.sh if reached via a different public IP)"
     fi
   fi
 
