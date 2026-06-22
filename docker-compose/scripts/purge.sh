@@ -54,6 +54,15 @@ if [ "$confirmation" = "DELETE ALL DATA" ]; then
   rm -rf "$PROJECT_DIR/dozzle"
 
   echo ""
+  echo "Removing generated TLS certificate..."
+  # generate_tls_cert() in install.sh skips regeneration when server.crt
+  # already exists, and the cert's subjectAltName is pinned to SERVER_STATIC_IP.
+  # If we leave it in place, a reinstall after the server IP changes keeps the
+  # stale SAN and browsers reject the cert (NET::ERR_CERT_COMMON_NAME_INVALID).
+  # Removing it forces a fresh cert matching the current IP on next install.
+  rm -rf "$PROJECT_DIR/config/caddy/ssl"
+
+  echo ""
   echo "Removing backup cron job..."
   # Mirrors setup_backup_cron() in install.sh, which installs this /etc/cron.d
   # drop-in. crond drops the schedule as soon as the file is gone -- no reload.
