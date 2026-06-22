@@ -9,6 +9,8 @@ Deploy Stargate on Windows Pro (non-Pro versions do not support Hyper-V)
 - Check Hyper-V and click "OK"
 - After the installation completes, click "Restart now" and wait for Windows to boot again
 
+**Note:** We recommend deploying the VM using Hyper-V Generation 2
+
 ## Get the image
 
 - Download the .vhdx image file. Please refer to [VM images list](VM-images-list.md?h=vhdx)
