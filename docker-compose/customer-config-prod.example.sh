@@ -122,7 +122,7 @@ NODE_EXPORTER_VERSION="v1.11.1"
 # renovate: datasource=docker depName=stalwartlabs/stalwart
 STALWART_VERSION="v0.16"
 # renovate: datasource=docker depName=quay.io/oauth2-proxy/oauth2-proxy
-OAUTH2_PROXY_VERSION="v7.13.0"
+OAUTH2_PROXY_VERSION="v7.15.3"
 
 # ==============================================================================
 # OPTIONAL: Advanced Mail Configuration
