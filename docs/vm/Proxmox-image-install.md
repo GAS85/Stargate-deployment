@@ -5,7 +5,7 @@ Deploy Stargate on Proxmox
 ## Get the image file URL
 
 - Please refer to [VM images list](VM-images-list.md?h=qcow2) for a list of images with URLs.
-- Copy URL to clipboard, for example `https://images.hin.ch/vm-images/AlmaLinux-10.stargate-202603021402.x86_64.qcow2`
+- Copy URL to clipboard, for example `https://images.hin.ch/vm-images/Verimesh-HINGateway.v0.5.1.x86_64.qcow2`
 
 ## Import the image file in Proxmox
 
@@ -32,25 +32,10 @@ Deploy Stargate on Proxmox
 - Click "Next"
 - Wait until the VM creation process finishes and then click on the new VM, click "Console", click "Start Now"
 
-## Log in and initialize the Stargate instance
+## Install HIN Gateway
 
-- Log in to the VM console with the `hinadmin` user in order to configure and install the Stargate components.
-- To obtain the `hinadmin` password, send an email to <support@hin.ch> with the subject: **"Password required for VM installation."**
+After the VM has been successfully created, proceed with the installation and onboarding steps as described in the provided [instructions](https://health-info-net-ag.github.io/Stargate-deployment/Installation-guide/)
 
-[Click here to send an Email](mailto:support@hin.ch?subject=Password%20required%20for%20VM%20installation.&body=Hello%20dear%20Support,%0A%0AI%20would%20like%20to%20receive%20the%20password%20for%20a%20VM%20installation.%0A%0APLEASE%20PROVIDE%20YOUR%20CUSTOMER%20INFO%20HERE){ .md-button style="position:relative;left:50%;transform:translate(-50%,0%);" }
-
-```shell
-sudo su -
-cd ~/stargate-deployment/docker-compose/
-```
-
-- Use vi/nano to edit `customer-config.sh`
-- Configuration details can be found in the [README - Step 1: Configure Customer Settings](../Docker-deploy.md#step-1-configure-customer-settings)
-- Run the install script:
-
-```shell
-./scripts/install.sh
-```
 
 !!! tip "Support"
 
