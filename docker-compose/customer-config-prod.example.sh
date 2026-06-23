@@ -106,7 +106,7 @@ KEYCLOAK_VERSION="26.5.3"
 # renovate: datasource=docker depName=hashicorp/vault
 VAULT_VERSION="1.19.0"
 # renovate: datasource=docker depName=apache/apisix
-APISIX_VERSION="3.15.0-debian"
+APISIX_VERSION="3.17.0-debian"
 # renovate: datasource=docker depName=nats
 NATS_VERSION="2.14-alpine"
 # renovate: datasource=docker depName=chrislusf/seaweedfs
