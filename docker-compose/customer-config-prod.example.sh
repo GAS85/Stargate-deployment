@@ -88,6 +88,7 @@ DASHBOARD_VERSION="v0.0.24"
 MTACONF_VERSION="v0.0.5"
 OPS_AGENT_VERSION="v0.0.3"
 
+# renovate: datasource=docker depName=clamav/clamav
 CLAMAV_VERSION="1.5.2"
 
 # ==============================================================================
@@ -98,17 +99,29 @@ CLAMAV_VERSION="1.5.2"
 # NOTE: Stateful services (postgres, vault, keycloak) should be changed
 # deliberately - bumping them recreates the container against existing data.
 
+# renovate: datasource=docker depName=postgres
 POSTGRES_VERSION="18-alpine"
+# renovate: datasource=docker depName=quay.io/keycloak/keycloak
 KEYCLOAK_VERSION="26.5.3"
+# renovate: datasource=docker depName=hashicorp/vault
 VAULT_VERSION="1.19.0"
+# renovate: datasource=docker depName=apache/apisix
 APISIX_VERSION="3.15.0-debian"
+# renovate: datasource=docker depName=nats
 NATS_VERSION="2.14-alpine"
+# renovate: datasource=docker depName=chrislusf/seaweedfs
 SEAWEEDFS_VERSION="4.34"
+# renovate: datasource=docker depName=caddy
 CADDY_VERSION="2-alpine"
+# renovate: datasource=docker depName=grafana/loki
 LOKI_VERSION="3.4.3"
+# renovate: datasource=docker depName=grafana/alloy
 ALLOY_VERSION="v1.17.0"
+# renovate: datasource=docker depName=prom/node-exporter
 NODE_EXPORTER_VERSION="v1.11.1"
+# renovate: datasource=docker depName=stalwartlabs/stalwart
 STALWART_VERSION="v0.16"
+# renovate: datasource=docker depName=quay.io/oauth2-proxy/oauth2-proxy
 OAUTH2_PROXY_VERSION="v7.13.0"
 
 # ==============================================================================
