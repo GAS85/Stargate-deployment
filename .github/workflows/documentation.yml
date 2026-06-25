@@ -2,11 +2,11 @@ name: documentation
 
 on:
   push:
-    branches:
-      - main
+    # branches:
+    #   - main
     paths:
       - 'docs/**'
-      - 'mkdocs.yml'
+      - 'config_docs/**'
 
 permissions:
   contents: write
@@ -53,14 +53,39 @@ jobs:
         run: sed -i "s/SHA/${{ steps.sha.outputs.sha }}/" docs/badges/build.json
         # Then badge can be used in text as ![commit](https://img.shields.io/endpoint?url=https://health-info-net-ag.github.io/Stargate-deployment/badges/build.json)
 
-      - name: Build documentation
+      - name: Build documentation - de
         run: |
           docker run --rm \
             -v ${{ github.workspace }}:/docs \
             --entrypoint sh \
             squidfunk/mkdocs-material \
-            -c "pip install mkdocs-glightbox mkdocs-print-site-plugin && mkdocs build --clean"
+            -c "pip install mkdocs-glightbox mkdocs-print-site-plugin && mkdocs build --clean -f config_docs/de/mkdocs.yml"
 
+      - name: Build documentation - fr
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/docs \
+            --entrypoint sh \
+            squidfunk/mkdocs-material \
+            -c "pip install mkdocs-glightbox mkdocs-print-site-plugin && mkdocs build --clean -f config_docs/fr/mkdocs.yml"
+
+      - name: Build documentation - it
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/docs \
+            --entrypoint sh \
+            squidfunk/mkdocs-material \
+            -c "pip install mkdocs-glightbox mkdocs-print-site-plugin && mkdocs build --clean -f config_docs/it/mkdocs.yml"
+
+      # We will make EN default language and copy its content to the root folder too to keep old links working
+      - name: Build documentation - en
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/docs \
+            --entrypoint sh \
+            squidfunk/mkdocs-material \
+            -c "pip install mkdocs-glightbox mkdocs-print-site-plugin && mkdocs build --clean -f config_docs/en/mkdocs.yml"
+          cp -r site/en/* site/
 
       - name: Adjust permissions
         run: |
