@@ -17,7 +17,7 @@ Reference: [Troubleshoot outbound SMTP connectivity in Azure](https://learn.micr
 
 ## Get the image file
 
-- Download the latest VHD image file. Please refer to [VM images list](VM-images-list.md?h=vhd)
+- Download the latest VHD image file. Please refer to [VM Catalog](VM-Catalog.md?h=vhd)
 
 ## Upload the Azure VHD image file
 
