@@ -2,7 +2,7 @@
 
 ## Get the Image File URL
 
-- Refer to the [VM images list](VM-images-list.md?h=qcow2) for available images with URLs.
+- Refer to the [VM Catalog](VM-Catalog.md?h=qcow2) for available images with URLs.
 - Copy the `qcow2` URL to your clipboard.
 
 ## Import the Image File in Cloudscale
