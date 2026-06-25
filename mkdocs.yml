@@ -162,5 +162,5 @@ nav:
           - Proxmox: vm/Proxmox-image-install.md
           - Windows 11 pro: vm/Windows11pro-image-install.md
           - Cloudscale: vm/Cloudscale-image-install.md
-  - VM Images catalog: vm/VM-images-list.md
+  - VM Images catalog: vm/VM-Catalog.md
   - Support / Contact us: Support.md
