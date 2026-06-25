@@ -4,8 +4,8 @@ site_author: HIN AG
 site_description: >-
   Stargate deployment User Dokumentation. Docker, Helmcharts, Virtual Machine, Azure, usw.
 
-docs_dir: '../../docs/de'
-site_dir: '../../site/de'
+docs_dir: "../../docs/de"
+site_dir: "../../site/de"
 
 # Repository
 repo_name: Health-Info-Net-AG/Stargate-deployment
@@ -70,8 +70,8 @@ plugins:
   - print-site
   - redirects:
       redirect_maps:
-        'vm/VM-images-list.md': 'vm/VM-Catalog.md'
-        'Testing.md': 'index.md'
+        "vm/VM-images-list.md": "vm/VM-Catalog.md"
+        "Testing.md": "index.md"
 #        'old/file.md': 'new/file.md'
 #        'some_file.md': 'http://external.url.com/foobar'
 
@@ -87,18 +87,17 @@ extra:
       link: https://hub.docker.com/r/healthinfonetag/
   alternate:
     - name: English
-      link: /generated/en/ 
+      link: /Stargate-deployment/en/
       lang: en
     - name: Deutsch
-      link: /generated/de/
+      link: /Stargate-deployment/de/
       lang: de
     - name: French
-      link: /generated/fr/
+      link: /Stargate-deployment/fr/
       lang: fr
     - name: Italian
-      link: /generated/it/
+      link: /Stargate-deployment/it/
       lang: it
-
 
 extra_javascript:
   - javascripts/tablesort.min.js
@@ -162,7 +161,7 @@ nav:
   - Home: index.md
   - Installation Guides:
       - Single domain, M365: Installation-guide.md
-#      - New Customers: New-customers.md
+  #      - New Customers: New-customers.md
   - Technical configuration and Integration:
       - Applications overview: Applications.md
       - Monitoring and Logs: Monitoring.md
