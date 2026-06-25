@@ -3,10 +3,10 @@ name: documentation
 on:
   push:
     branches:
-      - i18n
-    # paths:
-    #   - 'docs/**'
-    #   - 'config_docs/**'
+      - main
+    paths:
+      - 'docs/**'
+      - 'config_docs/**'
 
 permissions:
   contents: write
